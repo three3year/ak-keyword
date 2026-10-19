@@ -43,14 +43,8 @@ function dataVersion(raw: RawServer): DataVersion {
   return { version: raw.gamedataConst.dataVersion ?? '', downloadedAt: raw.downloadedAt }
 }
 
-/**
- * 維護者清單:關鍵字面板的分組。每組由多行組成,每行是一串關鍵字 id(術語或 sup.<id> 補充關鍵字),順序就是面板順序。
- * 沒列到的關鍵字歸到「未分組」。
- */
-export interface KeywordGroup {
-  name: string
-  rows: string[][]
-}
+/** 維護者清單:關鍵字面板的分組,形狀同索引(術語或 sup.<id> 補充關鍵字都能排進任何一行)。沒列到的關鍵字歸到「未分組」。 */
+export type KeywordGroup = IndexGroup
 
 /** 維護者清單:補充關鍵字。關鍵字 id 為 sup.<id>。 */
 export interface SupplementKeyword {
@@ -467,9 +461,14 @@ class Builder {
   groups(keywords: IndexKeyword[]): IndexGroup[] {
     const ids = new Set(keywords.map((k) => k.id))
     const listed = new Set<string>()
-    const take = (id: string) => ids.has(id) && !listed.has(id) && !!listed.add(id)
-    const groups = (this.input.groups ?? []).map((g) => ({ name: g.name, rows: g.rows.map((row) => row.filter(take)) }))
-    groups.push({ name: UNGROUPED, rows: [keywords.map((k) => k.id).filter(take)] })
+    /** 索引裡有、且還沒排進前面任何一行的關鍵字;收下後記為已排。 */
+    const firstListed = (id: string) => {
+      if (!ids.has(id) || listed.has(id)) return false
+      listed.add(id)
+      return true
+    }
+    const groups = (this.input.groups ?? []).map((g) => ({ name: g.name, rows: g.rows.map((row) => row.filter(firstListed)) }))
+    groups.push({ name: UNGROUPED, rows: [keywords.map((k) => k.id).filter(firstListed)] })
     return groups
       .map((g) => ({ name: g.name, rows: g.rows.filter((row) => row.length > 0) }))
       .filter((g) => g.rows.length > 0)

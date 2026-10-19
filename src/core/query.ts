@@ -243,7 +243,7 @@ export function keywordGroups(index: SearchIndex, server: Server): PanelGroup[] 
     .map((g) => ({
       name: g.name,
       rows: g.rows
-        .map((row) => row.filter((id) => withData.has(id)).flatMap((id) => (keywords.has(id) ? [panelKeyword(keywords.get(id)!)] : [])))
+        .map((row) => row.filter((id) => withData.has(id)).map((id) => panelKeyword(keywords.get(id)!)))
         .filter((row) => row.length > 0),
     }))
     .filter((g) => g.rows.length > 0)

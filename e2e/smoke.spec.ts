@@ -156,6 +156,7 @@ test('類型鈕反灰:關鍵字在目前伺服器沒有該類型的敘述時停�
   await page.getByRole('radio', { name: '台服' }).click()
   await expect(erosion.getByRole('button', { name: '反制' })).toHaveClass(/no-data/)
   await expect(erosion.getByRole('button', { name: '反制' })).toBeEnabled()
+  await expect(erosion.getByRole('button', { name: '利用' })).toBeDisabled()
 })
 
 test('命中敘述裡的關鍵字只供查定義:游標為問號,點擊不改搜尋', async ({ page }) => {
@@ -232,7 +233,7 @@ test('關鍵字面板:補充關鍵字叫推、拉;頂端沒有過濾欄位與清
   await expect(page.getByText('點選關鍵字開始搜尋')).toBeVisible()
 })
 
-test('效果類型判定:鉤索師模組特性只算利用-拉;佩佩利用與反制異常狀態;酒神利用束縛', async ({ page }) => {
+test('效果類型判定:鉤索師特性的模組3 階段只算利用-拉;佩佩利用與反制異常狀態;酒神利用束縛', async ({ page }) => {
   await page.goto('./')
   const panel = page.getByRole('complementary', { name: '關鍵字面板' })
   const cards = page.getByTestId('result-card')
