@@ -1,15 +1,16 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { keywordGroups } from '../core/query'
-import type { SearchIndex } from '../core/types'
+import type { SearchIndex, Server } from '../core/types'
 
 const props = defineProps<{
   index: SearchIndex
+  server: Server
   selected: string[]
 }>()
 const emit = defineEmits<{ toggle: [id: string] }>()
 
-const groups = computed(() => keywordGroups(props.index))
+const groups = computed(() => keywordGroups(props.index, props.server))
 </script>
 
 <template>

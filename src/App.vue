@@ -187,7 +187,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
           <strong>關鍵字</strong>
           <button class="btn" @click="drawerOpen = false">完成</button>
         </div>
-        <KeywordPanel :index="index" :selected="selected" @toggle="toggle" />
+        <KeywordPanel :index="index" :server="server" :selected="selected" @toggle="toggle" />
       </aside>
       <section class="results">
         <FilterBar v-model:rarities="rarities" v-model:professions="professions" :options="options" />

@@ -4,7 +4,7 @@
 
 **Blocked by:** None — can start immediately
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] 面板分組函式接受伺服器,拿掉在該伺服器沒有任何幹員具有任何效果類型的關鍵字,拿掉後變空的分組也不回傳;星級、職業篩選不是參數
 - [ ] 頁面依目前伺服器顯示面板,切換伺服器時面板重新計算,搜尋條件 chip 不變

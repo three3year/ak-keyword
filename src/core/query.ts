@@ -183,10 +183,21 @@ export function query(index: SearchIndex, opts: QueryOptions): ResultOperator[] 
  */
 export function availableTypes(index: SearchIndex, server: Server, keyword: string): EffectType[] {
   const found: EffectType[] = []
-  for (const op of index.operators)
-    for (const { entry } of visibleEntries(op, server))
-      for (const v of visibleStages(entry, op, server)) found.push(...(v.match.hits[keyword] ?? []))
+  for (const hits of visibleHits(index, server)) found.push(...(hits[keyword] ?? []))
   return sortTypes(found)
+}
+
+/** 某個伺服器模式下看得到的每段敘述的命中;伺服器可見性與查詢一致。 */
+function* visibleHits(index: SearchIndex, server: Server): Generator<IndexText['hits']> {
+  for (const op of index.operators)
+    for (const { entry } of visibleEntries(op, server)) for (const v of visibleStages(entry, op, server)) yield v.match.hits
+}
+
+/** 某個伺服器有幹員具有任一效果類型的關鍵字。 */
+function keywordsWithData(index: SearchIndex, server: Server): Set<string> {
+  const found = new Set<string>()
+  for (const hits of visibleHits(index, server)) for (const [k, types] of Object.entries(hits)) if (types.length > 0) found.add(k)
+  return found
 }
 
 /** 面板點選關鍵字時新 chip 預設亮的效果類型:該伺服器有資料的第一個(依 EFFECT_TYPES 順序);都沒有時為施加。 */
@@ -219,10 +230,15 @@ export interface PanelGroup {
   keywords: PanelKeyword[]
 }
 
-/** 關鍵字面板:依分組列出全部關鍵字,略過空的分組。 */
-export function keywordGroups(index: SearchIndex): PanelGroup[] {
+/**
+ * 關鍵字面板:依分組列出該伺服器有幹員具有任一效果類型的關鍵字,略過空的分組。
+ * 星級、職業篩選不影響面板。
+ */
+export function keywordGroups(index: SearchIndex, server: Server): PanelGroup[] {
+  const withData = keywordsWithData(index, server)
   const groups = new Map<string, PanelKeyword[]>(index.groups.map((g) => [g, []]))
   for (const k of index.keywords) {
+    if (!withData.has(k.id)) continue
     if (!groups.has(k.group)) groups.set(k.group, [])
     groups.get(k.group)!.push({ id: k.id, name: k.name, definition: k.definition, unofficial: k.kind === 'supplement' })
   }

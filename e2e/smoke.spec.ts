@@ -147,12 +147,15 @@ test('類型鈕反灰:關鍵字在目前伺服器沒有該類型的敘述時停�
   await expect(types.getByRole('button', { name: '施加' })).toBeEnabled()
   await expect(types.getByRole('button', { name: '利用' })).toBeEnabled()
 
-  // 反制-侵蝕損傷 只有國服有資料:切到台服後反灰
+  // 侵蝕損傷只有國服有反制資料,點下去預設亮反制;切到台服後反灰,已亮著的仍可關掉
   await page.getByRole('button', { name: '侵蝕損傷', exact: true }).first().click()
-  const erosion = page.getByRole('group', { name: '侵蝕損傷的效果類型' }).getByRole('button', { name: '反制' })
-  await expect(erosion).toBeEnabled()
+  const erosion = page.getByRole('group', { name: '侵蝕損傷的效果類型' })
+  await expect(erosion.getByRole('button', { name: '反制' })).toHaveAttribute('aria-pressed', 'true')
+  await expect(erosion.getByRole('button', { name: '反制' })).not.toHaveClass(/no-data/)
+  await expect(erosion.getByRole('button', { name: '施加' })).toBeDisabled()
   await page.getByRole('radio', { name: '台服' }).click()
-  await expect(erosion).toBeDisabled()
+  await expect(erosion.getByRole('button', { name: '反制' })).toHaveClass(/no-data/)
+  await expect(erosion.getByRole('button', { name: '反制' })).toBeEnabled()
 })
 
 test('命中敘述裡的關鍵字只供查定義:游標為問號,點擊不改搜尋', async ({ page }) => {
@@ -278,4 +281,24 @@ test('面板點關鍵字時預設亮第一個有資料的效果類型,切換伺�
   await page.getByRole('radio', { name: '台服' }).click()
   await expect(pressed('異常狀態')).toHaveText(['利用'])
   await expect(pressed('暈眩')).toHaveText(['施加'])
+})
+
+test('面板隱藏目前伺服器沒有幹員的關鍵字,已選的 chip 保留', async ({ page }) => {
+  await page.goto('./')
+  const panel = page.getByRole('complementary', { name: '關鍵字面板' })
+  // 缚地只有國服有幹員
+  const groundbind = panel.getByRole('button', { name: '缚地', exact: true })
+  await expect(groundbind).toHaveCount(1)
+  await page.getByRole('radio', { name: '台服' }).click()
+  await expect(groundbind).toHaveCount(0)
+  await expect(panel.getByRole('button', { name: '暈眩', exact: true })).toHaveCount(1)
+
+  // 國服選縛地再切台服:chip 仍在,切回國服面板恢復
+  await page.getByRole('radio', { name: '國服' }).click()
+  await groundbind.click()
+  await page.getByRole('radio', { name: '台服' }).click()
+  await expect(groundbind).toHaveCount(0)
+  await expect(page.getByTestId('chip').locator('.chip-name')).toHaveText('缚地')
+  await page.getByRole('radio', { name: '國服' }).click()
+  await expect(groundbind).toHaveAttribute('aria-pressed', 'true')
 })
