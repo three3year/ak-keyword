@@ -214,12 +214,10 @@ export interface PanelGroup {
   keywords: PanelKeyword[]
 }
 
-/** 關鍵字面板:依分組列出名稱含有 filter 的關鍵字,略過空的分組。 */
-export function keywordGroups(index: SearchIndex, filter: string): PanelGroup[] {
-  const needle = filter.trim().toLowerCase()
+/** 關鍵字面板:依分組列出全部關鍵字,略過空的分組。 */
+export function keywordGroups(index: SearchIndex): PanelGroup[] {
   const groups = new Map<string, PanelKeyword[]>(index.groups.map((g) => [g, []]))
   for (const k of index.keywords) {
-    if (needle && !k.name.toLowerCase().includes(needle)) continue
     if (!groups.has(k.group)) groups.set(k.group, [])
     groups.get(k.group)!.push({ id: k.id, name: k.name, definition: k.definition, unofficial: k.kind === 'supplement' })
   }

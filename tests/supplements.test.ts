@@ -55,7 +55,7 @@ describe('補充關鍵字', () => {
 
   test('面板依清單分組,定義標為非官方', () => {
     const { index } = buildIndex({ cn: fixture({ 甲: '将敌人推开' }), groups: [{ name: '控場', keywords: ['ba.stun'] }], supplements })
-    const panel = keywordGroups(index, '')
+    const panel = keywordGroups(index)
     expect(panel.map((g) => [g.name, g.keywords.map((k) => k.name)])).toEqual([
       ['控場', ['擊退', '浮起']],
       ['傷害', ['真實傷害']],

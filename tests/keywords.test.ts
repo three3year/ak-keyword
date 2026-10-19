@@ -51,7 +51,7 @@ describe('多關鍵字', () => {
 describe('關鍵字面板', () => {
   test('依維護者清單分組,清單沒列到的術語歸到「未分組」', () => {
     const { index } = buildIndex({ cn: fixture(), groups })
-    const panel = keywordGroups(index, '')
+    const panel = keywordGroups(index)
     expect(panel.map((g) => [g.name, g.keywords.map((k) => k.name)])).toEqual([
       ['控場', ['浮空']],
       ['減益', ['寒冷']],
@@ -59,14 +59,9 @@ describe('關鍵字面板', () => {
     ])
   })
 
-  test('打字過濾關鍵字名稱', () => {
-    const { index } = buildIndex({ cn: fixture(), groups })
-    expect(keywordGroups(index, '浮').map((g) => [g.name, g.keywords.map((k) => k.name)])).toEqual([['控場', ['浮空']]])
-  })
-
   test('術語官方定義裡的巢狀術語標記被解析,不顯示原始標記', () => {
     const { index } = buildIndex({ cn: fixture(), groups })
-    const coldKw = keywordGroups(index, '寒冷')[0].keywords[0]
+    const coldKw = keywordGroups(index).flatMap((g) => g.keywords).find((k) => k.name === '寒冷')!
     expect(plain(coldKw.definition)).toBe('攻击速度下降，如果在持续时间内再次受到寒冷效果则会变为冻结')
     expect(highlights(coldKw.definition)).toEqual([['冻结', 'ba.frozen']])
     expect(coldKw.unofficial).toBe(false)

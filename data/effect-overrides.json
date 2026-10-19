@@ -1260,7 +1260,6 @@
 "cbb893ee70d2d20b:ba.fear": {"types":["apply"],"reviewed":true},
 "cc0ee1aab8bc7a18:ba.tremble": {"types":["apply"],"reviewed":true},
 "cc2b7c16c9d1295c:ba.barrier": {"types":["apply"],"reviewed":true},
-"cc2b7e9daafdf6c4:sup.knockback": {"types":[],"reviewed":true,"note":"補充關鍵字「击飞」誤中「攻击飞行」"},
 "cc76bc5d99b64895:ba.berserk": {"types":["apply"],"reviewed":true},
 "cc9b0351f43c82df:ba.root": {"types":["apply"],"reviewed":true},
 "ccb8f71c6622ec01:ba.levitate": {"types":["apply"],"reviewed":true},

@@ -102,7 +102,7 @@ describe('國服模式', () => {
 describe('名稱與補充關鍵字', () => {
   test('關鍵字名稱與定義優先用台服', () => {
     const { index } = buildIndex(servers())
-    const cold = keywordGroups(index, '寒冷')[0].keywords[0]
+    const cold = keywordGroups(index).flatMap((g) => g.keywords).find((k) => k.name === '寒冷')!
     expect(plain(cold.definition)).toBe('攻擊速度下降,如果在持續時間內再次受到寒冷效果則會變為凍結')
   })
 

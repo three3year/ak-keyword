@@ -467,21 +467,6 @@ input:focus-visible {
 
 /* ---- 關鍵字面板 ---- */
 
-.kw-tools {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-
-.kw-filter {
-  flex: 1 1 auto;
-  min-width: 0;
-  border: 1px solid var(--border);
-  background: var(--surface-2);
-  border-radius: 8px;
-  padding: 5px 10px;
-}
-
 .btn {
   border: 1px solid var(--border);
   background: var(--surface-2);
@@ -491,13 +476,8 @@ input:focus-visible {
   white-space: nowrap;
 }
 
-.btn:hover:not(:disabled) {
+.btn:hover {
   border-color: var(--accent);
-}
-
-.btn:disabled {
-  opacity: 0.5;
-  cursor: default;
 }
 
 .kw-group + .kw-group {
@@ -514,11 +494,6 @@ input:focus-visible {
 
 .kw.sup {
   border-style: dashed;
-}
-
-.small {
-  font-size: 0.85rem;
-  padding: 8px 0;
 }
 
 /* ---- 搜尋條件 chip ---- */

@@ -192,3 +192,24 @@ test('幹員名稱是連到 PRTS 的新分頁連結,頭像不是連結', async (
   for (const href of await page.locator('[data-testid=result-card] .op-name a').evaluateAll((as) => as.map((a) => a.getAttribute('href'))))
     expect(href).toMatch(/^https:\/\/prts\.wiki\/w\/.+/)
 })
+
+test('關鍵字面板:補充關鍵字叫推、拉;頂端沒有過濾欄位與清除按鈕,在面板上再點一次該關鍵字即移除', async ({ page }) => {
+  await page.goto('./')
+  const panel = page.getByRole('complementary', { name: '關鍵字面板' })
+  for (const name of ['推', '拉']) await expect(panel.getByRole('button', { name, exact: true })).toHaveCount(1)
+  for (const name of ['擊退', '拉拽']) await expect(panel.getByRole('button', { name, exact: true })).toHaveCount(0)
+  await expect(panel.getByRole('searchbox')).toHaveCount(0)
+  await expect(panel.getByRole('button', { name: '清除' })).toHaveCount(0)
+
+  // 巡林者天賦1「攻擊飛行目標」不算推
+  const push = panel.getByRole('button', { name: '推', exact: true })
+  await push.click()
+  const cards = page.getByTestId('result-card')
+  await expect(cards.first()).toBeVisible()
+  await expect(page.getByTestId('chip').locator('.chip-name')).toHaveText('推')
+  await expect(cards.filter({ has: page.getByRole('heading', { name: '巡林者', exact: true }) })).toHaveCount(0)
+
+  await push.click()
+  await expect(page.getByTestId('chip')).toHaveCount(0)
+  await expect(page.getByText('點選關鍵字開始搜尋')).toBeVisible()
+})

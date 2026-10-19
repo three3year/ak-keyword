@@ -105,10 +105,6 @@ function toggleType(id: string, type: EffectType) {
     .filter((s) => s.types.length > 0)
 }
 
-function clear() {
-  selection.value = []
-}
-
 // ---- 提示框:以事件委派處理所有帶 data-k(關鍵字)與 data-p(潛能加成)的元素 ----
 
 function target(e: Event): HTMLElement | null {
@@ -185,7 +181,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
           <strong>關鍵字</strong>
           <button class="btn" @click="drawerOpen = false">完成</button>
         </div>
-        <KeywordPanel :index="index" :selected="selected" @toggle="toggle" @clear="clear" />
+        <KeywordPanel :index="index" :selected="selected" @toggle="toggle" />
       </aside>
       <section class="results">
         <FilterBar v-model:rarities="rarities" v-model:professions="professions" :options="options" />
