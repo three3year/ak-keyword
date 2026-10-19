@@ -11,7 +11,7 @@ import type {
   SearchIndex,
 } from './types'
 
-function stageLabel(stage: IndexStage): string {
+function stageLabel(stage: IndexStage, entry: IndexEntry): string {
   switch (stage.kind) {
     case 'lv7':
       return '等級7'
@@ -20,7 +20,8 @@ function stageLabel(stage: IndexStage): string {
     case 'max':
       return `等級${stage.level ?? ''}`
     case 'base':
-      return '無模組'
+      // 沒有模組階段可對照時,不需要標「無模組」
+      return entry.stages.some((s) => s.kind === 'module') ? '無模組' : ''
     case 'module':
       return '模組3'
   }
@@ -37,14 +38,14 @@ function entrySource(entry: IndexEntry): string {
   }
 }
 
-function resultStage(stage: IndexStage, opts: QueryOptions): ResultStage {
+function resultStage(stage: IndexStage, entry: IndexEntry, opts: QueryOptions): ResultStage {
   const text = stage.cn
   const effects: ResultStage['effects'] = {}
   for (const k of opts.keywords) {
     const type = text.hits[k]
     if (type && (!opts.effectTypes || opts.effectTypes.includes(type))) effects[k] = type
   }
-  return { label: stageLabel(stage), runs: text.runs, hit: Object.keys(effects).length > 0, effects }
+  return { label: stageLabel(stage, entry), runs: text.runs, hit: Object.keys(effects).length > 0, effects }
 }
 
 function onlyLabel(stages: ResultStage[]): string | undefined {
@@ -57,7 +58,7 @@ function resultOperator(op: IndexOperator, opts: QueryOptions): ResultOperator |
   const entries: ResultEntry[] = []
   const found = new Set<string>()
   for (const entry of op.entries) {
-    const stages = entry.stages.map((st) => resultStage(st, opts))
+    const stages = entry.stages.map((st) => resultStage(st, entry, opts))
     if (!stages.some((s) => s.hit)) continue
     for (const s of stages) for (const k of Object.keys(s.effects)) found.add(k)
     const result: ResultEntry = { source: entrySource(entry), stages }

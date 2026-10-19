@@ -10,7 +10,8 @@ import type {
   SearchIndex,
 } from '../src/core/types'
 import { PROFESSIONS } from '../src/core/types'
-import type { RawCharacter, RawServer, RawSkill, RawSkillLevel } from './raw'
+import { withPotentialBonus } from './potential'
+import type { RawCharacter, RawServer, RawSkill, RawSkillLevel, RawTalentCandidate, RawUnlockCondition } from './raw'
 import { parseRichText, toValues } from './richText'
 
 /** 維護者清單:關鍵字分組。沒列到的關鍵字歸到「未分組」。 */
@@ -57,6 +58,12 @@ class Builder {
 
   operator(id: string, char: RawCharacter): IndexOperator {
     const entries: IndexEntry[] = []
+    const trait = this.traitEntry(id, char)
+    if (trait) entries.push(trait)
+    ;(char.talents ?? []).forEach((t, i) => {
+      const entry = this.talentEntry(id, t.candidates ?? [], i + 1)
+      if (entry) entries.push(entry)
+    })
     char.skills.forEach((s, i) => {
       if (!s.skillId) return
       const skill = this.input.cn.skillTable[s.skillId]
@@ -87,6 +94,40 @@ class Builder {
       return stage
     })
     return { kind: 'skill', no, name: skill.levels[0]?.name, stages }
+  }
+
+  traitEntry(id: string, char: RawCharacter): IndexEntry | undefined {
+    const candidates = char.trait?.candidates ?? []
+    const top = [...candidates].filter((c) => c.requiredPotentialRank === 0).sort((a, b) => unlockOrder(b.unlockCondition) - unlockOrder(a.unlockCondition))[0]
+    const raw = top?.overrideDescripton ?? char.description
+    if (!raw) return undefined
+    return { kind: 'trait', stages: [{ kind: 'base', cn: this.text(raw, toValues(top?.blackboard), `幹員 ${id} 特性`) }] }
+  }
+
+  talentEntry(id: string, candidates: RawTalentCandidate[], no: number): IndexEntry | undefined {
+    const visible = candidates.filter((c) => !c.isHideTalent && c.description)
+    if (visible.length === 0) return undefined
+    const where = `幹員 ${id} 天賦${no}`
+    const runs = this.talentRuns(visible, (c) => c.description!, where)
+    return { kind: 'talent', no, name: visible[0].name ?? undefined, stages: [{ kind: 'base', cn: { runs, hits: hitsOf(runs) } }] }
+  }
+
+  /** 取最高解鎖條件(精英二)的潛能1 版本,並以高潛能版本補上「(+B)」。 */
+  talentRuns<C extends RawTalentCandidate>(candidates: C[], textOf: (c: C) => string, where: string): Run[] {
+    const top = Math.max(...candidates.map((c) => unlockOrder(c.unlockCondition)))
+    const versions = candidates.filter((c) => unlockOrder(c.unlockCondition) === top).sort((a, b) => a.requiredPotentialRank - b.requiredPotentialRank)
+    const parse = (c: C) => parseRichText(textOf(c), { values: toValues(c.blackboard), where, warn: this.warn })
+    const [base, ...higher] = versions
+    const baseRuns = parse(base)
+    const merged = withPotentialBonus(
+      baseRuns,
+      higher.map((c) => ({ rank: c.requiredPotentialRank, runs: parse(c) })),
+    )
+    if (!merged) {
+      this.warn(`${where}:潛能加成對不齊,只顯示潛能1 敘述:${textOf(versions[versions.length - 1])}`)
+      return baseRuns
+    }
+    return merged
   }
 
   text(raw: string, values: Map<string, number | string>, where: string): IndexText {
@@ -125,6 +166,12 @@ class Builder {
 
 function isOperator(id: string, char: RawCharacter): boolean {
   return id.startsWith('char_') && (PROFESSIONS as readonly string[]).includes(char.profession) && !char.isNotObtainable
+}
+
+const PHASES: Record<string, number> = { PHASE_0: 0, PHASE_1: 1, PHASE_2: 2 }
+
+function unlockOrder(c: RawUnlockCondition): number {
+  return (PHASES[c.phase] ?? 0) * 1000 + c.level
 }
 
 function skillStages(skill: RawSkill): { kind: IndexStage['kind']; level: RawSkillLevel; levelNo: number }[] {

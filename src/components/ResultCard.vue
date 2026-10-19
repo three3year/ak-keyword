@@ -21,7 +21,7 @@ defineProps<{
       </div>
       <div class="stages" :class="{ single: e.stages.length === 1 }">
         <div v-for="(s, j) in e.stages" :key="j" class="stage" :class="{ miss: !s.hit }">
-          <div class="stage-label">{{ s.label }}</div>
+          <div v-if="s.label" class="stage-label">{{ s.label }}</div>
           <RichText class="stage-text" :runs="s.runs" :selected="selected" />
         </div>
       </div>
