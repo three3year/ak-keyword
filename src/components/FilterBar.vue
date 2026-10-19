@@ -1,24 +1,14 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import type { FilterOptions } from '../core/query'
 import type { Profession } from '../core/types'
 
-const props = defineProps<{ options: FilterOptions }>()
+defineProps<{ options: FilterOptions }>()
 
 const rarities = defineModel<number[]>('rarities', { required: true })
 const professions = defineModel<Profession[]>('professions', { required: true })
-const branch = defineModel<string>('branch', { required: true })
-
-// 分支選單只列已選職業的分支(沒選職業時列全部)
-const branches = computed(() =>
-  props.options.professions
-    .filter((p) => professions.value.length === 0 || professions.value.includes(p.id))
-    .flatMap((p) => p.branches.map((b) => ({ ...b, profession: p.name }))),
-)
 
 function toggleProfession(p: Profession) {
   professions.value = professions.value.includes(p) ? professions.value.filter((x) => x !== p) : [...professions.value, p]
-  if (branch.value && !branches.value.some((b) => b.id === branch.value)) branch.value = ''
 }
 </script>
 
@@ -43,10 +33,6 @@ function toggleProfession(p: Profession) {
       >
         {{ p.name }}
       </button>
-      <select v-model="branch" class="branch" aria-label="分支">
-        <option value="">全部分支</option>
-        <option v-for="b in branches" :key="b.id" :value="b.id">{{ b.name }}({{ b.profession }})</option>
-      </select>
     </fieldset>
   </div>
 </template>

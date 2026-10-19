@@ -144,7 +144,6 @@ export interface QueryOptions {
   server: Server
   rarities?: number[]
   professions?: Profession[]
-  subProfessions?: string[]
 }
 
 export interface ResultStage {

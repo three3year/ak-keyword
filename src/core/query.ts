@@ -136,7 +136,6 @@ function resultOperator(op: IndexOperator, opts: QueryOptions): ResultOperator |
 function passesFilters(op: IndexOperator, opts: QueryOptions): boolean {
   if (opts.rarities?.length && !opts.rarities.includes(op.rarity)) return false
   if (opts.professions?.length && !opts.professions.includes(op.profession)) return false
-  if (opts.subProfessions?.length && !opts.subProfessions.includes(op.subProfession)) return false
   return true
 }
 
@@ -191,17 +190,13 @@ export function availableTypes(index: SearchIndex, server: Server, keyword: stri
 
 export interface FilterOptions {
   rarities: number[]
-  professions: { id: Profession; name: string; branches: { id: string; name: string }[] }[]
+  professions: { id: Profession; name: string }[]
 }
 
-/** 篩選列的選項:索引裡實際出現的星級、職業(遊戲內順序)與分支。 */
+/** 篩選列的選項:索引裡實際出現的星級與職業(遊戲內順序)。 */
 export function filterOptions(index: SearchIndex): FilterOptions {
   const rarities = [...new Set(index.operators.map((o) => o.rarity))].sort((a, b) => b - a)
-  const professions = PROFESSIONS.filter((p) => index.operators.some((o) => o.profession === p)).map((p) => {
-    const branches = [...new Set(index.operators.filter((o) => o.profession === p).map((o) => o.subProfession))]
-      .map((id) => ({ id, name: index.subProfessions[id]?.name ?? id }))
-    return { id: p, name: PROFESSION_LABELS[p], branches }
-  })
+  const professions = PROFESSIONS.filter((p) => index.operators.some((o) => o.profession === p)).map((p) => ({ id: p, name: PROFESSION_LABELS[p] }))
   return { rarities, professions }
 }
 

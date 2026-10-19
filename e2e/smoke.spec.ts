@@ -88,8 +88,11 @@ test('階段切換:預設第一個命中的階段,未命中的階段停用,重�
 
 test('搜尋條件 chip:加入時只亮施加,再亮一顆後結果變多或不變,關掉最後一顆後 chip 消失', async ({ page }) => {
   await page.goto('./')
-  // 篩選列不再有效果類型
+  // 篩選列不再有效果類型與分支選單
   await expect(page.getByRole('group', { name: '效果類型', exact: true })).toHaveCount(0)
+  await expect(page.getByRole('group', { name: '職業' })).toBeVisible()
+  await expect(page.getByRole('combobox')).toHaveCount(0)
+  await expect(page.getByText('全部分支')).toHaveCount(0)
 
   await page.getByRole('button', { name: '暈眩', exact: true }).first().click()
   const chip = page.getByTestId('chip')

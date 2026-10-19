@@ -83,29 +83,23 @@ describe('篩選', () => {
     ])
   })
 
-  test('分支篩選', () => {
-    const { index } = buildIndex(fixture(roster))
-    expect(query(index, { conditions: applying('ba.cold'), server: 'cn', subProfessions: ['corecaster'] }).map((r) => r.name)).toEqual([
-      '老六星術師',
-      '四星術師',
-    ])
-  })
-
-  test('篩選選項:職業依遊戲順序,分支名稱優先用台服', () => {
+  test('篩選選項:星級高到低,職業依遊戲順序,不含分支', () => {
     const { index } = buildIndex(fixture(roster))
     expect(filterOptions(index)).toEqual({
       rarities: [6, 5, 4],
       professions: [
-        { id: 'WARRIOR', name: '近衛', branches: [{ id: 'instructor', name: '教官' }] },
-        {
-          id: 'CASTER',
-          name: '術師',
-          branches: [
-            { id: 'corecaster', name: '中堅術師' },
-            { id: 'splashcaster', name: '扩散术师' },
-          ],
-        },
+        { id: 'WARRIOR', name: '近衛' },
+        { id: 'CASTER', name: '術師' },
       ],
+    })
+  })
+
+  test('分支名稱優先用台服,供結果卡顯示', () => {
+    const { index } = buildIndex(fixture(roster))
+    expect(Object.fromEntries(Object.entries(index.subProfessions).map(([id, s]) => [id, s.name]))).toEqual({
+      corecaster: '中堅術師',
+      instructor: '教官',
+      splashcaster: '扩散术师',
     })
   })
 })

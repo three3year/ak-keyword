@@ -35,7 +35,6 @@ const SERVERS: { value: Server; label: string }[] = [
 ]
 const rarities = ref<number[]>([])
 const professions = ref<Profession[]>([])
-const branch = ref('')
 // 窄螢幕上關鍵字面板收合成抽屜
 const drawerOpen = ref(false)
 
@@ -57,7 +56,6 @@ const results = computed(() =>
         server: server.value,
         rarities: rarities.value,
         professions: professions.value,
-        subProfessions: branch.value ? [branch.value] : [],
       })
     : [],
 )
@@ -79,7 +77,6 @@ const emptyConditions = computed(() => {
   ]
   if (rarities.value.length) list.push(`星級:${[...rarities.value].sort((a, b) => b - a).map((r) => `${r}★`).join('、')}`)
   if (professions.value.length) list.push(`職業:${professions.value.map((p) => PROFESSION_LABELS[p]).join('、')}`)
-  if (branch.value) list.push(`分支:${index.value?.subProfessions[branch.value]?.name ?? branch.value}`)
   return list
 })
 
@@ -196,12 +193,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
         <KeywordPanel :index="index" :selected="selected" @toggle="toggle" @clear="clear" />
       </aside>
       <section class="results">
-        <FilterBar
-          v-model:rarities="rarities"
-          v-model:professions="professions"
-          v-model:branch="branch"
-          :options="options"
-        />
+        <FilterBar v-model:rarities="rarities" v-model:professions="professions" :options="options" />
         <div v-if="selection.length > 0" class="chips">
           <span v-for="s in selection" :key="s.keyword" class="chip" data-testid="chip">
             <span :data-k="s.keyword" class="chip-name">{{ keywordName(s.keyword) }}</span>
