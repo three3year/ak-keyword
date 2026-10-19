@@ -105,6 +105,9 @@ function onClick(e: MouseEvent) {
     showTip(el, { text: el.dataset.p }, { pinned: true })
   } else if (el.dataset.k && el.classList.contains('chip-name')) {
     showTip(el, { keyword: el.dataset.k }, { pinned: true })
+  } else if (el.dataset.k && el.classList.contains('kw') && isTouch()) {
+    // 觸控裝置沒有懸停:點面板的關鍵字按鈕時,除了切換選取也顯示定義
+    showTip(el, { keyword: el.dataset.k }, { pinned: true })
   } else if (el.dataset.k && inText) {
     // 命中敘述裡的詞:桌機直接切換選取;觸控裝置先顯示定義,再由說明框切換
     if (isTouch()) showTip(el, { keyword: el.dataset.k }, { pinned: true, toggle: true })

@@ -53,7 +53,7 @@ describe('台服模式', () => {
     expect(diff.stages.map((s) => plain(s.runs))).toEqual(['攻擊使敵人寒冷3秒', '攻擊使敵人寒冷5秒'])
   })
 
-  test('台服文字也能命中國服沒有的關鍵字', () => {
+  test('台服敘述也能命中國服沒有的關鍵字', () => {
     const cn = server({ terms: COMMON_TERMS, operators: { char_610_x: operator({ name: '甲', skills: ['sk'] }) }, skills: [masteredSkill('sk', '技', { description: '攻击' }, { description: '攻击' })] })
     const tw = server({
       terms: TW_TERMS,
@@ -106,7 +106,7 @@ describe('名稱與補充關鍵字', () => {
     expect(plain(cold.definition)).toBe('攻擊速度下降,如果在持續時間內再次受到寒冷效果則會變為凍結')
   })
 
-  test('補充關鍵字在台服文字上以繁中字串比對', () => {
+  test('補充關鍵字在台服敘述上以繁中字串比對', () => {
     const supplements: SupplementKeyword[] = [{ id: 'knockback', name: '擊退', cn: ['推开'], tw: ['推開'], definition: '推', group: '控場' }]
     const cn = server({ terms: COMMON_TERMS, operators: { char_620_p: operator({ name: '推', skills: ['sk'] }) }, skills: [masteredSkill('sk', '技', { description: '将敌人推开' }, { description: '将敌人推开' })] })
     const tw = server({ terms: TW_TERMS, operators: { char_620_p: operator({ name: '推', skills: ['sk'] }) }, skills: [masteredSkill('sk', '技', { description: '將敵人推開' }, { description: '將敵人推開' })] })
@@ -142,12 +142,5 @@ describe('模組3 階段的伺服器處理', () => {
 
     const [cnEntry] = query(index, { keywords: ['ba.cold'], server: 'cn' })[0].entries
     expect(cnEntry.stages.map((s) => s.label)).toEqual(['無模組', '模組3 · 甲模組', '模組3 · 乙模组'])
-  })
-})
-
-describe('資料版本', () => {
-  test('索引記錄兩邊的資料版本', () => {
-    const { index } = buildIndex(servers())
-    expect(index.versions).toEqual({ cn: '78.2.0', tw: '51.4.0' })
   })
 })

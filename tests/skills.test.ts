@@ -121,7 +121,7 @@ describe('敘述解析', () => {
     expect(warnings).toEqual([])
   })
 
-  test('遊戲文字裡字面的 \\n 轉成換行', () => {
+  test('敘述裡字面的 \\n 轉成換行', () => {
     const { runs } = parse('，持续3秒\\n<@ba.rem>不可叠加</>')
     expect(plain(runs)).toBe('晕眩，持续3秒\n不可叠加')
   })

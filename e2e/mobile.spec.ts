@@ -11,6 +11,7 @@ test('手機寬度:抽屜選關鍵字、點擊顯示說明、點高亮詞切換�
   await page.getByRole('button', { name: /^關鍵字/ }).click()
   await expect(panel).toBeVisible()
   await panel.getByRole('button', { name: '暈眩', exact: true }).first().tap()
+  await expect(page.getByTestId('tip')).toContainText('無法移動')
   await panel.getByRole('button', { name: '完成' }).tap()
   await expect(panel).toBeHidden()
 

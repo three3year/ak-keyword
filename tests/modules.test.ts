@@ -65,7 +65,7 @@ describe('模組3 階段', () => {
     expect(entry.only).toBeUndefined()
   })
 
-  test('模組沒有改寫的天賦或特性,不重複列出模組版本', () => {
+  test('模組沒有改寫的天賦或特性,不重複列出模組3 階段', () => {
     const { results } = search(
       { name: '只改特性', trait: '攻击力提升', talents: [{ name: '冰心', description: '使敌人<$ba.cold>寒冷</>' }] },
       [{ id: 'uniequip_002_m', name: '特性模組', code: 'CCR-X', trait: { add: '额外攻击力' } }],

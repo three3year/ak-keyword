@@ -190,21 +190,23 @@ class Builder {
 
     // 召喚物的天賦與技能歸到所屬幹員
     const summons: IndexSummon[] = []
-    for (const tokenId of summonIds(char)) {
-      const token = this.char('cn', tokenId)
-      if (!token) {
-        this.warn(`幹員 ${id}:幹員表沒有召喚物 ${tokenId}`)
+    const displayOnly = new Set(Object.keys(char.displayTokenDict ?? {}))
+    for (const summonId of summonIds(char)) {
+      const summon = this.char('cn', summonId)
+      if (!summon) {
+        // 顯示用清單裡偶有只供顯示的 id(實際召喚物另有 id),不必警告
+        if (!displayOnly.has(summonId)) this.warn(`幹員 ${id}:幹員表沒有召喚物 ${summonId}`)
         continue
       }
-      const twToken = this.char('tw', tokenId)
-      summons.push({ id: tokenId, name: twToken?.name ?? token.name, inTw: !!twToken })
-      const tokenEntries: IndexEntry[] = []
-      ;(token.talents ?? []).forEach((_, i) => {
-        const entry = this.talentEntry(tokenId, i, [])
-        if (entry) tokenEntries.push(entry)
+      const twSummon = this.char('tw', summonId)
+      summons.push({ id: summonId, name: twSummon?.name ?? summon.name, inTw: !!twSummon })
+      const summonEntries: IndexEntry[] = []
+      ;(summon.talents ?? []).forEach((_, i) => {
+        const entry = this.talentEntry(summonId, i, [])
+        if (entry) summonEntries.push(entry)
       })
-      tokenEntries.push(...this.skillEntries(tokenId))
-      for (const e of tokenEntries) entries.push({ ...e, summon: tokenId })
+      summonEntries.push(...this.skillEntries(summonId))
+      for (const e of summonEntries) entries.push({ ...e, summon: summonId })
     }
 
     const twEquips = this.input.tw?.uniequipTable?.equipDict ?? {}
@@ -246,7 +248,7 @@ class Builder {
         const stage = this.stage({ kind }, `${ownerId} 技能${no} ${kind}`, (server) => {
           const level = this.raw(server)?.skillTable[skillId]?.levels[index]
           if (!level) return undefined
-          return this.parse(level.description ?? '', skillValues(level), `${server === 'tw' ? '台服' : ''}技能 ${skillId} ${kind}`)
+          return this.parse(level.description ?? '', skillValues(level), `${serverPrefix(server)}技能 ${skillId} ${kind}`)
         })
         if (!stage) continue
         if (kind === 'max') stage.level = index + 1
@@ -269,7 +271,7 @@ class Builder {
         .sort((a, b) => unlockOrder(b.unlockCondition) - unlockOrder(a.unlockCondition))[0]
       const raw = top?.overrideDescripton ?? char.description
       if (!raw) return undefined
-      return this.parse(raw, toValues(top?.blackboard), `${server === 'tw' ? '台服' : ''}幹員 ${id} 特性`)
+      return this.parse(raw, toValues(top?.blackboard), `${serverPrefix(server)}幹員 ${id} 特性`)
     }
     const base = this.stage({ kind: 'base' }, `${id} 特性`, traitRuns)
     if (!base) return undefined
@@ -300,7 +302,7 @@ class Builder {
     const base = this.stage({ kind: 'base' }, `${id} 天賦${no}`, (server) => {
       const candidates = visible(server)
       if (candidates.length === 0) return undefined
-      return this.talentRuns(candidates, (c) => c.description!, `${server === 'tw' ? '台服' : ''}幹員 ${id} 天賦${no}`)
+      return this.talentRuns(candidates, (c) => c.description!, `${serverPrefix(server)}幹員 ${id} 天賦${no}`)
     })
     if (base) stages.push(base)
     for (const m of modules) {
@@ -447,6 +449,11 @@ class Builder {
       .sort((a, b) => groups.indexOf(a.k.group) - groups.indexOf(b.k.group) || kindOrder(a.k) - kindOrder(b.k) || a.i - b.i)
       .map(({ k }) => k)
   }
+}
+
+/** 警告訊息裡標出台服的文字,方便和國服的同一段區分。 */
+function serverPrefix(server: Server): string {
+  return server === 'tw' ? '台服' : ''
 }
 
 function supplementId(s: SupplementKeyword): string {

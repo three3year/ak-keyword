@@ -49,6 +49,19 @@ describe('召喚物', () => {
     ])
   })
 
+  test('多個召喚物的同一段命中敘述合併成一筆,列出所有召喚物名', () => {
+    const cn = server({
+      terms: COMMON_TERMS,
+      operators: {
+        char_304_m: operator({ name: '多召喚', tokens: ['token_304_a', 'token_304_b'] }),
+        token_304_a: operator({ name: '甲型', profession: 'TOKEN', talents: [{ name: '冷却', description: '攻击使敌人<$ba.cold>寒冷</>' }] }),
+        token_304_b: operator({ name: '乙型', profession: 'TOKEN', talents: [{ name: '冷却', description: '攻击使敌人<$ba.cold>寒冷</>' }] }),
+      },
+    })
+    const [r] = query(buildIndex({ cn }).index, { keywords: ['ba.cold'], server: 'cn' })
+    expect(r.entries.map((e) => [e.source, e.summon])).toEqual([['召喚物天賦1', '甲型、乙型']])
+  })
+
   test('不屬於任何幹員的召喚物(例如活動限定)不收錄', () => {
     const cn = server({
       terms: COMMON_TERMS,

@@ -126,7 +126,7 @@ function resultOperator(op: IndexOperator, opts: QueryOptions): ResultOperator |
     rarity: op.rarity,
     profession: op.profession,
     subProfession: op.subProfession,
-    entries,
+    entries: mergeSummonEntries(entries),
   }
   if (op.avatar) result.avatar = op.avatar
   return result
@@ -142,6 +142,27 @@ function passesFilters(op: IndexOperator, opts: QueryOptions): boolean {
 /** 星級高到低,再依職業(遊戲內順序),最後實裝新到舊。 */
 function compareOperators(a: IndexOperator, b: IndexOperator): number {
   return b.rarity - a.rarity || PROFESSIONS.indexOf(a.profession) - PROFESSIONS.indexOf(b.profession) || b.release - a.release
+}
+
+/** 幾個召喚物(例如同一召喚物的不同型態)有完全相同的命中敘述時,合併成一筆並列出所有召喚物名。 */
+function mergeSummonEntries(entries: ResultEntry[]): ResultEntry[] {
+  const out: ResultEntry[] = []
+  const seen = new Map<string, ResultEntry>()
+  for (const e of entries) {
+    if (!e.summon) {
+      out.push(e)
+      continue
+    }
+    const key = JSON.stringify([e.source, e.name, e.stages.map((s) => [s.label, s.runs, s.effects])])
+    const prev = seen.get(key)
+    if (prev) prev.summon = `${prev.summon}、${e.summon}`
+    else {
+      const copy = { ...e }
+      seen.set(key, copy)
+      out.push(copy)
+    }
+  }
+  return out
 }
 
 export function query(index: SearchIndex, opts: QueryOptions): ResultOperator[] {

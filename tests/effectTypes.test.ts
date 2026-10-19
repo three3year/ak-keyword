@@ -92,7 +92,7 @@ describe('覆寫檔與待複核清單', () => {
     ])
   })
 
-  test('同一段文字在多處出現時只列一次', () => {
+  test('同一段敘述在多處出現時只列一次', () => {
     const { pending } = buildIndex({ cn: fixture({ 甲: '使敌人<$ba.cold>寒冷</>', 乙: '使敌人<$ba.cold>寒冷</>' }) })
     expect(pending).toHaveLength(1)
     expect(pending[0].where).toHaveLength(2)
