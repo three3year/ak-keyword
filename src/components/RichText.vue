@@ -1,0 +1,18 @@
+<script setup lang="ts">
+import type { Run } from '../core/types'
+
+defineProps<{
+  runs: Run[]
+  selected: string[]
+}>()
+</script>
+
+<template>
+  <span class="rich"
+    ><template v-for="(r, i) in runs" :key="i"
+      ><mark v-if="r.k && selected.includes(r.k)" class="hl" :data-k="r.k">{{ r.t }}</mark
+      ><span v-else-if="r.k" class="term" :data-k="r.k">{{ r.t }}</span
+      ><span v-else :class="r.s ? `s-${r.s}` : undefined">{{ r.t }}</span></template
+    ></span
+  >
+</template>
