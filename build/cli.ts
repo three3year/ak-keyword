@@ -63,10 +63,11 @@ async function main() {
   }
 
   const cn = await loadServer('cn')
+  const tw = await loadServer('tw')
   const groups = await readJson<KeywordGroup[]>(join(ROOT, 'data', 'keyword-groups.json'))
   const overrides = await readJson<Overrides>(join(ROOT, 'data', 'effect-overrides.json'))
   const supplements = await readJson<SupplementKeyword[]>(join(ROOT, 'data', 'supplementary-keywords.json'))
-  const { index, warnings, pending } = buildIndex({ cn, groups, supplements, overrides })
+  const { index, warnings, pending } = buildIndex({ cn, tw, groups, supplements, overrides })
 
   await mkdir(dirname(OUT_INDEX), { recursive: true })
   const json = JSON.stringify(index)

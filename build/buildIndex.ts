@@ -1,9 +1,15 @@
 // 索引建置:原始遊戲資料 → 索引。純函式,不做任何 I/O。
+//
+// 每段敘述(技能、天賦、特性的某個階段)都由一個「產生器」對國服與台服各解析一次:
+// 國服文字用於國服模式的比對;台服文字用於台服模式的比對與顯示,
+// 並在術語、數值、補充關鍵字都和國服一致時,供國服模式改顯示繁中。
+// 模組3 階段只有國服資料(台服資料庫沒有模組戰鬥資料)。
 import { createHash } from 'node:crypto'
 import type {
   EffectType,
   IndexEntry,
   IndexKeyword,
+  IndexModule,
   IndexOperator,
   IndexStage,
   IndexSummon,
@@ -11,6 +17,7 @@ import type {
   Profession,
   Run,
   SearchIndex,
+  Server,
 } from '../src/core/types'
 import { PROFESSION_LABELS, PROFESSIONS } from '../src/core/types'
 import { ruleEffectTypes } from './effectType'
@@ -36,19 +43,6 @@ export interface KeywordGroup {
   keywords: string[]
 }
 
-/** 效果類型覆寫檔:以「敘述文字雜湊:關鍵字」為鍵,建置時優先於規則判定。 */
-export type Overrides = Record<string, { type: EffectType; reviewed: boolean; note?: string }>
-
-/** 待複核的配對:雜湊還不在覆寫檔裡的「敘述 × 關鍵字」。 */
-export interface PendingReview {
-  key: string
-  keyword: string
-  ruleType: EffectType
-  text: string
-  /** 這段敘述出現的位置,例如「char_002_amiya 技能1 專精3」。 */
-  where: string[]
-}
-
 /** 維護者清單:補充關鍵字。關鍵字 id 為 sup.<id>。 */
 export interface SupplementKeyword {
   id: string
@@ -61,8 +55,22 @@ export interface SupplementKeyword {
   group: string
 }
 
+/** 效果類型覆寫檔:以「敘述文字雜湊:關鍵字」為鍵,建置時優先於規則判定。 */
+export type Overrides = Record<string, { type: EffectType; reviewed: boolean; note?: string }>
+
+/** 待複核的配對:雜湊還不在覆寫檔裡的「敘述 × 關鍵字」。 */
+export interface PendingReview {
+  key: string
+  keyword: string
+  ruleType: EffectType
+  text: string
+  /** 這段敘述出現的位置,例如「char_002_amiya 技能1 m3」。 */
+  where: string[]
+}
+
 export interface BuildInput {
   cn: RawServer
+  tw?: RawServer
   groups?: KeywordGroup[]
   supplements?: SupplementKeyword[]
   overrides?: Overrides
@@ -84,13 +92,16 @@ interface ModuleLevel3 {
   talents: Map<number, RawEquipTalentCandidate[]>
 }
 
+/** 對某個伺服器產生一段敘述的 runs;該伺服器沒有這段敘述時回傳 undefined。 */
+type Producer = (server: Server) => Run[] | undefined
+
 class Builder {
   readonly warnings: string[] = []
   readonly warn = (message: string) => {
     this.warnings.push(message)
   }
   readonly pending = new Map<string, PendingReview>()
-  readonly matchers: { cn: SupplementMatcher[]; tw: SupplementMatcher[] }
+  readonly matchers: Record<Server, SupplementMatcher[]>
 
   constructor(readonly input: BuildInput) {
     const supplements = input.supplements ?? []
@@ -100,8 +111,18 @@ class Builder {
     }
   }
 
+  raw(server: Server): RawServer | undefined {
+    return server === 'cn' ? this.input.cn : this.input.tw
+  }
+
+  /** 幹員、召喚物或職業形態(阿米婭)。 */
+  char(server: Server, id: string): RawCharacter | undefined {
+    const raw = this.raw(server)
+    return raw?.characterTable[id] ?? raw?.charPatchTable?.patchChars[id]
+  }
+
   build(): SearchIndex {
-    const { cn } = this.input
+    const { cn, tw } = this.input
     const operators: IndexOperator[] = []
     // 阿米婭等有多個職業形態的幹員:每個形態各成一位幹員,名字後面標職業
     const forms = new Set(Object.values(cn.charPatchTable?.infos ?? {}).flatMap((i) => i.tmplIds))
@@ -112,8 +133,10 @@ class Builder {
       if (forms.has(id)) op.name = `${op.name}(${PROFESSION_LABELS[op.profession]})`
       operators.push(op)
     }
+    const versions: SearchIndex['versions'] = { cn: cn.gamedataConst.dataVersion ?? '' }
+    if (tw) versions.tw = tw.gamedataConst.dataVersion ?? ''
     return {
-      versions: { cn: cn.gamedataConst.dataVersion ?? '' },
+      versions,
       groups: this.groups(),
       keywords: this.keywords(operators),
       subProfessions: {},
@@ -122,114 +145,173 @@ class Builder {
   }
 
   operator(id: string, char: RawCharacter): IndexOperator {
+    const twChar = this.char('tw', id)
     const modules = this.modules(id)
     const entries: IndexEntry[] = []
-    const trait = this.traitEntry(id, char, modules)
+
+    const trait = this.traitEntry(id, modules)
     if (trait) entries.push(trait)
-    ;(char.talents ?? []).forEach((t, i) => {
-      const entry = this.talentEntry(id, t.candidates ?? [], i, modules)
+    ;(char.talents ?? []).forEach((_, i) => {
+      const entry = this.talentEntry(id, i, modules)
       if (entry) entries.push(entry)
     })
     for (const m of modules) {
       const added = m.talents.get(-1)
       if (!added) continue
-      const runs = this.talentRuns(added, (c) => c.upgradeDescription!, `模組 ${m.equip.uniEquipId} 新增天賦`)
-      const cn = this.finish(runs, `${id} 模組天賦 ${m.equip.uniEquipId}`)
-      entries.push({ kind: 'talent', name: added[0].name ?? undefined, stages: [{ kind: 'module', module: m.equip.uniEquipId, cn }] })
+      const stage = this.stage({ kind: 'module', module: m.equip.uniEquipId }, `${id} 模組天賦 ${m.equip.uniEquipId}`, (server) =>
+        server === 'cn' ? this.talentRuns(added, (c) => c.upgradeDescription!, `模組 ${m.equip.uniEquipId} 新增天賦`) : undefined,
+      )
+      if (stage) entries.push({ kind: 'talent', name: added[0].name ?? undefined, stages: [stage] })
     }
-    entries.push(...this.skillEntries(id, char))
+    entries.push(...this.skillEntries(id))
 
     // 召喚物的天賦與技能歸到所屬幹員
     const summons: IndexSummon[] = []
     for (const tokenId of summonIds(char)) {
-      const token = this.input.cn.characterTable[tokenId]
+      const token = this.char('cn', tokenId)
       if (!token) {
         this.warn(`幹員 ${id}:幹員表沒有召喚物 ${tokenId}`)
         continue
       }
-      summons.push({ id: tokenId, name: token.name, inTw: false })
+      const twToken = this.char('tw', tokenId)
+      summons.push({ id: tokenId, name: twToken?.name ?? token.name, inTw: !!twToken })
       const tokenEntries: IndexEntry[] = []
-      ;(token.talents ?? []).forEach((t, i) => {
-        const entry = this.talentEntry(tokenId, t.candidates ?? [], i, [])
+      ;(token.talents ?? []).forEach((_, i) => {
+        const entry = this.talentEntry(tokenId, i, [])
         if (entry) tokenEntries.push(entry)
       })
-      tokenEntries.push(...this.skillEntries(tokenId, token))
+      tokenEntries.push(...this.skillEntries(tokenId))
       for (const e of tokenEntries) entries.push({ ...e, summon: tokenId })
     }
+
+    const twEquips = this.input.tw?.uniequipTable?.equipDict ?? {}
+    const indexModules: IndexModule[] = modules.map((m) => {
+      const twEquip = twEquips[m.equip.uniEquipId]
+      return { id: m.equip.uniEquipId, name: twEquip?.uniEquipName ?? m.equip.uniEquipName, code: m.equip.typeIcon.toUpperCase(), inTw: !!twEquip }
+    })
+
     return {
       id,
-      name: char.name,
+      name: twChar?.name ?? char.name,
       rarity: Number(char.rarity.replace('TIER_', '')),
       profession: char.profession as Profession,
       subProfession: char.subProfessionId,
       release: 0,
-      inTw: false,
-      modules: modules.map((m) => ({ id: m.equip.uniEquipId, name: m.equip.uniEquipName, code: m.equip.typeIcon.toUpperCase(), inTw: false })),
+      inTw: !!twChar,
+      modules: indexModules,
       summons,
-      entries: entries.filter((e) => e.stages.some((st) => Object.keys(st.cn.hits).length > 0)),
+      entries: entries.filter((e) => e.stages.some((st) => hasHits(st.cn) || (st.tw && hasHits(st.tw)))),
     }
   }
 
-  skillEntries(ownerId: string, char: RawCharacter): IndexEntry[] {
+  // ---------- 技能 ----------
+
+  skillEntries(ownerId: string): IndexEntry[] {
+    const char = this.char('cn', ownerId)!
     const entries: IndexEntry[] = []
     char.skills.forEach((s, i) => {
       if (!s.skillId) return
-      const skill = this.input.cn.skillTable[s.skillId]
+      const skillId = s.skillId
+      const skill = this.input.cn.skillTable[skillId]
       if (!skill) {
-        this.warn(`${ownerId}:技能表沒有 ${s.skillId}`)
+        this.warn(`${ownerId}:技能表沒有 ${skillId}`)
         return
       }
-      entries.push(this.skillEntry(ownerId, skill, i + 1))
+      const no = i + 1
+      const stages: IndexStage[] = []
+      for (const { kind, index } of skillStages(skill)) {
+        const stage = this.stage({ kind }, `${ownerId} 技能${no} ${kind}`, (server) => {
+          const level = this.raw(server)?.skillTable[skillId]?.levels[index]
+          if (!level) return undefined
+          return this.parse(level.description ?? '', skillValues(level), `${server === 'tw' ? '台服' : ''}技能 ${skillId} ${kind}`)
+        })
+        if (!stage) continue
+        if (kind === 'max') stage.level = index + 1
+        stages.push(stage)
+      }
+      const name = this.input.tw?.skillTable[skillId]?.levels[0]?.name ?? skill.levels[0]?.name
+      entries.push({ kind: 'skill', no, name, stages })
     })
     return entries
   }
 
-  skillEntry(ownerId: string, skill: RawSkill, no: number): IndexEntry {
-    const stages: IndexStage[] = skillStages(skill).map(({ kind, level, levelNo }) => {
-      const runs = this.parse(skillLevelText(level), skillValues(level), `技能 ${skill.skillId} ${kind}`)
-      const stage: IndexStage = { kind, cn: this.finish(runs, `${ownerId} 技能${no} ${kind}`) }
-      if (kind === 'max') stage.level = levelNo
-      return stage
-    })
-    return { kind: 'skill', no, name: skill.levels[0]?.name, stages }
-  }
+  // ---------- 特性 ----------
 
-  traitEntry(id: string, char: RawCharacter, modules: ModuleLevel3[]): IndexEntry | undefined {
-    const candidates = char.trait?.candidates ?? []
-    const top = [...candidates].filter((c) => c.requiredPotentialRank === 0).sort((a, b) => unlockOrder(b.unlockCondition) - unlockOrder(a.unlockCondition))[0]
-    const raw = top?.overrideDescripton ?? char.description
-    if (!raw) return undefined
-    const baseRuns = this.parse(raw, toValues(top?.blackboard), `幹員 ${id} 特性`)
-    const stages: IndexStage[] = [{ kind: 'base', cn: this.finish(baseRuns, `${id} 特性`) }]
+  traitEntry(id: string, modules: ModuleLevel3[]): IndexEntry | undefined {
+    const traitRuns = (server: Server) => {
+      const char = this.char(server, id)
+      if (!char) return undefined
+      const top = [...(char.trait?.candidates ?? [])]
+        .filter((c) => c.requiredPotentialRank === 0)
+        .sort((a, b) => unlockOrder(b.unlockCondition) - unlockOrder(a.unlockCondition))[0]
+      const raw = top?.overrideDescripton ?? char.description
+      if (!raw) return undefined
+      return this.parse(raw, toValues(top?.blackboard), `${server === 'tw' ? '台服' : ''}幹員 ${id} 特性`)
+    }
+    const base = this.stage({ kind: 'base' }, `${id} 特性`, traitRuns)
+    if (!base) return undefined
+    const stages: IndexStage[] = [base]
     for (const m of modules) {
-      if (!m.trait) continue
-      const where = `模組 ${m.equip.uniEquipId} 特性`
-      const values = toValues(m.trait.blackboard)
-      const runs = m.trait.overrideDescripton ? this.parse(m.trait.overrideDescripton, values, where) : [...baseRuns]
-      if (m.trait.additionalDescription) runs.push({ t: '\n' }, ...this.parse(m.trait.additionalDescription, values, where))
-      stages.push({ kind: 'module', module: m.equip.uniEquipId, cn: this.finish(runs, `${id} 特性 模組3 ${m.equip.uniEquipId}`) })
+      const trait = m.trait
+      if (!trait) continue
+      const stage = this.stage({ kind: 'module', module: m.equip.uniEquipId }, `${id} 特性 模組3 ${m.equip.uniEquipId}`, (server) => {
+        if (server !== 'cn') return undefined
+        const where = `模組 ${m.equip.uniEquipId} 特性`
+        const values = toValues(trait.blackboard)
+        const runs = trait.overrideDescripton ? this.parse(trait.overrideDescripton, values, where) : [...(traitRuns('cn') ?? [])]
+        if (trait.additionalDescription) runs.push({ t: '\n' }, ...this.parse(trait.additionalDescription, values, where))
+        return runs
+      })
+      if (stage) stages.push(stage)
     }
     return { kind: 'trait', stages }
   }
 
-  talentEntry(id: string, candidates: RawTalentCandidate[], index: number, modules: ModuleLevel3[]): IndexEntry | undefined {
+  // ---------- 天賦 ----------
+
+  talentEntry(id: string, index: number, modules: ModuleLevel3[]): IndexEntry | undefined {
     const no = index + 1
-    const visible = candidates.filter((c) => !c.isHideTalent && c.description)
+    const visible = (server: Server) =>
+      (this.char(server, id)?.talents?.[index]?.candidates ?? []).filter((c) => !c.isHideTalent && c.description)
     const stages: IndexStage[] = []
-    if (visible.length > 0) {
-      const runs = this.talentRuns(visible, (c) => c.description!, `幹員 ${id} 天賦${no}`)
-      stages.push({ kind: 'base', cn: this.finish(runs, `${id} 天賦${no}`) })
-    }
+    const base = this.stage({ kind: 'base' }, `${id} 天賦${no}`, (server) => {
+      const candidates = visible(server)
+      if (candidates.length === 0) return undefined
+      return this.talentRuns(candidates, (c) => c.description!, `${server === 'tw' ? '台服' : ''}幹員 ${id} 天賦${no}`)
+    })
+    if (base) stages.push(base)
     for (const m of modules) {
       const rewrite = m.talents.get(index)
       if (!rewrite) continue
-      const runs = this.talentRuns(rewrite, (c) => c.upgradeDescription!, `模組 ${m.equip.uniEquipId} 天賦${no}`)
-      stages.push({ kind: 'module', module: m.equip.uniEquipId, cn: this.finish(runs, `${id} 天賦${no} 模組3 ${m.equip.uniEquipId}`) })
+      const stage = this.stage({ kind: 'module', module: m.equip.uniEquipId }, `${id} 天賦${no} 模組3 ${m.equip.uniEquipId}`, (server) =>
+        server === 'cn' ? this.talentRuns(rewrite, (c) => c.upgradeDescription!, `模組 ${m.equip.uniEquipId} 天賦${no}`) : undefined,
+      )
+      if (stage) stages.push(stage)
     }
     if (stages.length === 0) return undefined
-    const name = visible[0]?.name ?? modules.map((m) => m.talents.get(index)?.[0].name).find(Boolean)
+    const name = visible('tw')[0]?.name ?? visible('cn')[0]?.name ?? modules.map((m) => m.talents.get(index)?.[0].name).find(Boolean)
     return { kind: 'talent', no, name: name ?? undefined, stages }
   }
+
+  /** 取最高解鎖條件(精英二)的潛能1 版本,並以高潛能版本補上「(+B)」。 */
+  talentRuns<C extends RawTalentCandidate>(candidates: C[], textOf: (c: C) => string, where: string): Run[] {
+    const top = Math.max(...candidates.map((c) => unlockOrder(c.unlockCondition)))
+    const versions = candidates.filter((c) => unlockOrder(c.unlockCondition) === top).sort((a, b) => a.requiredPotentialRank - b.requiredPotentialRank)
+    const parse = (c: C) => this.parse(textOf(c), toValues(c.blackboard), where)
+    const [base, ...higher] = versions
+    const baseRuns = parse(base)
+    const merged = withPotentialBonus(
+      baseRuns,
+      higher.map((c) => ({ rank: c.requiredPotentialRank, runs: parse(c) })),
+    )
+    if (!merged) {
+      this.warn(`${where}:潛能加成對不齊,只顯示潛能1 敘述:${textOf(versions[versions.length - 1])}`)
+      return baseRuns
+    }
+    return merged
+  }
+
+  // ---------- 模組 ----------
 
   /** 幹員的進階模組,各取第3級對特性與天賦的改寫(只看幹員本身,不看召喚物)。 */
   modules(charId: string): ModuleLevel3[] {
@@ -246,34 +328,37 @@ class Builder {
     return out
   }
 
-  /** 取最高解鎖條件(精英二)的潛能1 版本,並以高潛能版本補上「(+B)」。 */
-  talentRuns<C extends RawTalentCandidate>(candidates: C[], textOf: (c: C) => string, where: string): Run[] {
-    const top = Math.max(...candidates.map((c) => unlockOrder(c.unlockCondition)))
-    const versions = candidates.filter((c) => unlockOrder(c.unlockCondition) === top).sort((a, b) => a.requiredPotentialRank - b.requiredPotentialRank)
-    const parse = (c: C) => parseRichText(textOf(c), { values: toValues(c.blackboard), where, warn: this.warn })
-    const [base, ...higher] = versions
-    const baseRuns = parse(base)
-    const merged = withPotentialBonus(
-      baseRuns,
-      higher.map((c) => ({ rank: c.requiredPotentialRank, runs: parse(c) })),
-    )
-    if (!merged) {
-      this.warn(`${where}:潛能加成對不齊,只顯示潛能1 敘述:${textOf(versions[versions.length - 1])}`)
-      return baseRuns
-    }
-    return merged
-  }
+  // ---------- 敘述文字 ----------
 
   parse(raw: string, values: Map<string, number | string>, where: string): Run[] {
     return parseRichText(raw, { values, where, warn: this.warn })
   }
 
+  /** 以產生器分別產生國服與台服文字,組成一個階段。國服沒有這段敘述時回傳 undefined。 */
+  stage(head: Pick<IndexStage, 'kind' | 'module'>, where: string, produce: Producer): IndexStage | undefined {
+    const cnRuns = produce('cn')
+    if (!cnRuns) return undefined
+    const stage: IndexStage = { ...head, cn: this.finish(cnRuns, 'cn', where) }
+    const twRuns = this.input.tw ? produce('tw') : undefined
+    if (twRuns) {
+      const marked = markSupplements(twRuns, this.matchers.tw)
+      if (signature(marked) === signature(stage.cn.runs)) {
+        // 與國服一致:沿用國服的效果類型,國服模式可改顯示繁中
+        stage.tw = { runs: marked, hits: { ...stage.cn.hits } }
+        stage.twSame = true
+      } else {
+        stage.tw = this.finish(twRuns, 'tw', `${where}(台服)`)
+      }
+    }
+    return stage
+  }
+
   /**
-   * 解析完成的 runs → 索引文字。每個關鍵字的效果類型:覆寫檔優先,否則用規則判定;
-   * 覆寫檔沒有的配對列入待複核清單。where 標出這段敘述在哪裡,供複核時參考。
+   * 解析完成的 runs → 索引文字:標出補充關鍵字,判定每個關鍵字的效果類型
+   * (覆寫檔優先,否則用規則判定;覆寫檔沒有的配對列入待複核清單)。
    */
-  finish(parsed: Run[], where: string): IndexText {
-    const runs = markSupplements(parsed, this.matchers.cn)
+  finish(parsed: Run[], server: Server, where: string): IndexText {
+    const runs = markSupplements(parsed, this.matchers[server])
     const text = plainText(runs)
     const hash = textHash(text)
     const hits: IndexText['hits'] = {}
@@ -290,6 +375,8 @@ class Builder {
     return { runs, hits }
   }
 
+  // ---------- 關鍵字 ----------
+
   /** 分組順序:維護者分組清單,再加上補充關鍵字清單裡新出現的分組,最後是「未分組」。 */
   groups(): string[] {
     const names = (this.input.groups ?? []).map((g) => g.name)
@@ -300,8 +387,10 @@ class Builder {
   keywords(operators: IndexOperator[]): IndexKeyword[] {
     const used = new Set<string>()
     for (const op of operators)
-      for (const e of op.entries) for (const st of e.stages) for (const k of Object.keys(st.cn.hits)) used.add(k)
-    const dict = this.input.cn.gamedataConst.termDescriptionDict
+      for (const e of op.entries)
+        for (const st of e.stages) for (const k of [...Object.keys(st.cn.hits), ...Object.keys(st.tw?.hits ?? {})]) used.add(k)
+    const cnTerms = this.input.cn.gamedataConst.termDescriptionDict
+    const twTerms = this.input.tw?.gamedataConst.termDescriptionDict ?? {}
     const groupOf = new Map<string, string>()
     const order = new Map<string, number>()
     for (const g of this.input.groups ?? [])
@@ -309,19 +398,22 @@ class Builder {
         groupOf.set(k, g.name)
         order.set(k, order.size)
       }
-    const sorted = [...used].filter((id) => !id.startsWith('sup.')).sort((a, b) => (order.get(a) ?? Infinity) - (order.get(b) ?? Infinity) || a.localeCompare(b))
+    const terms = [...used]
+      .filter((id) => !id.startsWith('sup.'))
+      .sort((a, b) => (order.get(a) ?? Infinity) - (order.get(b) ?? Infinity) || a.localeCompare(b))
     const keywords: IndexKeyword[] = []
     for (const s of this.input.supplements ?? [])
       keywords.push({ id: supplementId(s), name: s.name, kind: 'supplement', group: s.group, definition: [{ t: s.definition }] })
-    for (const id of sorted) {
-      const term = dict[id]
+    for (const id of terms) {
+      // 名稱與定義優先用台服
+      const term = twTerms[id] ?? cnTerms[id]
       if (!term) this.warn(`術語字典沒有 ${id}`)
       keywords.push({
         id,
         name: term?.termName ?? id,
         kind: 'term',
         group: groupOf.get(id) ?? UNGROUPED,
-        definition: term ? parseRichText(term.description, { values: new Map(), where: `術語 ${id} 定義`, warn: this.warn }) : [],
+        definition: term ? this.parse(term.description, new Map(), `術語 ${id} 定義`) : [],
       })
     }
     // 依分組順序排列;同一組內術語在前、補充關鍵字在後
@@ -340,6 +432,10 @@ function supplementId(s: SupplementKeyword): string {
 
 function isOperator(id: string, char: RawCharacter): boolean {
   return id.startsWith('char_') && (PROFESSIONS as readonly string[]).includes(char.profession) && !char.isNotObtainable
+}
+
+function hasHits(text: IndexText): boolean {
+  return Object.keys(text.hits).length > 0
 }
 
 const PHASES: Record<string, number> = { PHASE_0: 0, PHASE_1: 1, PHASE_2: 2 }
@@ -374,18 +470,25 @@ function moduleTalents(parts: RawEquipPart[]): Map<number, RawEquipTalentCandida
   return talents
 }
 
-function skillStages(skill: RawSkill): { kind: IndexStage['kind']; level: RawSkillLevel; levelNo: number }[] {
+/** 技能取等級7與專精3;沒有專精的技能只取最高等級。index 為 levels 的位置。 */
+function skillStages(skill: RawSkill): { kind: IndexStage['kind']; index: number }[] {
   const n = skill.levels.length
-  if (n >= 10) return [{ kind: 'lv7', level: skill.levels[6], levelNo: 7 }, { kind: 'm3', level: skill.levels[9], levelNo: 10 }]
-  return [{ kind: 'max', level: skill.levels[n - 1], levelNo: n }]
-}
-
-function skillLevelText(level: RawSkillLevel): string {
-  return level.description ?? ''
+  if (n >= 10) return [{ kind: 'lv7', index: 6 }, { kind: 'm3', index: 9 }]
+  return [{ kind: 'max', index: n - 1 }]
 }
 
 function skillValues(level: RawSkillLevel) {
   return toValues(level.blackboard, { duration: level.duration ?? 0 })
+}
+
+const NUMBER = /\d+(?:\.\d+)?/g
+
+/** 比較國服與台服文字是否「一致」:術語順序、數值、補充關鍵字都相同。 */
+function signature(runs: Run[]): string {
+  const terms = runs.filter((r) => r.k && !r.k.startsWith('sup.')).map((r) => r.k)
+  const sups = [...new Set(runs.filter((r) => r.k?.startsWith('sup.')).map((r) => r.k))].sort()
+  const numbers = plainText(runs).match(NUMBER) ?? []
+  return JSON.stringify([terms, numbers, sups])
 }
 
 /** 敘述文字的雜湊:覆寫檔的鍵。文字一變,雜湊就變,配對就重新列入待複核。 */

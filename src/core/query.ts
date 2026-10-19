@@ -4,18 +4,51 @@ import type {
   IndexKeyword,
   IndexOperator,
   IndexStage,
+  IndexText,
   QueryOptions,
   ResultEntry,
   ResultOperator,
   ResultStage,
+  Run,
   SearchIndex,
+  Server,
 } from './types'
 
 function moduleName(stage: IndexStage, op: IndexOperator): string {
   return op.modules.find((m) => m.id === stage.module)?.name ?? stage.module ?? ''
 }
 
-function stageLabel(stage: IndexStage, entry: IndexEntry, op: IndexOperator): string {
+/** 某個伺服器模式下看得到的一個階段:比對用的文字與顯示用的文字。 */
+interface Visible {
+  stage: IndexStage
+  /** 比對用(命中與效果類型)。 */
+  match: IndexText
+  /** 顯示用。 */
+  runs: Run[]
+  cnData: boolean
+}
+
+/**
+ * 依伺服器挑出看得到的階段:
+ * - 台服模式:比對與顯示都用台服文字;台服沒有的階段不列出。模組3 只列台服已實裝的模組,文字取國服。
+ * - 國服模式:比對用國服文字;台服文字一致時顯示繁中,否則顯示簡中。
+ */
+function visibleStages(entry: IndexEntry, op: IndexOperator, server: Server): Visible[] {
+  const out: Visible[] = []
+  for (const stage of entry.stages) {
+    if (stage.kind === 'module') {
+      if (server === 'tw' && !op.modules.find((m) => m.id === stage.module)?.inTw) continue
+      out.push({ stage, match: stage.cn, runs: stage.cn.runs, cnData: true })
+    } else if (server === 'tw') {
+      if (stage.tw) out.push({ stage, match: stage.tw, runs: stage.tw.runs, cnData: false })
+    } else {
+      out.push({ stage, match: stage.cn, runs: stage.twSame && stage.tw ? stage.tw.runs : stage.cn.runs, cnData: false })
+    }
+  }
+  return out
+}
+
+function stageLabel(stage: IndexStage, visible: Visible[], op: IndexOperator): string {
   switch (stage.kind) {
     case 'lv7':
       return '等級7'
@@ -25,7 +58,7 @@ function stageLabel(stage: IndexStage, entry: IndexEntry, op: IndexOperator): st
       return `等級${stage.level ?? ''}`
     case 'base':
       // 沒有模組階段可對照時,不需要標「無模組」
-      return entry.stages.some((s) => s.kind === 'module') ? '無模組' : ''
+      return visible.some((v) => v.stage.kind === 'module') ? '無模組' : ''
     case 'module':
       return `模組3 · ${moduleName(stage, op)}`
   }
@@ -46,18 +79,15 @@ function baseSource(entry: IndexEntry): string {
   }
 }
 
-function resultStage(stage: IndexStage, entry: IndexEntry, op: IndexOperator, opts: QueryOptions): ResultStage {
-  const text = stage.cn
+function resultStage(v: Visible, visible: Visible[], op: IndexOperator, opts: QueryOptions): ResultStage {
   const effects: ResultStage['effects'] = {}
   for (const k of opts.keywords) {
-    const type = text.hits[k]
+    const type = v.match.hits[k]
     if (type && (!opts.effectTypes || opts.effectTypes.includes(type))) effects[k] = type
   }
-  const result: ResultStage = { label: stageLabel(stage, entry, op), runs: text.runs, hit: Object.keys(effects).length > 0, effects }
-  if (stage.kind === 'module') {
-    result.module = moduleName(stage, op)
-    result.cnData = true
-  }
+  const result: ResultStage = { label: stageLabel(v.stage, visible, op), runs: v.runs, hit: Object.keys(effects).length > 0, effects }
+  if (v.stage.kind === 'module') result.module = moduleName(v.stage, op)
+  if (v.cnData) result.cnData = true
   return result
 }
 
@@ -71,15 +101,19 @@ function onlyLabel(stages: ResultStage[]): string | undefined {
 }
 
 function resultOperator(op: IndexOperator, opts: QueryOptions): ResultOperator | undefined {
+  if (opts.server === 'tw' && !op.inTw) return undefined
   const entries: ResultEntry[] = []
   const found = new Set<string>()
   for (const entry of op.entries) {
-    const stages = entry.stages.map((st) => resultStage(st, entry, op, opts))
+    const summon = entry.summon ? op.summons.find((s) => s.id === entry.summon) : undefined
+    if (opts.server === 'tw' && summon && !summon.inTw) continue
+    const visible = visibleStages(entry, op, opts.server)
+    const stages = visible.map((v) => resultStage(v, visible, op, opts))
     if (!stages.some((s) => s.hit)) continue
     for (const s of stages) for (const k of Object.keys(s.effects)) found.add(k)
     const result: ResultEntry = { source: entrySource(entry), stages }
     if (entry.name) result.name = entry.name
-    if (entry.summon) result.summon = op.summons.find((s) => s.id === entry.summon)?.name ?? entry.summon
+    if (entry.summon) result.summon = summon?.name ?? entry.summon
     const only = onlyLabel(stages)
     if (only) result.only = only
     entries.push(result)

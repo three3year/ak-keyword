@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import { loadIndex } from './core/loadIndex'
 import { query } from './core/query'
-import type { EffectType, IndexKeyword, SearchIndex } from './core/types'
+import type { EffectType, IndexKeyword, SearchIndex, Server } from './core/types'
+import { loadServer, saveServer } from './ui/storage'
 import FilterBar from './components/FilterBar.vue'
 import KeywordPanel from './components/KeywordPanel.vue'
 import KeywordTip from './components/KeywordTip.vue'
@@ -14,6 +15,8 @@ const error = ref('')
 const selected = ref<string[]>([])
 // 預設只勾「施加」:最常問的「誰能上 X」一打開就是答案
 const effectTypes = ref<EffectType[]>(['apply'])
+const server = ref<Server>(loadServer())
+watch(server, saveServer)
 
 onMounted(async () => {
   try {
@@ -24,7 +27,7 @@ onMounted(async () => {
 })
 
 const keywordMap = computed(() => new Map<string, IndexKeyword>((index.value?.keywords ?? []).map((k) => [k.id, k])))
-const results = computed(() => (index.value ? query(index.value, { keywords: selected.value, server: 'cn', effectTypes: effectTypes.value }) : []))
+const results = computed(() => (index.value ? query(index.value, { keywords: selected.value, server: server.value, effectTypes: effectTypes.value }) : []))
 
 function toggle(id: string) {
   selected.value = selected.value.includes(id) ? selected.value.filter((k) => k !== id) : [...selected.value, id]
@@ -93,7 +96,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
         <KeywordPanel :index="index" :selected="selected" @toggle="toggle" @clear="clear" />
       </aside>
       <section class="results">
-        <FilterBar v-model:effect-types="effectTypes" />
+        <FilterBar v-model:server="server" v-model:effect-types="effectTypes" />
         <div v-if="selected.length > 0" class="chips">
           <span v-for="id in selected" :key="id" class="chip">
             <span :data-k="id" class="chip-name">{{ keywordMap.get(id)?.name ?? id }}</span>
