@@ -779,10 +779,14 @@ input:focus-visible {
   min-width: 0;
 }
 
-.op-sub {
+.op-title {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 8px;
+}
+
+.op-sub {
   font-size: 0.82rem;
   color: var(--text-2);
 }

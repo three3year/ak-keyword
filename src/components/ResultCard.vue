@@ -56,13 +56,13 @@ function onAvatarError(e: Event) {
         @error="onAvatarError"
       />
       <div class="op-meta">
-        <h3 class="op-name">
-          <a :href="op.prtsUrl" target="_blank" rel="noopener noreferrer" :title="`在 PRTS 查看${op.name}(新分頁)`">{{ op.name }}</a>
-        </h3>
-        <div class="op-sub">
+        <div class="op-title">
+          <h3 class="op-name">
+            <a :href="op.prtsUrl" target="_blank" rel="noopener noreferrer" :title="`在 PRTS 查看${op.name}(新分頁)`">{{ op.name }}</a>
+          </h3>
           <span class="stars" :class="`r${op.rarity}`" :aria-label="`${op.rarity} 星`">{{ '★'.repeat(op.rarity) }}</span>
-          <span>{{ PROFESSION_LABELS[op.profession] }} · {{ branchName }}</span>
         </div>
+        <div class="op-sub">{{ PROFESSION_LABELS[op.profession] }} · {{ branchName }}</div>
       </div>
     </header>
     <div class="tabs" role="tablist" :aria-label="`${op.name}的命中敘述`">
