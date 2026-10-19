@@ -31,9 +31,9 @@
   {
     "name": "機制",
     "keywords": [
-      "ba.charged", "ba.overdrive", "ba.binding", "ba.chant", "ba.magicpoint", "ba.magicarcane",
+      "ba.charged", "ba.overdrive", "ba.chant", "ba.magicpoint", "ba.magicarcane",
       "ba.addbullet", "ba.addash", "ba.permanentatk", "ba.alter", "ba.weaknessatk", "ba.dying",
-      "ba.costlowerbound", "ba.triggereffect"
+      "ba.triggereffect"
     ]
   }
 ]

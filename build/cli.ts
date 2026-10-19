@@ -81,7 +81,8 @@ async function main() {
   const groups = await readJson<KeywordGroup[]>(join(ROOT, 'data', 'keyword-groups.json'))
   const overrides = await readJson<Overrides>(join(ROOT, 'data', 'effect-overrides.json'))
   const supplements = await readJson<SupplementKeyword[]>(join(ROOT, 'data', 'supplementary-keywords.json'))
-  const { index, warnings, pending } = buildIndex({ cn, tw, groups, supplements, overrides })
+  const excludedTerms = await readJson<string[]>(join(ROOT, 'data', 'excluded-terms.json'))
+  const { index, warnings, pending } = buildIndex({ cn, tw, groups, supplements, overrides, excludedTerms })
 
   // 頭像:職業形態(阿米婭)沒有專屬頭像時改用預設形態
   const formDefault = new Map<string, string>()

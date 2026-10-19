@@ -72,3 +72,30 @@ describe('關鍵字面板', () => {
     expect(coldKw.unofficial).toBe(false)
   })
 })
+
+describe('排除的術語', () => {
+  function excludedFixture() {
+    const team = { description: '<$ba.mujica>Ave Mujica</>干员在场时使敌人<$ba.cold>寒冷</>' }
+    return server({
+      terms: { ...COMMON_TERMS, 'ba.mujica': ['Ave Mujica', '乐队'] },
+      operators: {
+        char_001_a: operator({ name: '隊員', skills: ['sk_team'] }),
+        char_002_b: operator({ name: '只有隊名', skills: ['sk_only'] }),
+      },
+      skills: [
+        masteredSkill('sk_team', '队', team, team),
+        masteredSkill('sk_only', '名', { description: '使<$ba.mujica>Ave Mujica</>干员攻击力提升' }, { description: '使<$ba.mujica>Ave Mujica</>干员攻击力提升' }),
+      ],
+    })
+  }
+
+  test('排除的術語不在關鍵字清單,含它的敘述顯示為一般文字、不產生該術語的命中', () => {
+    const { index, pending } = buildIndex({ cn: excludedFixture(), groups, excludedTerms: ['ba.mujica'] })
+    expect(index.keywords.map((k) => k.id)).toEqual(['ba.cold'])
+    expect(query(index, { keywords: ['ba.mujica'], server: 'cn' })).toEqual([])
+    const [r] = query(index, { keywords: ['ba.cold'], server: 'cn' })
+    expect(plain(r.entries[0].stages[0].runs)).toBe('Ave Mujica干员在场时使敌人寒冷')
+    expect(highlights(r.entries[0].stages[0].runs)).toEqual([['寒冷', 'ba.cold']])
+    expect(pending.map((p) => p.keyword)).toEqual(['ba.cold'])
+  })
+})

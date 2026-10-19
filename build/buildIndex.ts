@@ -35,7 +35,7 @@ import type {
   RawTalentCandidate,
   RawUnlockCondition,
 } from './raw'
-import { parseRichText, plainText, toValues } from './richText'
+import { parseRichText, plainText, push, toValues } from './richText'
 import { type SupplementMatcher, markSupplements } from './supplements'
 
 function dataVersion(raw: RawServer): DataVersion {
@@ -88,6 +88,8 @@ export interface BuildInput {
   groups?: KeywordGroup[]
   supplements?: SupplementKeyword[]
   overrides?: Overrides
+  /** 維護者清單:談不上效果類型、不當關鍵字的術語 id(隊伍名等);敘述中顯示為一般文字。 */
+  excludedTerms?: string[]
 }
 
 export interface BuildOutput {
@@ -116,8 +118,10 @@ class Builder {
   }
   readonly pending = new Map<string, PendingReview>()
   readonly matchers: Record<Server, SupplementMatcher[]>
+  readonly excluded: Set<string>
 
   constructor(readonly input: BuildInput) {
+    this.excluded = new Set(input.excludedTerms)
     const supplements = input.supplements ?? []
     this.matchers = {
       cn: supplements.map((s) => ({ id: supplementId(s), strings: s.cn })),
@@ -386,8 +390,13 @@ class Builder {
 
   // ---------- 敘述文字 ----------
 
+  /** 解析一段遊戲文字;排除的術語不帶關鍵字標記。 */
   parse(raw: string, values: Map<string, number | string>, where: string): Run[] {
-    return parseRichText(raw, { values, where, warn: this.warn })
+    const runs = parseRichText(raw, { values, where, warn: this.warn })
+    if (!runs.some((r) => r.k && this.excluded.has(r.k))) return runs
+    const out: Run[] = []
+    for (const r of runs) push(out, r.k && this.excluded.has(r.k) ? { ...r, k: undefined } : r)
+    return out
   }
 
   /** 以產生器分別產生國服與台服文字,組成一個階段。國服沒有這段敘述時回傳 undefined。 */

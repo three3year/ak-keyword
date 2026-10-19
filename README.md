@@ -53,6 +53,7 @@ npm run build-index:offline    # 沿用 .cache/ 已下載的資料
 | `keyword-groups.json` | 關鍵字分組。沒列到的新術語會出現在「未分組」。 |
 | `supplementary-keywords.json` | 補充關鍵字:名稱、簡中與繁中比對字串、定義(顯示為「非官方」)、分組。新增一筆即可,不用改程式。 |
 | `effect-overrides.json` | 效果類型覆寫檔(由 `build/applyReview.ts` 維護)。 |
+| `excluded-terms.json` | 談不上效果類型、不當關鍵字的術語 id(隊伍名、綁定、部署費用下限等)。不進關鍵字面板,敘述中顯示為一般文字。新增一個 id 即可。 |
 
 ## 已知的近似
 
