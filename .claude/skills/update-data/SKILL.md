@@ -6,9 +6,9 @@ disable-model-invocation: true
 
 # 更新遊戲資料
 
-照順序做完每一步;每一步的「完成」寫在步驟最後。標著 **停下** 的地方,把內容列給維護者,等維護者回覆再往下。名詞見 `CONTEXT.md`。
+照順序做完每一步。標著 **停下** 的地方,把內容列給維護者,等維護者回覆再往下。名詞見 `CONTEXT.md`。
 
-每一次建置(`npm run build-index`、`npm run build-index:offline`)都看結束碼:非 0 就**停下**,原樣回報錯誤訊息。`data/` 裡的維護者清單(例如 `prts-pages.json`)缺什麼,一律由維護者決定怎麼補。PowerShell 會把建置的警告輸出顯示成紅色錯誤區塊,結束碼 0 就是成功。
+每個指令都看結束碼:非 0 就**停下**,原樣回報錯誤訊息,怎麼修由維護者決定(例如 `data/prts-pages.json` 缺頁名)。PowerShell 會把建置的警告輸出顯示成紅色錯誤區塊,結束碼 0 就是成功。
 
 ## 1. 比對上游版本
 
@@ -16,7 +16,6 @@ disable-model-invocation: true
 
 - 最後一行是「結果:已是最新」,而且維護者沒有說「強制」:回報「已是最新」與兩服版號,結束。
 - 有新版,或維護者說「強制」:往下。
-- 結束碼非 0:**停下**,原樣回報錯誤訊息。
 
 ## 2. 下載並建置索引
 
@@ -28,7 +27,7 @@ disable-model-invocation: true
 
 讀 `review/pending-review.json`。0 筆就跳到第 4 步。
 
-每一筆依 `CONTEXT.md` 的「效果類型」定義判定 `types`(`apply`/`exploit`/`counter`,可多種;談不上任何一種就是空清單),理由見 `docs/adr/0002-three-effect-types-no-fallback.md`。在 session 裡判定,不呼叫外部 API。
+每一筆依 `CONTEXT.md` 的「效果類型」定義判定 `types`(`apply`/`exploit`/`counter`,可多種),寧缺勿濫:談不上任何一種就是空清單。在 session 裡判定。
 
 **停下**:每一筆都列給維護者,一筆一列:幹員名(從 `public/data/index.json` 的 `operators` 依 `where` 裡的幹員 id 查)、敘述來源(`where`)、關鍵字名、規則判定(`ruleTypes`)、敘述原文(`text`)、你的判定與一句理由。維護者確認或改掉幾筆後,才把確認後的判定寫成 `review/decisions/<今天日期>.json`:
 
@@ -84,8 +83,6 @@ npm run test:e2e
 
 e2e 因為沒有瀏覽器而失敗(訊息提到 `npx playwright install`)時,執行 `npx playwright install chromium` 後重跑 e2e。
 
-任何一項失敗:**停下**,原樣回報失敗的測試與錯誤訊息,不 commit。
-
 完成:三項都通過。
 
 ## 7. 摘要
@@ -113,3 +110,5 @@ commit 訊息第一行:
 - 強制跑且兩服版號都沒變:`data: 重新建置(上游版本未更新:國服 <版號>、台服 <版號>)`
 
 內文放第 7 步的摘要。只 commit;push 由維護者自己做。
+
+完成:`git status` 在 `public/data`、`public/avatars`、`data` 底下沒有未 commit 的改動。
