@@ -1,6 +1,7 @@
 // 查詢:索引 + 查詢條件 → 排好序的幹員清單與命中敘述。純函式。
 import type {
   IndexEntry,
+  IndexKeyword,
   IndexOperator,
   IndexStage,
   QueryOptions,
@@ -86,4 +87,29 @@ export function query(index: SearchIndex, opts: QueryOptions): ResultOperator[] 
     if (r) results.push(r)
   }
   return results
+}
+
+export interface PanelKeyword {
+  id: string
+  name: string
+  definition: IndexKeyword['definition']
+  /** 補充關鍵字的定義由維護者撰寫,不是官方定義。 */
+  unofficial: boolean
+}
+
+export interface PanelGroup {
+  name: string
+  keywords: PanelKeyword[]
+}
+
+/** 關鍵字面板:依分組列出名稱含有 filter 的關鍵字,略過空的分組。 */
+export function keywordGroups(index: SearchIndex, filter: string): PanelGroup[] {
+  const needle = filter.trim().toLowerCase()
+  const groups = new Map<string, PanelKeyword[]>(index.groups.map((g) => [g, []]))
+  for (const k of index.keywords) {
+    if (needle && !k.name.toLowerCase().includes(needle)) continue
+    if (!groups.has(k.group)) groups.set(k.group, [])
+    groups.get(k.group)!.push({ id: k.id, name: k.name, definition: k.definition, unofficial: k.kind === 'supplement' })
+  }
+  return [...groups].filter(([, ks]) => ks.length > 0).map(([name, keywords]) => ({ name, keywords }))
 }

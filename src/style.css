@@ -289,3 +289,140 @@ input:focus-visible {
     max-height: none;
   }
 }
+
+/* ---- 關鍵字面板 ---- */
+
+.kw-tools {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.kw-filter {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  border-radius: 8px;
+  padding: 5px 10px;
+}
+
+.btn {
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  border-radius: 8px;
+  padding: 4px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.kw-group + .kw-group {
+  margin-top: 10px;
+}
+
+.kw-group-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-2);
+  margin: 0 0 5px;
+  letter-spacing: 0.05em;
+}
+
+.kw.sup {
+  border-style: dashed;
+}
+
+.small {
+  font-size: 0.85rem;
+  padding: 8px 0;
+}
+
+/* ---- 已選關鍵字 ---- */
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 999px;
+  padding: 2px 4px 2px 10px;
+  font-size: 0.9rem;
+}
+
+.chip-name {
+  cursor: help;
+}
+
+.chip-x {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 4px;
+}
+
+/* ---- 說明框 ---- */
+
+.tip {
+  position: fixed;
+  z-index: 50;
+  width: min(320px, calc(100vw - 16px));
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
+  padding: 10px 12px;
+  font-size: 0.9rem;
+}
+
+.tip-title {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.tip-body {
+  color: var(--text);
+  white-space: pre-line;
+}
+
+.tip-action {
+  margin-top: 8px;
+  width: 100%;
+  border: 1px solid var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-radius: 8px;
+  padding: 6px;
+  cursor: pointer;
+}
+
+.badge.unofficial {
+  border-color: var(--exploit);
+  color: var(--exploit);
+}
+
+.rich [data-k],
+.rich [data-p] {
+  cursor: pointer;
+}

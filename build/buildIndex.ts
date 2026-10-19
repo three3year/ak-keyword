@@ -13,8 +13,15 @@ import { PROFESSIONS } from '../src/core/types'
 import type { RawCharacter, RawServer, RawSkill, RawSkillLevel } from './raw'
 import { parseRichText, toValues } from './richText'
 
+/** 維護者清單:關鍵字分組。沒列到的關鍵字歸到「未分組」。 */
+export interface KeywordGroup {
+  name: string
+  keywords: string[]
+}
+
 export interface BuildInput {
   cn: RawServer
+  groups?: KeywordGroup[]
 }
 
 export interface BuildOutput {
@@ -41,7 +48,7 @@ class Builder {
     }
     return {
       versions: { cn: cn.gamedataConst.dataVersion ?? '' },
-      groups: [UNGROUPED],
+      groups: [...(this.input.groups ?? []).map((g) => g.name), UNGROUPED],
       keywords: this.keywords(operators),
       subProfessions: {},
       operators,
@@ -92,15 +99,23 @@ class Builder {
     for (const op of operators)
       for (const e of op.entries) for (const st of e.stages) for (const k of Object.keys(st.cn.hits)) used.add(k)
     const dict = this.input.cn.gamedataConst.termDescriptionDict
+    const groupOf = new Map<string, string>()
+    const order = new Map<string, number>()
+    for (const g of this.input.groups ?? [])
+      for (const k of g.keywords) {
+        groupOf.set(k, g.name)
+        order.set(k, order.size)
+      }
+    const sorted = [...used].sort((a, b) => (order.get(a) ?? Infinity) - (order.get(b) ?? Infinity) || a.localeCompare(b))
     const keywords: IndexKeyword[] = []
-    for (const id of used) {
+    for (const id of sorted) {
       const term = dict[id]
       if (!term) this.warn(`術語字典沒有 ${id}`)
       keywords.push({
         id,
         name: term?.termName ?? id,
         kind: 'term',
-        group: UNGROUPED,
+        group: groupOf.get(id) ?? UNGROUPED,
         definition: term ? parseRichText(term.description, { values: new Map(), where: `術語 ${id} 定義`, warn: this.warn }) : [],
       })
     }

@@ -4,7 +4,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import { buildIndex } from './buildIndex'
+import { buildIndex, type KeywordGroup } from './buildIndex'
 import type { RawServer } from './raw'
 
 const ROOT = join(import.meta.dirname, '..')
@@ -63,7 +63,8 @@ async function main() {
   }
 
   const cn = await loadServer('cn')
-  const { index, warnings } = buildIndex({ cn })
+  const groups = await readJson<KeywordGroup[]>(join(ROOT, 'data', 'keyword-groups.json'))
+  const { index, warnings } = buildIndex({ cn, groups })
 
   await mkdir(dirname(OUT_INDEX), { recursive: true })
   const json = JSON.stringify(index)
