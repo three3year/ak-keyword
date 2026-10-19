@@ -578,3 +578,60 @@ input:focus-visible {
   padding-left: 20px;
   color: var(--text-2);
 }
+
+/* ---- 結果卡頭 ---- */
+
+.avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  flex: none;
+  object-fit: cover;
+}
+
+.op-meta {
+  min-width: 0;
+}
+
+.op-sub {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  font-size: 0.82rem;
+  color: var(--text-2);
+}
+
+.stars {
+  letter-spacing: -1px;
+  color: #b0b8c4;
+}
+
+.stars.r6 {
+  color: #f08a24;
+}
+
+.stars.r5 {
+  color: #e0b23a;
+}
+
+.stars.r4 {
+  color: #a77fd8;
+}
+
+.stars.r3 {
+  color: #4a9fe0;
+}
+
+/* ---- 頁尾 ---- */
+
+.footer {
+  margin-top: 24px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  color: var(--text-2);
+  font-size: 0.82rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+}

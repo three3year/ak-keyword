@@ -1,18 +1,39 @@
 <script setup lang="ts">
-import { EFFECT_TYPE_LABELS, type IndexKeyword, type ResultOperator } from '../core/types'
+import { EFFECT_TYPE_LABELS, PROFESSION_LABELS, type IndexKeyword, type ResultOperator } from '../core/types'
 import RichText from './RichText.vue'
 
 defineProps<{
   op: ResultOperator
   selected: string[]
   keywords: Map<string, IndexKeyword>
+  branchName: string
 }>()
+
+function onAvatarError(e: Event) {
+  const img = e.target as HTMLImageElement
+  if (!img.src.endsWith('avatar-placeholder.svg')) img.src = 'avatar-placeholder.svg'
+}
 </script>
 
 <template>
   <article class="card" data-testid="result-card">
     <header class="card-head">
-      <h3 class="op-name">{{ op.name }}</h3>
+      <img
+        class="avatar"
+        :src="op.avatar ?? 'avatar-placeholder.svg'"
+        :alt="op.name"
+        width="48"
+        height="48"
+        loading="lazy"
+        @error="onAvatarError"
+      />
+      <div class="op-meta">
+        <h3 class="op-name">{{ op.name }}</h3>
+        <div class="op-sub">
+          <span class="stars" :class="`r${op.rarity}`" :aria-label="`${op.rarity} 星`">{{ '★'.repeat(op.rarity) }}</span>
+          <span>{{ PROFESSION_LABELS[op.profession] }} · {{ branchName }}</span>
+        </div>
+      </div>
     </header>
     <section v-for="(e, i) in op.entries" :key="i" class="entry">
       <div class="entry-head">

@@ -158,11 +158,22 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
               <li v-for="c in conditions" :key="c">{{ c }}</li>
             </ul>
           </div>
-          <ResultCard v-for="op in results" :key="op.id" :op="op" :selected="selected" :keywords="keywordMap" />
+          <ResultCard
+            v-for="op in results"
+            :key="op.id"
+            :op="op"
+            :selected="selected"
+            :keywords="keywordMap"
+            :branch-name="index.subProfessions[op.subProfession]?.name ?? op.subProfession"
+          />
         </template>
       </section>
     </main>
     <p v-else class="hint">載入中…</p>
+    <footer v-if="index" class="footer">
+      資料版本:國服 {{ index.versions.cn }}<template v-if="index.versions.tw"> · 台服 {{ index.versions.tw }}</template>
+      <span class="footer-note">遊戲資料來自 Kengxxiao/ArknightsGameData 與 arkntools/arknights-data-tw-for-maa</span>
+    </footer>
     <KeywordTip :keywords="keywordMap" :selected="selected" @toggle="toggle" />
   </div>
 </template>

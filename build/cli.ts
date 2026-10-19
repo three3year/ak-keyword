@@ -4,6 +4,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { dirname, join } from 'node:path'
+import { prepareAvatars } from './avatars'
 import { buildIndex, type KeywordGroup, type Overrides, type SupplementKeyword } from './buildIndex'
 import type { RawServer } from './raw'
 
@@ -68,6 +69,18 @@ async function main() {
   const overrides = await readJson<Overrides>(join(ROOT, 'data', 'effect-overrides.json'))
   const supplements = await readJson<SupplementKeyword[]>(join(ROOT, 'data', 'supplementary-keywords.json'))
   const { index, warnings, pending } = buildIndex({ cn, tw, groups, supplements, overrides })
+
+  // 頭像:職業形態(阿米婭)沒有專屬頭像時改用預設形態
+  const formDefault = new Map<string, string>()
+  for (const info of Object.values(cn.charPatchTable?.infos ?? {})) for (const id of info.tmplIds) formDefault.set(id, info.default)
+  const avatars = await prepareAvatars(
+    index.operators.map((o) => ({ id: o.id, candidates: [...new Set([o.id, formDefault.get(o.id) ?? o.id])] })),
+    { root: ROOT, offline, warn: (m) => warnings.push(m) },
+  )
+  for (const op of index.operators) {
+    const avatar = avatars.get(op.id)
+    if (avatar) op.avatar = avatar
+  }
 
   await mkdir(dirname(OUT_INDEX), { recursive: true })
   const json = JSON.stringify(index)
