@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { type SupplementKeyword, buildIndex } from '../build/buildIndex'
 import { keywordGroups, query } from '../src/core/query'
-import { COMMON_TERMS, basicSkill, highlights, operator, plain, server } from './fixtures'
+import { applying, COMMON_TERMS, basicSkill, highlights, operator, plain, server } from './fixtures'
 
 const supplements: SupplementKeyword[] = [
   { id: 'knockback', name: '擊退', cn: ['推开', '击退'], tw: ['推開', '擊退'], definition: '把敵人往遠離自己的方向推動', group: '控場' },
@@ -18,7 +18,7 @@ function fixture(descriptions: Record<string, string>) {
 describe('補充關鍵字', () => {
   test('以純文字比對清單中的字串,命中處高亮', () => {
     const { index } = buildIndex({ cn: fixture({ 推人者: '攻击将敌人<@ba.vup>推开</>一段距离', 無關者: '攻击力提升' }), supplements })
-    const results = query(index, { keywords: ['sup.knockback'], server: 'cn' })
+    const results = query(index, { conditions: applying('sup.knockback'), server: 'cn' })
     expect(results.map((r) => r.name)).toEqual(['推人者'])
     const runs = results[0].entries[0].stages[0].runs
     expect(plain(runs)).toBe('攻击将敌人推开一段距离')
@@ -27,7 +27,7 @@ describe('補充關鍵字', () => {
 
   test('比對字串可以跨越樣式標記', () => {
     const { index } = buildIndex({ cn: fixture({ 甲: '造成<@ba.vup>真实</>伤害' }), supplements })
-    const [r] = query(index, { keywords: ['sup.truedmg'], server: 'cn' })
+    const [r] = query(index, { conditions: applying('sup.truedmg'), server: 'cn' })
     expect(highlights(r.entries[0].stages[0].runs)).toEqual([['真实伤害', 'sup.truedmg']])
   })
 
@@ -36,8 +36,8 @@ describe('補充關鍵字', () => {
       cn: fixture({ 術語者: '使敌人<$ba.levitate>浮空</>', 純文字者: '使敌人浮空2秒' }),
       supplements,
     })
-    expect(query(index, { keywords: ['sup.lift'], server: 'cn' }).map((r) => r.name)).toEqual(['純文字者'])
-    expect(query(index, { keywords: ['ba.levitate'], server: 'cn' }).map((r) => r.name)).toEqual(['術語者'])
+    expect(query(index, { conditions: applying('sup.lift'), server: 'cn' }).map((r) => r.name)).toEqual(['純文字者'])
+    expect(query(index, { conditions: applying('ba.levitate'), server: 'cn' }).map((r) => r.name)).toEqual(['術語者'])
   })
 
   test('補充關鍵字可與術語多選 AND,並接受效果類型判定', () => {
@@ -45,7 +45,7 @@ describe('補充關鍵字', () => {
       cn: fixture({ 兩者: '使敌人<$ba.cold>寒冷</>并将其推开', 只寒冷: '使敌人<$ba.cold>寒冷</>' }),
       supplements,
     })
-    const results = query(index, { keywords: ['ba.cold', 'sup.knockback'], server: 'cn', effectTypes: ['apply'] })
+    const results = query(index, { conditions: applying('ba.cold', 'sup.knockback'), server: 'cn' })
     expect(results.map((r) => r.name)).toEqual(['兩者'])
     expect(results[0].entries[0].stages[0].effects).toEqual({ 'ba.cold': ['apply'], 'sup.knockback': ['apply'] })
   })

@@ -4,10 +4,12 @@ import { loadIndex } from './core/loadIndex'
 import { filterOptions, footerItems, query } from './core/query'
 import {
   EFFECT_TYPE_LABELS,
+  EFFECT_TYPES,
   PROFESSION_LABELS,
   type EffectType,
   type IndexKeyword,
   type Profession,
+  type SearchCondition,
   type SearchIndex,
   type Server,
 } from './core/types'
@@ -20,9 +22,10 @@ import { hideTip, isTouch, showTip, tip } from './ui/tip'
 
 const index = shallowRef<SearchIndex>()
 const error = ref('')
-const selected = ref<string[]>([])
-// 預設只勾「施加」:最常問的「誰能上 X」一打開就是答案
-const effectTypes = ref<EffectType[]>(['apply'])
+/** 已選關鍵字(依加入順序)與各自亮著的效果類型;每亮一顆就是一個搜尋條件。 */
+const selection = ref<{ keyword: string; types: EffectType[] }[]>([])
+const selected = computed(() => selection.value.map((s) => s.keyword))
+const conditions = computed<SearchCondition[]>(() => selection.value.flatMap((s) => s.types.map((type) => ({ keyword: s.keyword, type }))))
 const server = ref<Server>(loadServer())
 watch(server, saveServer)
 const rarities = ref<number[]>([])
@@ -45,9 +48,8 @@ const options = computed(() => (index.value ? filterOptions(index.value) : { rar
 const results = computed(() =>
   index.value
     ? query(index.value, {
-        keywords: selected.value,
+        conditions: conditions.value,
         server: server.value,
-        effectTypes: effectTypes.value,
         rarities: rarities.value,
         professions: professions.value,
         subProfessions: branch.value ? [branch.value] : [],
@@ -56,11 +58,10 @@ const results = computed(() =>
 )
 
 /** 沒有結果時列出目前生效的條件,讓使用者知道要放寬哪一項。 */
-const conditions = computed(() => {
+const emptyConditions = computed(() => {
   const list = [
-    `關鍵字:${selected.value.map((k) => keywordMap.value.get(k)?.name ?? k).join('、')}`,
+    `搜尋條件:${conditions.value.map((c) => `${EFFECT_TYPE_LABELS[c.type]}-${keywordName(c.keyword)}`).join('、')}`,
     `伺服器:${server.value === 'tw' ? '台服' : '國服'}`,
-    `效果類型:${effectTypes.value.length ? effectTypes.value.map((t) => EFFECT_TYPE_LABELS[t]).join('、') : '(未勾選)'}`,
   ]
   if (rarities.value.length) list.push(`星級:${[...rarities.value].sort((a, b) => b - a).map((r) => `${r}★`).join('、')}`)
   if (professions.value.length) list.push(`職業:${professions.value.map((p) => PROFESSION_LABELS[p]).join('、')}`)
@@ -68,12 +69,33 @@ const conditions = computed(() => {
   return list
 })
 
+function keywordName(id: string): string {
+  return keywordMap.value.get(id)?.name ?? id
+}
+
+/** 面板、命中敘述、提示框的點選:未選就加入並只亮「施加」(最常問的「誰能上 X」),已選就移除。 */
 function toggle(id: string) {
-  selected.value = selected.value.includes(id) ? selected.value.filter((k) => k !== id) : [...selected.value, id]
+  if (selected.value.includes(id)) remove(id)
+  else selection.value = [...selection.value, { keyword: id, types: ['apply'] }]
+}
+
+function remove(id: string) {
+  selection.value = selection.value.filter((s) => s.keyword !== id)
+}
+
+/** chip 上的類型鈕:切換該類型;關掉最後一顆等於移除 chip。 */
+function toggleType(id: string, type: EffectType) {
+  selection.value = selection.value
+    .map((s) => {
+      if (s.keyword !== id) return s
+      const on = s.types.includes(type) ? s.types.filter((t) => t !== type) : [...s.types, type]
+      return { keyword: id, types: EFFECT_TYPES.filter((t) => on.includes(t)) }
+    })
+    .filter((s) => s.types.length > 0)
 }
 
 function clear() {
-  selected.value = []
+  selection.value = []
 }
 
 // ---- 提示框:以事件委派處理所有帶 data-k(關鍵字)與 data-p(潛能加成)的元素 ----
@@ -150,16 +172,28 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
       <section class="results">
         <FilterBar
           v-model:server="server"
-          v-model:effect-types="effectTypes"
           v-model:rarities="rarities"
           v-model:professions="professions"
           v-model:branch="branch"
           :options="options"
         />
-        <div v-if="selected.length > 0" class="chips">
-          <span v-for="id in selected" :key="id" class="chip">
-            <span :data-k="id" class="chip-name">{{ keywordMap.get(id)?.name ?? id }}</span>
-            <button class="chip-x" :aria-label="`移除 ${keywordMap.get(id)?.name ?? id}`" @click.stop="toggle(id)">×</button>
+        <div v-if="selection.length > 0" class="chips">
+          <span v-for="s in selection" :key="s.keyword" class="chip" data-testid="chip">
+            <span :data-k="s.keyword" class="chip-name">{{ keywordName(s.keyword) }}</span>
+            <span class="chip-types" role="group" :aria-label="`${keywordName(s.keyword)}的效果類型`">
+              <button
+                v-for="t in EFFECT_TYPES"
+                :key="t"
+                type="button"
+                class="chip-type"
+                :class="[`fx-${t}`, { on: s.types.includes(t) }]"
+                :aria-pressed="s.types.includes(t)"
+                @click.stop="toggleType(s.keyword, t)"
+              >
+                {{ EFFECT_TYPE_LABELS[t] }}
+              </button>
+            </span>
+            <button class="chip-x" :aria-label="`移除 ${keywordName(s.keyword)}`" @click.stop="remove(s.keyword)">×</button>
           </span>
         </div>
         <p v-if="selected.length === 0" class="hint">點選關鍵字開始搜尋</p>
@@ -171,7 +205,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
           <div v-if="results.length === 0" class="empty" data-testid="empty">
             <strong>沒有符合的幹員</strong>
             <ul>
-              <li v-for="c in conditions" :key="c">{{ c }}</li>
+              <li v-for="c in emptyConditions" :key="c">{{ c }}</li>
             </ul>
           </div>
           <ResultCard

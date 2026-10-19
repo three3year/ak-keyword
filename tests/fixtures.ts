@@ -11,7 +11,7 @@ import type {
   RawTalentCandidate,
   RawTerm,
 } from '../build/raw'
-import type { Run } from '../src/core/types'
+import type { Run, SearchCondition } from '../src/core/types'
 
 export type Values = Record<string, number | string>
 
@@ -260,4 +260,9 @@ export function plain(runs: Run[]): string {
 /** 列出 runs 裡被高亮(帶關鍵字)的文字與其關鍵字。 */
 export function highlights(runs: Run[]): [string, string][] {
   return runs.filter((r) => r.k).map((r) => [r.t, r.k!])
+}
+
+/** 每個關鍵字配「施加」的搜尋條件。 */
+export function applying(...keywords: string[]): SearchCondition[] {
+  return keywords.map((keyword) => ({ keyword, type: 'apply' }))
 }

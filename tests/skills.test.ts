@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { buildIndex } from '../build/buildIndex'
 import { query } from '../src/core/query'
-import { COMMON_TERMS, basicSkill, highlights, masteredSkill, operator, plain, server } from './fixtures'
+import { applying, COMMON_TERMS, basicSkill, highlights, masteredSkill, operator, plain, server } from './fixtures'
 
 describe('技能敘述的寒冷直通', () => {
   test('點寒冷列出技能含寒冷的幹員,佔位符填入實際數值,等級7與專精3並列', () => {
@@ -23,7 +23,7 @@ describe('技能敘述的寒冷直通', () => {
     })
 
     const { index } = buildIndex({ cn })
-    const results = query(index, { keywords: ['ba.cold'], server: 'cn' })
+    const results = query(index, { conditions: applying('ba.cold'), server: 'cn' })
 
     expect(results.map((r) => r.name)).toEqual(['冰原'])
     const [entry] = results[0].entries
@@ -43,7 +43,7 @@ describe('技能敘述的寒冷直通', () => {
       operators: { char_001_ice: operator({ name: '冰原', skills: ['sk_ice_1'] }) },
       skills: [masteredSkill('sk_ice_1', '冰封', { description: '攻击力提升' }, { description: '攻击力提升并使敌人<$ba.cold>寒冷</>' })],
     })
-    const [r] = query(buildIndex({ cn }).index, { keywords: ['ba.cold'], server: 'cn' })
+    const [r] = query(buildIndex({ cn }).index, { conditions: applying('ba.cold'), server: 'cn' })
     expect(r.entries[0].stages.map((s) => [s.label, s.hit])).toEqual([
       ['等級7', false],
       ['專精3', true],
@@ -56,7 +56,7 @@ describe('技能敘述的寒冷直通', () => {
       operators: { char_003_low: operator({ name: '低星', rarity: 3, skills: ['sk_low_1'] }) },
       skills: [basicSkill('sk_low_1', '冷风', { description: '使敌人<$ba.cold>寒冷</>{duration}秒', duration: 2 })],
     })
-    const [r] = query(buildIndex({ cn }).index, { keywords: ['ba.cold'], server: 'cn' })
+    const [r] = query(buildIndex({ cn }).index, { conditions: applying('ba.cold'), server: 'cn' })
     expect(r.entries[0].stages.map((s) => [s.label, plain(s.runs), s.hit])).toEqual([['等級7', '使敌人寒冷2秒', true]])
   })
 
@@ -72,7 +72,7 @@ describe('技能敘述的寒冷直通', () => {
       },
       skills: [masteredSkill('sk_1', '冰', cold, cold)],
     })
-    expect(query(buildIndex({ cn }).index, { keywords: ['ba.cold'], server: 'cn' }).map((r) => r.name)).toEqual(['冰原'])
+    expect(query(buildIndex({ cn }).index, { conditions: applying('ba.cold'), server: 'cn' }).map((r) => r.name)).toEqual(['冰原'])
   })
 })
 
@@ -84,7 +84,7 @@ describe('敘述解析', () => {
       skills: [basicSkill('sk_x_1', '技', { description: `使敌人<$ba.stun>晕眩</>${description}`, values, duration })],
     })
     const { index, warnings } = buildIndex({ cn })
-    const [r] = query(index, { keywords: ['ba.stun'], server: 'cn' })
+    const [r] = query(index, { conditions: applying('ba.stun'), server: 'cn' })
     return { runs: r.entries[0].stages[0].runs, warnings }
   }
 

@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { buildIndex } from '../build/buildIndex'
 import { query } from '../src/core/query'
-import { COMMON_TERMS, type ModuleSpec, type OperatorSpec, operator, plain, server } from './fixtures'
+import { applying, COMMON_TERMS, type ModuleSpec, type OperatorSpec, operator, plain, server } from './fixtures'
 
 function search(spec: OperatorSpec, modules: Omit<ModuleSpec, 'charId'>[], keyword: string) {
   const cn = server({
@@ -10,7 +10,7 @@ function search(spec: OperatorSpec, modules: Omit<ModuleSpec, 'charId'>[], keywo
     modules: modules.map((m) => ({ ...m, charId: 'char_200_m' })),
   })
   const { index, warnings } = buildIndex({ cn })
-  return { results: query(index, { keywords: [keyword], server: 'cn' }), warnings }
+  return { results: query(index, { conditions: applying(keyword), server: 'cn' }), warnings }
 }
 
 const stagesOf = (e: { stages: { label: string; runs: { t: string }[]; hit: boolean }[] }) =>

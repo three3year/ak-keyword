@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { buildIndex } from '../build/buildIndex'
 import { filterOptions, query } from '../src/core/query'
-import { COMMON_TERMS, type OperatorSpec, basicSkill, operator, server, withRelease } from './fixtures'
+import { applying, COMMON_TERMS, type OperatorSpec, basicSkill, operator, server, withRelease } from './fixtures'
 
 const cold = { description: '使敌人<$ba.cold>寒冷</>' }
 
@@ -36,7 +36,7 @@ const roster = [
 describe('排序', () => {
   test('依星級高到低、職業(遊戲內順序)、實裝新到舊排列', () => {
     const { index } = buildIndex(fixture(roster))
-    expect(query(index, { keywords: ['ba.cold'], server: 'cn' }).map((r) => r.name)).toEqual([
+    expect(query(index, { conditions: applying('ba.cold'), server: 'cn' }).map((r) => r.name)).toEqual([
       '六星近衛',
       '新六星術師',
       '老六星術師',
@@ -49,12 +49,12 @@ describe('排序', () => {
 describe('篩選', () => {
   test('星級複選', () => {
     const { index } = buildIndex(fixture(roster))
-    expect(query(index, { keywords: ['ba.cold'], server: 'cn', rarities: [5, 4] }).map((r) => r.name)).toEqual(['五星近衛', '四星術師'])
+    expect(query(index, { conditions: applying('ba.cold'), server: 'cn', rarities: [5, 4] }).map((r) => r.name)).toEqual(['五星近衛', '四星術師'])
   })
 
   test('職業篩選', () => {
     const { index } = buildIndex(fixture(roster))
-    expect(query(index, { keywords: ['ba.cold'], server: 'cn', professions: ['WARRIOR'] }).map((r) => r.name)).toEqual([
+    expect(query(index, { conditions: applying('ba.cold'), server: 'cn', professions: ['WARRIOR'] }).map((r) => r.name)).toEqual([
       '六星近衛',
       '五星近衛',
     ])
@@ -62,7 +62,7 @@ describe('篩選', () => {
 
   test('分支篩選', () => {
     const { index } = buildIndex(fixture(roster))
-    expect(query(index, { keywords: ['ba.cold'], server: 'cn', subProfessions: ['corecaster'] }).map((r) => r.name)).toEqual([
+    expect(query(index, { conditions: applying('ba.cold'), server: 'cn', subProfessions: ['corecaster'] }).map((r) => r.name)).toEqual([
       '老六星術師',
       '四星術師',
     ])

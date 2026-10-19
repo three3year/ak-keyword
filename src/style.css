@@ -505,10 +505,13 @@ input:focus-visible {
 
 .chip {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 2px;
-  background: var(--accent);
-  color: #fff;
+  gap: 4px;
+  max-width: 100%;
+  border: 1px solid var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
   border-radius: 999px;
   padding: 2px 4px 2px 10px;
   font-size: 0.9rem;
@@ -516,6 +519,35 @@ input:focus-visible {
 
 .chip-name {
   cursor: help;
+  font-weight: 600;
+}
+
+/* 類型鈕:亮著的填效果類型的顏色,每亮一顆就是一個搜尋條件 */
+.chip-types {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.chip-type {
+  min-height: 28px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  background: var(--surface);
+  padding: 0 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chip-type.on {
+  background: var(--fx);
+  border-color: var(--fx);
+  color: var(--surface);
+}
+
+.chip-type:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 
 .chip-x {
@@ -631,21 +663,20 @@ input:focus-visible {
 }
 
 .fx-apply {
-  color: var(--apply);
+  --fx: var(--apply);
 }
 
 .fx-exploit {
-  color: var(--exploit);
+  --fx: var(--exploit);
 }
 
 .fx-counter {
-  color: var(--counter);
+  --fx: var(--counter);
 }
 
-.check.fx-apply,
-.check.fx-exploit,
-.check.fx-counter {
-  color: var(--text);
+.fx,
+.chip-type {
+  color: var(--fx);
 }
 
 .segmented {

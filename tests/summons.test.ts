@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { buildIndex } from '../build/buildIndex'
 import { query } from '../src/core/query'
-import { COMMON_TERMS, basicSkill, masteredSkill, operator, plain, server } from './fixtures'
+import { applying, COMMON_TERMS, basicSkill, masteredSkill, operator, plain, server } from './fixtures'
 
 const cold = { description: '使敌人<$ba.cold>寒冷</>' }
 
@@ -23,7 +23,7 @@ describe('召喚物', () => {
         basicSkill('sktok_ice_1', '冰息', { description: '吐息使敌人<$ba.cold>寒冷</>' }),
       ],
     })
-    const results = query(buildIndex({ cn }).index, { keywords: ['ba.cold'], server: 'cn' })
+    const results = query(buildIndex({ cn }).index, { conditions: applying('ba.cold'), server: 'cn' })
     expect(results.map((r) => r.name)).toEqual(['召喚師'])
     expect(results[0].entries.map((e) => [e.source, e.summon, e.name, plain(e.stages[0].runs)])).toEqual([
       ['召喚物天賦1', '冰灵', '冰体', '攻击使敌人寒冷'],
@@ -42,7 +42,7 @@ describe('召喚物', () => {
       },
       skills: [masteredSkill('sk_a_1', '召', { description: '召唤' }, { description: '召唤' }), basicSkill('sktok_1', '冷', cold)],
     })
-    const results = query(buildIndex({ cn }).index, { keywords: ['ba.cold'], server: 'cn' })
+    const results = query(buildIndex({ cn }).index, { conditions: applying('ba.cold'), server: 'cn' })
     expect(results.map((r) => [r.name, r.entries[0].summon])).toEqual([
       ['技能召喚', '甲物'],
       ['天賦召喚', '乙物'],
@@ -58,7 +58,7 @@ describe('召喚物', () => {
         token_304_b: operator({ name: '乙型', profession: 'TOKEN', talents: [{ name: '冷却', description: '攻击使敌人<$ba.cold>寒冷</>' }] }),
       },
     })
-    const [r] = query(buildIndex({ cn }).index, { keywords: ['ba.cold'], server: 'cn' })
+    const [r] = query(buildIndex({ cn }).index, { conditions: applying('ba.cold'), server: 'cn' })
     expect(r.entries.map((e) => [e.source, e.summon])).toEqual([['召喚物天賦1', '甲型、乙型']])
   })
 
@@ -71,7 +71,7 @@ describe('召喚物', () => {
       },
       skills: [basicSkill('sktok_ev', '活动', cold)],
     })
-    expect(query(buildIndex({ cn }).index, { keywords: ['ba.cold'], server: 'cn' })).toEqual([])
+    expect(query(buildIndex({ cn }).index, { conditions: applying('ba.cold'), server: 'cn' })).toEqual([])
   })
 })
 
@@ -92,7 +92,7 @@ describe('阿米婭形態', () => {
         masteredSkill('sk_amiya3_1', '医', { description: '治疗' }, { description: '治疗' }),
       ],
     })
-    const results = query(buildIndex({ cn }).index, { keywords: ['ba.cold'], server: 'cn' })
+    const results = query(buildIndex({ cn }).index, { conditions: applying('ba.cold'), server: 'cn' })
     expect(results.map((r) => [r.id, r.name, r.profession, r.entries[0].name])).toEqual([
       ['char_1001_amiya2', '阿米娅(近衛)', 'WARRIOR', '剑'],
       ['char_002_amiya', '阿米娅(術師)', 'CASTER', '术'],

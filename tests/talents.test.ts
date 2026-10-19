@@ -2,12 +2,12 @@ import { describe, expect, test } from 'vitest'
 import { buildIndex } from '../build/buildIndex'
 import { query } from '../src/core/query'
 import type { Run } from '../src/core/types'
-import { COMMON_TERMS, type OperatorSpec, highlights, operator, plain, server } from './fixtures'
+import { applying, COMMON_TERMS, type OperatorSpec, highlights, operator, plain, server } from './fixtures'
 
 function search(spec: OperatorSpec, keyword: string) {
   const cn = server({ terms: COMMON_TERMS, operators: { char_100_t: operator(spec) } })
   const { index, warnings } = buildIndex({ cn })
-  return { results: query(index, { keywords: [keyword], server: 'cn' }), warnings }
+  return { results: query(index, { conditions: applying(keyword), server: 'cn' }), warnings }
 }
 
 function bonuses(runs: Run[]): [string, string][] {
@@ -149,7 +149,7 @@ describe('特性', () => {
       },
       skills: [{ skillId: 'sk_1', levels: Array(7).fill({ name: '技', description: '使敌人<$ba.cold>寒冷</>', blackboard: [] }) }],
     })
-    const [r] = query(buildIndex({ cn }).index, { keywords: ['ba.cold'], server: 'cn' })
+    const [r] = query(buildIndex({ cn }).index, { conditions: applying('ba.cold'), server: 'cn' })
     expect(r.entries.map((e) => [e.source, e.kind])).toEqual([
       ['特性', 'trait'],
       ['天賦1', 'talent'],

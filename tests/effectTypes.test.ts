@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { type Overrides, buildIndex } from '../build/buildIndex'
 import { query } from '../src/core/query'
-import type { EffectType } from '../src/core/types'
+import { EFFECT_TYPES, type EffectType, type SearchIndex, type Server } from '../src/core/types'
 import { COMMON_TERMS, basicSkill, operator, server } from './fixtures'
 
 const DODGE = { id: 'dodge', name: '閃避', cn: ['闪避'], tw: ['閃避'], definition: '使攻擊無效', group: '增益' }
@@ -19,10 +19,17 @@ function fixture(descriptions: Record<string, string>) {
   })
 }
 
-/** 一段敘述對某關鍵字的效果類型(勾選全部三種時);沒有命中時為 undefined。 */
-function effectOf(description: string, keyword: string): EffectType[] | undefined {
-  const { index } = buildIndex({ cn: fixture({ 甲: description }), supplements: [DODGE] })
-  return query(index, { keywords: [keyword], server: 'cn', effectTypes: ['apply', 'exploit', 'counter'] })[0]?.entries[0].stages[0].effects[keyword]
+/** 以哪些效果類型搭配這個關鍵字當搜尋條件時,找得到索引裡唯一的幹員。 */
+function typesFound(index: SearchIndex, keyword: string, server: Server = 'cn'): EffectType[] {
+  return EFFECT_TYPES.filter((type) => query(index, { conditions: [{ keyword, type }], server }).length > 0)
+}
+
+function effectOf(description: string, keyword: string): EffectType[] {
+  return typesFound(buildIndex({ cn: fixture({ 甲: description }), supplements: [DODGE] }).index, keyword)
+}
+
+function names(index: SearchIndex, conditions: [EffectType, string][]): string[] {
+  return query(index, { conditions: conditions.map(([type, keyword]) => ({ keyword, type })), server: 'cn' }).map((r) => r.name)
 }
 
 describe('效果類型的規則判定', () => {
@@ -48,19 +55,18 @@ describe('效果類型的規則判定', () => {
     ['自身免疫<$ba.stun>晕眩</>1', '自身免疫<$ba.stun>暈眩</>2', 'ba.stun', ['counter']],
   ])('繁中(台服文字與國服不一致時各自判定):%s → %s', (cnText, twText, keyword, expected) => {
     const { index } = buildIndex({ cn: fixture({ 甲: cnText }), tw: fixture({ 甲: twText }), supplements: [DODGE] })
-    const [result] = query(index, { keywords: [keyword], server: 'tw', effectTypes: ['apply', 'exploit', 'counter'] })
-    expect(result.entries[0].stages[0].effects[keyword]).toEqual(expected)
+    expect(typesFound(index, keyword, 'tw')).toEqual(expected)
   })
 
   test('句型判定不出、又不在覆寫檔的配對不會成為命中敘述,並列入待複核清單', () => {
     const cn = fixture({ 甲: '场上存在<$ba.cold>寒冷</>相关的效果时攻击力提升' })
     const { index, pending } = buildIndex({ cn })
-    expect(query(index, { keywords: ['ba.cold'], server: 'cn', effectTypes: ['apply', 'exploit', 'counter'] })).toEqual([])
+    expect(typesFound(index, 'ba.cold')).toEqual([])
     expect(pending.map((p) => [p.keyword, p.ruleTypes])).toEqual([['ba.cold', []]])
   })
 })
 
-describe('效果類型篩選', () => {
+describe('搜尋條件', () => {
   const cn = fixture({
     施加者: '攻击使敌人<$ba.cold>寒冷</>',
     利用者: '对<$ba.cold>寒冷</>状态的敌人伤害提升',
@@ -68,31 +74,56 @@ describe('效果類型篩選', () => {
     施加又利用: '使敌人<$ba.cold>寒冷</>，对<$ba.cold>寒冷</>的敌人伤害提升',
   })
 
-  test('只勾一種效果類型時只列出該類型;一段多類型的敘述在每種類型下都找得到', () => {
+  test('一個搜尋條件只列出該效果類型;一段多類型的敘述在每種類型下都找得到', () => {
     const { index } = buildIndex({ cn })
-    expect(query(index, { keywords: ['ba.cold'], server: 'cn', effectTypes: ['apply'] }).map((r) => r.name)).toEqual(['施加者', '施加又利用'])
-    expect(query(index, { keywords: ['ba.cold'], server: 'cn', effectTypes: ['exploit'] }).map((r) => r.name)).toEqual(['利用者', '施加又利用'])
+    expect(names(index, [['apply', 'ba.cold']])).toEqual(['施加者', '施加又利用'])
+    expect(names(index, [['exploit', 'ba.cold']])).toEqual(['利用者', '施加又利用'])
+    expect(names(index, [['counter', 'ba.cold']])).toEqual(['反制者'])
   })
 
-  test('複選多種效果類型時放寬結果,結果只列勾選的類型', () => {
-    const { index } = buildIndex({ cn })
-    const results = query(index, { keywords: ['ba.cold'], server: 'cn', effectTypes: ['apply', 'counter'] })
-    expect(results.map((r) => [r.name, r.entries[0].stages[0].effects['ba.cold']])).toEqual([
-      ['施加者', ['apply']],
-      ['反制者', ['counter']],
-      ['施加又利用', ['apply']],
+  test('同一關鍵字的施加-X AND 利用-X 只列兩者都有的幹員,兩者可來自不同敘述', () => {
+    const operators = {
+      char_401_a: operator({ name: '分兩段', skills: ['sk_a', 'sk_b'] }),
+      char_402_b: operator({ name: '只施加', skills: ['sk_a'] }),
+    }
+    const skills = [
+      basicSkill('sk_a', '甲', { description: '使敌人<$ba.cold>寒冷</>' }),
+      basicSkill('sk_b', '乙', { description: '对<$ba.cold>寒冷</>的敌人伤害提升' }),
+    ]
+    const { index } = buildIndex({ cn: server({ terms: COMMON_TERMS, operators, skills }) })
+    const conditions: [EffectType, string][] = [
+      ['apply', 'ba.cold'],
+      ['exploit', 'ba.cold'],
+    ]
+    expect(names(index, conditions)).toEqual(['分兩段'])
+    const [r] = query(index, { conditions: conditions.map(([type, keyword]) => ({ keyword, type })), server: 'cn' })
+    // 每段命中敘述只標出它符合的搜尋條件
+    expect(r.entries.map((e) => [e.source, e.stages[0].effects])).toEqual([
+      ['技能1', { 'ba.cold': ['apply'] }],
+      ['技能2', { 'ba.cold': ['exploit'] }],
     ])
   })
 
-  test('多關鍵字時,每個已選關鍵字都要有一段效果類型符合的命中敘述', () => {
+  test('施加-X AND 利用-Y', () => {
     const { index } = buildIndex({
       cn: fixture({
-        兩者都施加: '使敌人<$ba.levitate>浮空</>并<$ba.magicfragile>法术脆弱</>',
-        只施加浮空: '使敌人<$ba.levitate>浮空</>，对<$ba.magicfragile>法术脆弱</>的敌人伤害提升',
+        施加暈眩利用寒冷: '使敌人<$ba.stun>晕眩</>，对<$ba.cold>寒冷</>的敌人伤害提升',
+        兩者都施加: '使敌人<$ba.stun>晕眩</>并<$ba.cold>寒冷</>',
       }),
     })
-    const names = query(index, { keywords: ['ba.levitate', 'ba.magicfragile'], server: 'cn', effectTypes: ['apply'] }).map((r) => r.name)
-    expect(names).toEqual(['兩者都施加'])
+    expect(names(index, [['apply', 'ba.stun'], ['exploit', 'ba.cold']])).toEqual(['施加暈眩利用寒冷'])
+    expect(names(index, [['apply', 'ba.stun'], ['apply', 'ba.cold']])).toEqual(['兩者都施加'])
+  })
+
+  test('結果階段只列符合搜尋條件的效果類型', () => {
+    const { index } = buildIndex({ cn })
+    const [r] = query(index, { conditions: [{ keyword: 'ba.cold', type: 'exploit' }], server: 'cn' }).filter((r) => r.name === '施加又利用')
+    expect(r.entries[0].stages[0].effects).toEqual({ 'ba.cold': ['exploit'] })
+  })
+
+  test('沒有搜尋條件時沒有結果', () => {
+    const { index } = buildIndex({ cn })
+    expect(query(index, { conditions: [], server: 'cn' })).toEqual([])
   })
 })
 
@@ -104,8 +135,7 @@ describe('覆寫檔與待複核清單', () => {
 
     const overrides: Overrides = { [first.pending[0].key]: { types: ['exploit', 'apply'], reviewed: true } }
     const second = buildIndex({ cn, overrides })
-    const effects = query(second.index, { keywords: ['ba.cold'], server: 'cn', effectTypes: ['apply', 'exploit', 'counter'] })[0].entries[0].stages[0].effects
-    expect(effects).toEqual({ 'ba.cold': ['apply', 'exploit'] })
+    expect(typesFound(second.index, 'ba.cold')).toEqual(['apply', 'exploit'])
     expect(second.pending).toEqual([])
   })
 
@@ -113,7 +143,7 @@ describe('覆寫檔與待複核清單', () => {
     const cn = fixture({ 甲: '使敌人<$ba.cold>寒冷</>' })
     const key = buildIndex({ cn }).pending[0].key
     const { index, pending } = buildIndex({ cn, overrides: { [key]: { types: [], reviewed: true } } })
-    expect(query(index, { keywords: ['ba.cold'], server: 'cn', effectTypes: ['apply', 'exploit', 'counter'] })).toEqual([])
+    expect(typesFound(index, 'ba.cold')).toEqual([])
     expect(pending).toEqual([])
   })
 

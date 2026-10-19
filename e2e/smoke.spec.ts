@@ -85,3 +85,48 @@ test('階段切換:預設第一個命中的階段,未命中的階段停用,重�
   await expect(card('忍冬').getByRole('tab', { name: '技能2' })).toHaveAttribute('aria-selected', 'true')
   await expect(stages.getByRole('button', { name: '等級7' })).toHaveAttribute('aria-pressed', 'true')
 })
+
+test('搜尋條件 chip:加入時只亮施加,再亮一顆後結果更新,關掉最後一顆後 chip 消失', async ({ page }) => {
+  await page.goto('./')
+  // 篩選列不再有效果類型
+  await expect(page.getByRole('group', { name: '效果類型', exact: true })).toHaveCount(0)
+
+  await page.getByRole('button', { name: '暈眩', exact: true }).first().click()
+  const chip = page.getByTestId('chip')
+  await expect(chip).toHaveCount(1)
+  const types = chip.getByRole('group', { name: '暈眩的效果類型' })
+  await expect(types.getByRole('button', { name: '施加' })).toHaveAttribute('aria-pressed', 'true')
+  await expect(types.getByRole('button', { name: '利用' })).toHaveAttribute('aria-pressed', 'false')
+  await expect(types.getByRole('button', { name: '反制' })).toHaveAttribute('aria-pressed', 'false')
+
+  const count = page.getByTestId('result-count')
+  const total = (text: string | null) => Number(/\d+/.exec(text ?? '')?.[0])
+  const applyOnly = total(await count.textContent())
+  expect(applyOnly).toBeGreaterThan(0)
+
+  // 施加-暈眩 AND 利用-暈眩:結果變少
+  await types.getByRole('button', { name: '利用' }).click()
+  await expect(types.getByRole('button', { name: '利用' })).toHaveAttribute('aria-pressed', 'true')
+  await expect(count).not.toHaveText(`共 ${applyOnly} 位幹員`)
+  const both = total(await count.textContent())
+  expect(both).toBeGreaterThan(0)
+  expect(both).toBeLessThan(applyOnly)
+  // 命中敘述的效果類型標籤列出它符合的類型
+  await expect(page.getByTestId('result-card').first().locator('.fx')).not.toHaveCount(0)
+
+  // 關掉所有亮著的類型鈕:chip 消失,回到初始提示
+  await types.getByRole('button', { name: '施加' }).click()
+  await expect(chip).toHaveCount(1)
+  await types.getByRole('button', { name: '利用' }).click()
+  await expect(chip).toHaveCount(0)
+  await expect(page.getByText('點選關鍵字開始搜尋')).toBeVisible()
+})
+
+test('沒有結果時列出搜尋條件', async ({ page }) => {
+  await page.goto('./')
+  await page.getByRole('button', { name: '暈眩', exact: true }).first().click()
+  await page.getByRole('button', { name: '停頓', exact: true }).first().click()
+  await page.getByRole('group', { name: '停頓的效果類型' }).getByRole('button', { name: '利用' }).click()
+  await page.getByRole('checkbox', { name: '1★' }).check()
+  await expect(page.getByTestId('empty')).toContainText('搜尋條件:施加-暈眩、施加-停頓、利用-停頓')
+})

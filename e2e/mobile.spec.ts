@@ -17,6 +17,8 @@ test('手機寬度:抽屜選關鍵字、點擊顯示定義、點高亮詞切換�
 
   const cards = page.getByTestId('result-card')
   await expect(cards.first()).toBeVisible()
+  // chip 上的類型鈕一併受檢
+  await expect(page.getByTestId('chip').getByRole('button', { name: '反制' })).toBeVisible()
   expect(await noHorizontalScroll()).toBe(true)
 
   // 點擊高亮詞:先顯示定義,再由提示框移出選取

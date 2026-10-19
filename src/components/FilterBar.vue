@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { FilterOptions } from '../core/query'
-import { EFFECT_TYPE_LABELS, EFFECT_TYPES, type EffectType, type Profession, type Server } from '../core/types'
+import type { Profession, Server } from '../core/types'
 
 const props = defineProps<{ options: FilterOptions }>()
 
 const server = defineModel<Server>('server', { required: true })
-const effectTypes = defineModel<EffectType[]>('effectTypes', { required: true })
 const rarities = defineModel<number[]>('rarities', { required: true })
 const professions = defineModel<Profession[]>('professions', { required: true })
 const branch = defineModel<string>('branch', { required: true })
@@ -43,13 +42,6 @@ function toggleProfession(p: Profession) {
         {{ s.label }}
       </button>
     </div>
-    <fieldset class="filter">
-      <legend>效果類型</legend>
-      <label v-for="t in EFFECT_TYPES" :key="t" class="check" :class="`fx-${t}`">
-        <input v-model="effectTypes" type="checkbox" :value="t" />
-        {{ EFFECT_TYPE_LABELS[t] }}
-      </label>
-    </fieldset>
     <fieldset class="filter">
       <legend>星級</legend>
       <label v-for="r in options.rarities" :key="r" class="check">

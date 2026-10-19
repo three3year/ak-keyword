@@ -86,9 +86,10 @@ function baseSource(entry: IndexEntry): string {
 
 function resultStage(v: Visible, visible: Visible[], op: IndexOperator, opts: QueryOptions): ResultStage {
   const effects: ResultStage['effects'] = {}
-  for (const k of opts.keywords) {
-    const types = (v.match.hits[k] ?? []).filter((t) => !opts.effectTypes || opts.effectTypes.includes(t))
-    if (types.length > 0) effects[k] = types
+  for (const c of opts.conditions) {
+    if (!v.match.hits[c.keyword]?.includes(c.type)) continue
+    // 依索引中的效果類型順序排列
+    effects[c.keyword] = v.match.hits[c.keyword].filter((t) => t === c.type || effects[c.keyword]?.includes(t))
   }
   const result: ResultStage = { label: stageLabel(v.stage, visible, op), runs: v.runs, hit: Object.keys(effects).length > 0, effects }
   if (v.stage.kind === 'module') result.module = moduleOf(v.stage, op).name
@@ -99,6 +100,7 @@ function resultStage(v: Visible, visible: Visible[], op: IndexOperator, opts: Qu
 function resultOperator(op: IndexOperator, opts: QueryOptions): ResultOperator | undefined {
   if (opts.server === 'tw' && !op.inTw) return undefined
   const entries: ResultEntry[] = []
+  /** 已有命中階段的搜尋條件,以「關鍵字 效果類型」記錄。 */
   const found = new Set<string>()
   for (const entry of op.entries) {
     const summon = entry.summon ? op.summons.find((s) => s.id === entry.summon) : undefined
@@ -108,13 +110,13 @@ function resultOperator(op: IndexOperator, opts: QueryOptions): ResultOperator |
     if (!stages.some((s) => s.hit)) continue
     // 模組新增的天賦沒有無模組階段:補一個不存在的,讓介面看得出要裝模組才有
     if (entry.kind === 'talent' && !entry.stages.some((s) => s.kind === 'base')) stages.unshift({ label: '無模組', runs: [], hit: false, effects: {}, absent: true })
-    for (const s of stages) for (const k of Object.keys(s.effects)) found.add(k)
+    for (const s of stages) for (const [k, types] of Object.entries(s.effects)) for (const t of types) found.add(`${k} ${t}`)
     const result: ResultEntry = { source: entrySource(entry), kind: entry.kind, stages }
     if (entry.name) result.name = entry.name
     if (entry.summon) result.summon = summon?.name ?? entry.summon
     entries.push(result)
   }
-  if (!opts.keywords.every((k) => found.has(k))) return undefined
+  if (!opts.conditions.every((c) => found.has(`${c.keyword} ${c.type}`))) return undefined
   const result: ResultOperator = {
     id: op.id,
     name: op.name,
@@ -161,7 +163,7 @@ function mergeSummonEntries(entries: ResultEntry[]): ResultEntry[] {
 }
 
 export function query(index: SearchIndex, opts: QueryOptions): ResultOperator[] {
-  if (opts.keywords.length === 0) return []
+  if (opts.conditions.length === 0) return []
   const results: ResultOperator[] = []
   for (const op of [...index.operators].sort(compareOperators)) {
     if (!passesFilters(op, opts)) continue

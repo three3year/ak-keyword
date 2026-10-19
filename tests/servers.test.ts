@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { type SupplementKeyword, buildIndex } from '../build/buildIndex'
 import { keywordGroups, query } from '../src/core/query'
-import { COMMON_TERMS, highlights, masteredSkill, operator, plain, server } from './fixtures'
+import { applying, COMMON_TERMS, highlights, masteredSkill, operator, plain, server } from './fixtures'
 
 const TW_TERMS: Record<string, [string, string]> = {
   'ba.cold': ['寒冷', '攻擊速度下降,如果在持續時間內再次受到寒冷效果則會變為<$ba.frozen>凍結</>'],
@@ -46,7 +46,7 @@ function servers() {
 describe('台服模式', () => {
   test('只列台服已實裝的幹員,比對與顯示都用台服資料', () => {
     const { index } = buildIndex(servers())
-    const results = query(index, { keywords: ['ba.cold'], server: 'tw' })
+    const results = query(index, { conditions: applying('ba.cold'), server: 'tw' })
     expect(results.map((r) => r.name)).toEqual(['冰原台', '改版者台'])
     const diff = results[1].entries[0]
     expect(diff.name).toBe('冰刃台')
@@ -61,33 +61,33 @@ describe('台服模式', () => {
       skills: [masteredSkill('sk', '技', { description: '攻擊使敵人<$ba.levitate>浮空</>' }, { description: '攻擊使敵人<$ba.levitate>浮空</>' })],
     })
     const { index } = buildIndex({ cn, tw })
-    expect(query(index, { keywords: ['ba.levitate'], server: 'tw' }).map((r) => r.name)).toEqual(['甲'])
-    expect(query(index, { keywords: ['ba.levitate'], server: 'cn' })).toEqual([])
+    expect(query(index, { conditions: applying('ba.levitate'), server: 'tw' }).map((r) => r.name)).toEqual(['甲'])
+    expect(query(index, { conditions: applying('ba.levitate'), server: 'cn' })).toEqual([])
   })
 })
 
 describe('國服模式', () => {
   test('列出所有國服幹員,幹員名優先用台服名', () => {
     const { index } = buildIndex(servers())
-    expect(query(index, { keywords: ['ba.cold'], server: 'cn' }).map((r) => r.name)).toEqual(['冰原台', '改版者台', '新幹员'])
+    expect(query(index, { conditions: applying('ba.cold'), server: 'cn' }).map((r) => r.name)).toEqual(['冰原台', '改版者台', '新幹员'])
   })
 
   test('台服同一段敘述的術語與數值都一致時顯示繁中', () => {
     const { index } = buildIndex(servers())
-    const same = query(index, { keywords: ['ba.cold'], server: 'cn' })[0].entries[0]
+    const same = query(index, { conditions: applying('ba.cold'), server: 'cn' })[0].entries[0]
     expect(same.stages.map((s) => plain(s.runs))).toEqual(['攻擊使敵人寒冷3秒', '攻擊使敵人寒冷5秒'])
     expect(highlights(same.stages[0].runs)).toEqual([['寒冷', 'ba.cold']])
   })
 
   test('數值不一致的階段顯示國服簡中,一致的階段仍顯示繁中', () => {
     const { index } = buildIndex(servers())
-    const diff = query(index, { keywords: ['ba.cold'], server: 'cn' })[1].entries[0]
+    const diff = query(index, { conditions: applying('ba.cold'), server: 'cn' })[1].entries[0]
     expect(diff.stages.map((s) => plain(s.runs))).toEqual(['攻擊使敵人寒冷3秒', '攻击使敌人寒冷6秒'])
   })
 
   test('台服沒有的幹員顯示國服簡中', () => {
     const { index } = buildIndex(servers())
-    const fresh = query(index, { keywords: ['ba.cold'], server: 'cn' })[2]
+    const fresh = query(index, { conditions: applying('ba.cold'), server: 'cn' })[2]
     expect(fresh.entries[0].name).toBe('新技')
     expect(plain(fresh.entries[0].stages[0].runs)).toBe('攻击使敌人寒冷3秒')
   })
@@ -111,9 +111,9 @@ describe('名稱與補充關鍵字', () => {
     const cn = server({ terms: COMMON_TERMS, operators: { char_620_p: operator({ name: '推', skills: ['sk'] }) }, skills: [masteredSkill('sk', '技', { description: '将敌人推开' }, { description: '将敌人推开' })] })
     const tw = server({ terms: TW_TERMS, operators: { char_620_p: operator({ name: '推', skills: ['sk'] }) }, skills: [masteredSkill('sk', '技', { description: '將敵人推開' }, { description: '將敵人推開' })] })
     const { index } = buildIndex({ cn, tw, supplements })
-    const [twResult] = query(index, { keywords: ['sup.knockback'], server: 'tw' })
+    const [twResult] = query(index, { conditions: applying('sup.knockback'), server: 'tw' })
     expect(highlights(twResult.entries[0].stages[0].runs)).toEqual([['推開', 'sup.knockback']])
-    const [cnResult] = query(index, { keywords: ['sup.knockback'], server: 'cn' })
+    const [cnResult] = query(index, { conditions: applying('sup.knockback'), server: 'cn' })
     expect(highlights(cnResult.entries[0].stages[0].runs)).toEqual([['推開', 'sup.knockback']])
   })
 })
@@ -134,14 +134,14 @@ describe('模組3 階段的伺服器處理', () => {
     }
     const { index } = buildIndex({ cn, tw })
 
-    const [twEntry] = query(index, { keywords: ['ba.cold'], server: 'tw' })[0].entries
+    const [twEntry] = query(index, { conditions: applying('ba.cold'), server: 'tw' })[0].entries
     expect(twEntry.stages.map((s) => [s.label, plain(s.runs), s.cnData ?? false])).toEqual([
       ['無模組', '攻擊造成法術傷害', false],
       ['模組3 · CCR-X', '攻击造成法术伤害\n攻击使敌人寒冷', false],
     ])
     expect(twEntry.stages[1].module).toBe('甲模組')
 
-    const [cnEntry] = query(index, { keywords: ['ba.cold'], server: 'cn' })[0].entries
+    const [cnEntry] = query(index, { conditions: applying('ba.cold'), server: 'cn' })[0].entries
     expect(cnEntry.stages.map((s) => [s.label, s.module, s.cnData ?? false])).toEqual([
       ['無模組', undefined, false],
       ['模組3 · CCR-X', '甲模組', false],

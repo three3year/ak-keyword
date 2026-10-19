@@ -126,11 +126,16 @@ export interface SearchIndex {
 
 // ---------- 查詢 ----------
 
+/** 搜尋條件:效果類型 + 關鍵字,例如施加-暈眩。 */
+export interface SearchCondition {
+  keyword: string
+  type: EffectType
+}
+
 export interface QueryOptions {
-  keywords: string[]
+  /** 全部搜尋條件一律 AND,包括同一關鍵字的多種效果類型。 */
+  conditions: SearchCondition[]
   server: Server
-  /** 省略時不篩選效果類型。 */
-  effectTypes?: EffectType[]
   rarities?: number[]
   professions?: Profession[]
   subProfessions?: string[]
@@ -140,9 +145,9 @@ export interface ResultStage {
   /** 例如「等級7」「專精3」「無模組」「模組3 · SUM-X」;沒有其他階段可對照的無模組階段為空字串。 */
   label: string
   runs: Run[]
-  /** 這個階段含有已選關鍵字(效果類型符合勾選)。 */
+  /** 這個階段符合任一搜尋條件。 */
   hit: boolean
-  /** 已選關鍵字在這個階段符合勾選的效果類型;沒有符合的關鍵字不列。 */
+  /** 關鍵字 → 這個階段符合的搜尋條件的效果類型;沒有符合的關鍵字不列。 */
   effects: Record<string, EffectType[]>
   /** 模組3 階段的模組不在台服模組清單,只有國服資料。 */
   cnData?: boolean

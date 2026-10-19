@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { buildIndex } from '../build/buildIndex'
 import { keywordGroups, query } from '../src/core/query'
-import { COMMON_TERMS, highlights, masteredSkill, operator, plain, server } from './fixtures'
+import { applying, COMMON_TERMS, highlights, masteredSkill, operator, plain, server } from './fixtures'
 
 const cold = { description: '使敌人<$ba.cold>寒冷</>' }
 const levitate = { description: '使敌人<$ba.levitate>浮空</>' }
@@ -33,14 +33,14 @@ const groups = [
 describe('多關鍵字', () => {
   test('多選為 AND:不同關鍵字可以來自不同敘述', () => {
     const { index } = buildIndex({ cn: fixture(), groups })
-    const results = query(index, { keywords: ['ba.cold', 'ba.levitate'], server: 'cn' })
+    const results = query(index, { conditions: applying('ba.cold', 'ba.levitate'), server: 'cn' })
     expect(results.map((r) => r.name).sort()).toEqual(['兩技能', '同一段'])
     expect(results.find((r) => r.name === '兩技能')!.entries.map((e) => e.source)).toEqual(['技能1', '技能2'])
   })
 
   test('命中敘述裡所有已選關鍵字都帶高亮', () => {
     const { index } = buildIndex({ cn: fixture(), groups })
-    const [r] = query(index, { keywords: ['ba.cold', 'ba.levitate'], server: 'cn' }).filter((r) => r.name === '同一段')
+    const [r] = query(index, { conditions: applying('ba.cold', 'ba.levitate'), server: 'cn' }).filter((r) => r.name === '同一段')
     expect(highlights(r.entries[0].stages[0].runs)).toEqual([
       ['浮空', 'ba.levitate'],
       ['寒冷', 'ba.cold'],
@@ -92,8 +92,8 @@ describe('排除的術語', () => {
   test('排除的術語不在關鍵字清單,含它的敘述顯示為一般文字、不產生該術語的命中', () => {
     const { index, pending } = buildIndex({ cn: excludedFixture(), groups, excludedTerms: ['ba.mujica'] })
     expect(index.keywords.map((k) => k.id)).toEqual(['ba.cold'])
-    expect(query(index, { keywords: ['ba.mujica'], server: 'cn' })).toEqual([])
-    const [r] = query(index, { keywords: ['ba.cold'], server: 'cn' })
+    expect(query(index, { conditions: applying('ba.mujica'), server: 'cn' })).toEqual([])
+    const [r] = query(index, { conditions: applying('ba.cold'), server: 'cn' })
     expect(plain(r.entries[0].stages[0].runs)).toBe('Ave Mujica干员在场时使敌人寒冷')
     expect(highlights(r.entries[0].stages[0].runs)).toEqual([['寒冷', 'ba.cold']])
     expect(pending.map((p) => p.keyword)).toEqual(['ba.cold'])
