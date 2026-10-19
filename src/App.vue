@@ -75,7 +75,7 @@ function clear() {
   selected.value = []
 }
 
-// ---- 說明框:以事件委派處理所有帶 data-k(關鍵字)與 data-p(潛能加成)的元素 ----
+// ---- 提示框:以事件委派處理所有帶 data-k(關鍵字)與 data-p(潛能加成)的元素 ----
 
 function target(e: Event): HTMLElement | null {
   return (e.target as HTMLElement | null)?.closest?.('[data-k],[data-p]') ?? null
@@ -109,7 +109,7 @@ function onClick(e: MouseEvent) {
     // 觸控裝置沒有懸停:點面板的關鍵字按鈕時,除了切換選取也顯示定義
     showTip(el, { keyword: el.dataset.k }, { pinned: true })
   } else if (el.dataset.k && inText) {
-    // 命中敘述裡的詞:桌機直接切換選取;觸控裝置先顯示定義,再由說明框切換
+    // 命中敘述裡的詞:桌機直接切換選取;觸控裝置先顯示定義,再由提示框切換
     if (isTouch()) showTip(el, { keyword: el.dataset.k }, { pinned: true, toggle: true })
     else {
       hideTip()

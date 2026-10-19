@@ -13,7 +13,7 @@ const emit = defineEmits<{ toggle: [id: string] }>()
 const left = ref(0)
 const kw = computed(() => (tip.keyword ? props.keywords.get(tip.keyword) : undefined))
 
-// 說明框不超出視窗左右
+// 提示框不超出視窗左右
 watchEffect(() => {
   const width = Math.min(320, window.innerWidth - 16)
   left.value = Math.max(8, Math.min(tip.x - width / 2, window.innerWidth - width - 8))

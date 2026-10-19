@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 
-test('手機寬度:抽屜選關鍵字、點擊顯示說明、點高亮詞切換選取,且沒有水平捲動', async ({ page }) => {
+test('手機寬度:抽屜選關鍵字、點擊顯示定義、點高亮詞切換選取,且沒有水平捲動', async ({ page }) => {
   await page.goto('./')
   const noHorizontalScroll = () =>
     page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)
@@ -19,7 +19,7 @@ test('手機寬度:抽屜選關鍵字、點擊顯示說明、點高亮詞切換�
   await expect(cards.first()).toBeVisible()
   expect(await noHorizontalScroll()).toBe(true)
 
-  // 點擊高亮詞:先顯示定義,再由說明框移出選取
+  // 點擊高亮詞:先顯示定義,再由提示框移出選取
   await cards.first().locator('mark.hl').first().tap()
   const tip = page.getByTestId('tip')
   await expect(tip).toBeVisible()

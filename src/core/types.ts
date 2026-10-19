@@ -14,7 +14,7 @@ export const EFFECT_TYPE_LABELS: Record<EffectType, string> = {
   other: '其他',
 }
 
-/** 敘述中的一段文字。k:關鍵字 id(高亮);s:樣式;p:潛能加成的說明(「潛能 5 獲得」)。 */
+/** 敘述中的一段文字。k:關鍵字 id(高亮);s:樣式;p:潛能加成由第幾潛能獲得(「潛能 5 獲得」)。 */
 export interface Run {
   t: string
   k?: string
