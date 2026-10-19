@@ -86,7 +86,7 @@ test('階段切換:預設第一個命中的階段,未命中的階段停用,重�
   await expect(stages.getByRole('button', { name: '等級7' })).toHaveAttribute('aria-pressed', 'true')
 })
 
-test('搜尋條件 chip:加入時只亮施加,再亮一顆後結果更新,關掉最後一顆後 chip 消失', async ({ page }) => {
+test('搜尋條件 chip:加入時只亮施加,再亮一顆後結果變多或不變,關掉最後一顆後 chip 消失', async ({ page }) => {
   await page.goto('./')
   // 篩選列不再有效果類型
   await expect(page.getByRole('group', { name: '效果類型', exact: true })).toHaveCount(0)
@@ -104,13 +104,11 @@ test('搜尋條件 chip:加入時只亮施加,再亮一顆後結果更新,關掉
   const applyOnly = total(await count.textContent())
   expect(applyOnly).toBeGreaterThan(0)
 
-  // 施加-暈眩 AND 利用-暈眩:結果變少
+  // 施加-暈眩 OR 利用-暈眩:結果變多(或不變)
   await types.getByRole('button', { name: '利用' }).click()
   await expect(types.getByRole('button', { name: '利用' })).toHaveAttribute('aria-pressed', 'true')
-  await expect(count).not.toHaveText(`共 ${applyOnly} 位幹員`)
-  const both = total(await count.textContent())
-  expect(both).toBeGreaterThan(0)
-  expect(both).toBeLessThan(applyOnly)
+  const either = total(await count.textContent())
+  expect(either).toBeGreaterThanOrEqual(applyOnly)
   // 命中敘述列出它符合的效果類型
   await expect(page.getByTestId('result-card').first().locator('.fx')).not.toHaveCount(0)
 

@@ -40,14 +40,17 @@ describe('補充關鍵字', () => {
     expect(query(index, { conditions: applying('ba.levitate'), server: 'cn' }).map((r) => r.name)).toEqual(['術語者'])
   })
 
-  test('補充關鍵字可與術語多選 AND,並接受效果類型判定', () => {
+  test('補充關鍵字可與術語多選 OR,並接受效果類型判定', () => {
     const { index } = buildIndex({
-      cn: fixture({ 兩者: '使敌人<$ba.cold>寒冷</>并将其推开', 只寒冷: '使敌人<$ba.cold>寒冷</>' }),
+      cn: fixture({ 兩者: '使敌人<$ba.cold>寒冷</>并将其推开', 只寒冷: '使敌人<$ba.cold>寒冷</>', 無關: '攻击力提升' }),
       supplements,
     })
     const results = query(index, { conditions: applying('ba.cold', 'sup.knockback'), server: 'cn' })
-    expect(results.map((r) => r.name)).toEqual(['兩者'])
-    expect(results[0].entries[0].stages[0].effects).toEqual({ 'ba.cold': ['apply'], 'sup.knockback': ['apply'] })
+    expect(results.map((r) => r.name)).toEqual(['兩者', '只寒冷'])
+    expect(results.map((r) => r.entries[0].stages[0].effects)).toEqual([
+      { 'ba.cold': ['apply'], 'sup.knockback': ['apply'] },
+      { 'ba.cold': ['apply'] },
+    ])
   })
 
   test('面板依清單分組,定義標為非官方', () => {

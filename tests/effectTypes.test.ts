@@ -83,38 +83,52 @@ describe('搜尋條件', () => {
     expect(names(index, [['counter', 'ba.cold']])).toEqual(['反制者'])
   })
 
-  test('同一關鍵字的施加-X AND 利用-X 只列兩者都有的幹員,兩者可來自不同敘述', () => {
+  test('同一關鍵字的施加-X OR 利用-X:只施加或只利用的幹員都列入,每段命中敘述只標出它符合的條件', () => {
     const operators = {
       char_401_a: operator({ name: '分兩段', skills: ['sk_a', 'sk_b'] }),
       char_402_b: operator({ name: '只施加', skills: ['sk_a'] }),
+      char_403_c: operator({ name: '只利用', skills: ['sk_b'] }),
+      char_404_d: operator({ name: '都沒有', skills: ['sk_c'] }),
     }
     const skills = [
       basicSkill('sk_a', '甲', { description: '使敌人<$ba.cold>寒冷</>' }),
       basicSkill('sk_b', '乙', { description: '对<$ba.cold>寒冷</>的敌人伤害提升' }),
+      basicSkill('sk_c', '丙', { description: '免疫<$ba.cold>寒冷</>' }),
     ]
     const { index } = buildIndex({ cn: server({ terms: COMMON_TERMS, operators, skills }) })
     const conditions: [EffectType, string][] = [
       ['apply', 'ba.cold'],
       ['exploit', 'ba.cold'],
     ]
-    expect(names(index, conditions)).toEqual(['分兩段'])
-    const [r] = query(index, { conditions: conditions.map(([type, keyword]) => ({ keyword, type })), server: 'cn' })
-    // 每段命中敘述只標出它符合的搜尋條件
-    expect(r.entries.map((e) => [e.source, e.stages[0].effects])).toEqual([
-      ['技能1', { 'ba.cold': ['apply'] }],
-      ['技能2', { 'ba.cold': ['exploit'] }],
+    expect(names(index, conditions)).toEqual(['分兩段', '只施加', '只利用'])
+    const results = query(index, { conditions: conditions.map(([type, keyword]) => ({ keyword, type })), server: 'cn' })
+    expect(results.map((r) => [r.name, r.entries.map((e) => [e.source, e.stages[0].effects])])).toEqual([
+      ['分兩段', [['技能1', { 'ba.cold': ['apply'] }], ['技能2', { 'ba.cold': ['exploit'] }]]],
+      ['只施加', [['技能1', { 'ba.cold': ['apply'] }]]],
+      ['只利用', [['技能1', { 'ba.cold': ['exploit'] }]]],
     ])
   })
 
-  test('施加-X AND 利用-Y', () => {
+  test('施加-X OR 利用-Y:只命中其中一個條件的幹員也列入,效果只列命中的那個', () => {
     const { index } = buildIndex({
       cn: fixture({
         施加暈眩利用寒冷: '使敌人<$ba.stun>晕眩</>，对<$ba.cold>寒冷</>的敌人伤害提升',
-        兩者都施加: '使敌人<$ba.stun>晕眩</>并<$ba.cold>寒冷</>',
+        只施加暈眩: '使敌人<$ba.stun>晕眩</>',
+        只利用寒冷: '对<$ba.cold>寒冷</>的敌人伤害提升',
+        只施加寒冷: '使敌人<$ba.cold>寒冷</>',
       }),
     })
-    expect(names(index, [['apply', 'ba.stun'], ['exploit', 'ba.cold']])).toEqual(['施加暈眩利用寒冷'])
-    expect(names(index, [['apply', 'ba.stun'], ['apply', 'ba.cold']])).toEqual(['兩者都施加'])
+    const conditions: [EffectType, string][] = [
+      ['apply', 'ba.stun'],
+      ['exploit', 'ba.cold'],
+    ]
+    expect(names(index, conditions)).toEqual(['施加暈眩利用寒冷', '只施加暈眩', '只利用寒冷'])
+    const results = query(index, { conditions: conditions.map(([type, keyword]) => ({ keyword, type })), server: 'cn' })
+    expect(results.map((r) => r.entries[0].stages[0].effects)).toEqual([
+      { 'ba.stun': ['apply'], 'ba.cold': ['exploit'] },
+      { 'ba.stun': ['apply'] },
+      { 'ba.cold': ['exploit'] },
+    ])
   })
 
   test('結果階段只列符合搜尋條件的效果類型', () => {

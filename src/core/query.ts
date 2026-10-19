@@ -108,25 +108,19 @@ function* visibleEntries(op: IndexOperator, server: Server): Generator<{ entry: 
 
 function resultOperator(op: IndexOperator, opts: QueryOptions): ResultOperator | undefined {
   const entries: ResultEntry[] = []
-  /** 已有命中階段的搜尋條件:關鍵字 → 效果類型。 */
-  const found = new Map<string, Set<EffectType>>()
   for (const { entry, summon } of visibleEntries(op, opts.server)) {
     const visible = visibleStages(entry, op, opts.server)
     const stages = visible.map((v) => resultStage(v, visible, op, opts))
     if (!stages.some((s) => s.hit)) continue
     // 模組新增的天賦沒有無模組階段:補一個不存在的,讓介面看得出要裝模組才有
     if (entry.kind === 'talent' && !entry.stages.some((s) => s.kind === 'base')) stages.unshift({ label: '無模組', runs: [], hit: false, effects: {}, absent: true })
-    for (const s of stages)
-      for (const [k, types] of Object.entries(s.effects)) {
-        if (!found.has(k)) found.set(k, new Set())
-        for (const t of types) found.get(k)!.add(t)
-      }
     const result: ResultEntry = { source: entrySource(entry), kind: entry.kind, stages }
     if (entry.name) result.name = entry.name
     if (entry.summon) result.summon = summon?.name ?? entry.summon
     entries.push(result)
   }
-  if (!opts.conditions.every((c) => found.get(c.keyword)?.has(c.type))) return undefined
+  // 搜尋條件一律 OR:有任一命中敘述就列入
+  if (entries.length === 0) return undefined
   const result: ResultOperator = {
     id: op.id,
     name: op.name,

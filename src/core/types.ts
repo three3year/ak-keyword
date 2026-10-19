@@ -139,7 +139,7 @@ export interface SearchCondition {
 }
 
 export interface QueryOptions {
-  /** 全部搜尋條件一律 AND,包括同一關鍵字的多種效果類型。 */
+  /** 搜尋條件一律 OR:幹員滿足任一條件就列入,包括同一關鍵字的多種效果類型。 */
   conditions: SearchCondition[]
   server: Server
   rarities?: number[]

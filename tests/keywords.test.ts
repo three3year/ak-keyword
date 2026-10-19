@@ -31,10 +31,10 @@ const groups = [
 ]
 
 describe('多關鍵字', () => {
-  test('多選為 AND:不同關鍵字可以來自不同敘述', () => {
+  test('多選為 OR:任一關鍵字命中就列入,不同關鍵字可以來自不同敘述', () => {
     const { index } = buildIndex({ cn: fixture(), groups })
     const results = query(index, { conditions: applying('ba.cold', 'ba.levitate'), server: 'cn' })
-    expect(results.map((r) => r.name).sort()).toEqual(['兩技能', '同一段'])
+    expect(results.map((r) => r.name).sort()).toEqual(['兩技能', '只寒冷', '同一段'].sort())
     expect(results.find((r) => r.name === '兩技能')!.entries.map((e) => e.source)).toEqual(['技能1', '技能2'])
   })
 

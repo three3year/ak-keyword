@@ -44,6 +44,29 @@ describe('排序', () => {
       '四星術師',
     ])
   })
+
+  test('多個搜尋條件(OR)的結果照樣依星級、職業、實裝排列,不依符合項數', () => {
+    const stun = { description: '使敌人<$ba.stun>晕眩</>' }
+    const both = { description: '使敌人<$ba.stun>晕眩</>并<$ba.cold>寒冷</>' }
+    const specs: [string, OperatorSpec][] = [
+      ['char_711_a', { name: '老六星寒冷', rarity: 6, profession: 'CASTER', skills: ['sk_cold'] }],
+      ['char_712_b', { name: '五星兩者', rarity: 5, profession: 'CASTER', skills: ['sk_both'] }],
+      ['char_713_c', { name: '新六星暈眩', rarity: 6, profession: 'CASTER', skills: ['sk_stun'] }],
+      ['char_714_d', { name: '六星近衛暈眩', rarity: 6, profession: 'WARRIOR', skills: ['sk_stun'] }],
+    ]
+    const cn = server({
+      terms: COMMON_TERMS,
+      operators: Object.fromEntries(specs.map(([id, s]) => [id, operator(s)])),
+      skills: [basicSkill('sk_cold', '冷', cold), basicSkill('sk_stun', '晕', stun), basicSkill('sk_both', '双', both)],
+    })
+    const { index } = buildIndex({ cn: withRelease(cn, specs.map(([id]) => id)) })
+    expect(query(index, { conditions: applying('ba.cold', 'ba.stun'), server: 'cn' }).map((r) => r.name)).toEqual([
+      '六星近衛暈眩',
+      '新六星暈眩',
+      '老六星寒冷',
+      '五星兩者',
+    ])
+  })
 })
 
 describe('篩選', () => {
