@@ -119,7 +119,7 @@ describe('名稱與補充關鍵字', () => {
 })
 
 describe('模組3 階段的伺服器處理', () => {
-  test('模組3 一律用國服資料並標註;台服模式只列台服已實裝的模組', () => {
+  test('模組3 一律用國服資料,只有台服模組清單沒有的模組標「國服資料」;台服模式只列台服已實裝的模組', () => {
     const cn = server({
       terms: COMMON_TERMS,
       operators: { char_630_m: operator({ name: '模組者', trait: '攻击造成法术伤害' }) },
@@ -137,15 +137,15 @@ describe('模組3 階段的伺服器處理', () => {
     const [twEntry] = query(index, { keywords: ['ba.cold'], server: 'tw' })[0].entries
     expect(twEntry.stages.map((s) => [s.label, plain(s.runs), s.cnData ?? false])).toEqual([
       ['無模組', '攻擊造成法術傷害', false],
-      ['模組3 · CCR-X', '攻击造成法术伤害\n攻击使敌人寒冷', true],
+      ['模組3 · CCR-X', '攻击造成法术伤害\n攻击使敌人寒冷', false],
     ])
     expect(twEntry.stages[1].module).toBe('甲模組')
 
     const [cnEntry] = query(index, { keywords: ['ba.cold'], server: 'cn' })[0].entries
-    expect(cnEntry.stages.map((s) => [s.label, s.module])).toEqual([
-      ['無模組', undefined],
-      ['模組3 · CCR-X', '甲模組'],
-      ['模組3 · CCR-Y', '乙模组'],
+    expect(cnEntry.stages.map((s) => [s.label, s.module, s.cnData ?? false])).toEqual([
+      ['無模組', undefined, false],
+      ['模組3 · CCR-X', '甲模組', false],
+      ['模組3 · CCR-Y', '乙模组', true],
     ])
   })
 })

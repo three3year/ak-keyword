@@ -26,11 +26,11 @@ function defaultStage(e: ResultEntry): number {
   return Math.max(0, e.stages.findIndex((s) => s.hit))
 }
 
-// 只有一段命中敘述時不顯示分頁
-const hasTabs = computed(() => props.op.entries.length > 1)
 const entry = computed(() => props.op.entries[tab.value] ?? props.op.entries[0])
 const stageIndex = computed(() => stageOf.value[tab.value] ?? defaultStage(entry.value))
 const stage = computed(() => entry.value.stages[stageIndex.value] ?? entry.value.stages[0])
+// 模組3 階段在敘述名後接模組名,例如「及鋒而試-筆跡」;特性沒有名稱時只顯示模組名
+const entryName = computed(() => [entry.value.name, stage.value.module].filter(Boolean).join('-'))
 const id = useId()
 
 function onAvatarError(e: Event) {
@@ -59,7 +59,7 @@ function onAvatarError(e: Event) {
         </div>
       </div>
     </header>
-    <div v-if="hasTabs" class="tabs" role="tablist" :aria-label="`${op.name}的命中敘述`">
+    <div class="tabs" role="tablist" :aria-label="`${op.name}的命中敘述`">
       <button
         v-for="(e, i) in op.entries"
         :id="`${id}-tab-${i}`"
@@ -67,7 +67,7 @@ function onAvatarError(e: Event) {
         type="button"
         role="tab"
         class="tab"
-        :class="{ on: i === tab }"
+        :class="[`src-${e.kind}`, { on: i === tab }]"
         :aria-selected="i === tab"
         :aria-controls="`${id}-panel`"
         @click="tab = i"
@@ -78,8 +78,8 @@ function onAvatarError(e: Event) {
     <section
       :id="`${id}-panel`"
       class="entry"
-      :role="hasTabs ? 'tabpanel' : undefined"
-      :aria-labelledby="hasTabs ? `${id}-tab-${tab}` : undefined"
+      role="tabpanel"
+      :aria-labelledby="`${id}-tab-${tab}`"
       data-testid="entry"
     >
       <div v-if="entry.stages.length > 1" class="stage-switch" role="group" aria-label="階段">
@@ -97,18 +97,14 @@ function onAvatarError(e: Event) {
         </button>
       </div>
       <div class="entry-head">
-        <span v-if="!hasTabs" class="source">{{ entry.source }}</span>
-        <span v-if="entry.name" class="entry-name">{{ entry.name }}</span>
+        <span v-if="entryName" class="entry-name">{{ entryName }}</span>
         <span v-if="entry.summon" class="badge summon">{{ entry.summon }}</span>
-        <span v-if="stage.module" class="badge module">{{ stage.module }}</span>
-        <span v-if="stage.cnData" class="badge" title="台服沒有模組數值資料,文字與數值取自國服">國服資料</span>
+        <span v-if="stage.cnData" class="badge" title="台服尚未實裝這個模組,文字與數值取自國服">國服資料</span>
         <span v-for="(fx, k) in stage.effects" :key="k" class="fx" :class="`fx-${fx}`">
           {{ selected.length > 1 ? `${keywords.get(k)?.name ?? k}:` : '' }}{{ EFFECT_TYPE_LABELS[fx] }}
         </span>
       </div>
-      <div class="stage" :class="`src-${entry.kind}`">
-        <RichText class="stage-text" :runs="stage.runs" :selected="selected" />
-      </div>
+      <RichText class="stage-text" :runs="stage.runs" :selected="selected" />
     </section>
   </article>
 </template>

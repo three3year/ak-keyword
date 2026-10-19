@@ -3,6 +3,7 @@
   --surface: #ffffff;
   --surface-2: #eef0f3;
   --border: #d9dde3;
+  --border-strong: #aab2be;
   --text: #1d2129;
   --text-2: #5b6472;
   --accent: #1f6fd1;
@@ -24,10 +25,16 @@
   --glow-4: rgb(167 127 216 / 0.2);
   --glow-3: rgb(74 159 224 / 0.18);
   --glow-low: rgb(150 160 175 / 0.18);
-  /* 文字框依敘述來源上色,避開星數光暈的色系 */
+  /* 頁籤依敘述來源上色,避開星數光暈的色系 */
   --src-skill: #e8f5ec;
   --src-talent: #fcecf2;
   --src-trait: #e3f4f4;
+  /* 選中頁籤下方粗線,同來源色系的深色 */
+  --src-skill-line: #2e9a5a;
+  --src-talent-line: #d1497c;
+  --src-trait-line: #1f9696;
+  /* 敘述底框:白色系,蓋過光暈好讀文字 */
+  --panel: #ffffff;
   --radius: 10px;
   color-scheme: light;
 }
@@ -38,6 +45,7 @@
     --surface: #1d2128;
     --surface-2: #262b33;
     --border: #353b45;
+    --border-strong: #59616e;
     --text: #e6e8eb;
     --text-2: #9aa3b0;
     --accent: #5aa2ff;
@@ -61,6 +69,10 @@
     --src-skill: #1c2d23;
     --src-talent: #322029;
     --src-trait: #1a2d30;
+    --src-skill-line: #5ccf8a;
+    --src-talent-line: #f07aa6;
+    --src-trait-line: #5cc8c8;
+    --panel: #23282f;
     color-scheme: dark;
   }
 }
@@ -175,7 +187,7 @@ input:focus-visible {
 }
 
 .card {
-  background: linear-gradient(90deg, var(--glow, transparent), transparent 160px) var(--surface);
+  background: linear-gradient(90deg, var(--glow, transparent), transparent 520px) var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 12px 14px;
@@ -218,15 +230,16 @@ input:focus-visible {
   flex-wrap: wrap;
   gap: 4px;
   margin-top: 8px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-strong);
 }
 
+/* 頁籤下框與分隔線重疊,選中時加一層內陰影成粗線 */
 .tab {
   min-height: 36px;
-  border: 0;
-  border-bottom: 2px solid transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px 8px 0 0;
   margin-bottom: -1px;
-  background: transparent;
+  background: var(--surface-2);
   color: var(--text-2);
   padding: 4px 12px;
   font-size: 0.9rem;
@@ -240,11 +253,18 @@ input:focus-visible {
 
 .tab.on {
   color: var(--accent);
-  border-bottom-color: var(--accent);
+  border-bottom-color: var(--line, var(--accent));
+  box-shadow: inset 0 -1px 0 var(--line, var(--accent));
 }
 
+/* 底框接在頁籤下的分隔線上 */
 .entry {
-  padding-top: 8px;
+  background: var(--panel);
+  border: 1px solid var(--border-strong);
+  border-top: 0;
+  border-radius: 0 0 8px 8px;
+  padding: 8px 10px;
+  min-width: 0;
 }
 
 .entry-head {
@@ -253,15 +273,6 @@ input:focus-visible {
   align-items: center;
   gap: 6px;
   margin-bottom: 6px;
-}
-
-.source {
-  font-weight: 600;
-  font-size: 0.85rem;
-  background: var(--accent-soft);
-  color: var(--accent);
-  border-radius: 6px;
-  padding: 1px 8px;
 }
 
 .entry-name {
@@ -308,23 +319,19 @@ input:focus-visible {
   cursor: default;
 }
 
-.stage {
-  background: var(--surface-2);
-  border-radius: 8px;
-  padding: 8px 10px;
-  min-width: 0;
-}
-
-.stage.src-skill {
+.src-skill {
   background: var(--src-skill);
+  --line: var(--src-skill-line);
 }
 
-.stage.src-talent {
+.src-talent {
   background: var(--src-talent);
+  --line: var(--src-talent-line);
 }
 
-.stage.src-trait {
+.src-trait {
   background: var(--src-trait);
+  --line: var(--src-trait-line);
 }
 
 .stage-text {

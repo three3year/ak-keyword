@@ -41,8 +41,9 @@ function visibleStages(entry: IndexEntry, op: IndexOperator, server: Server): Vi
   const out: Visible[] = []
   for (const stage of entry.stages) {
     if (stage.kind === 'module') {
-      if (server === 'tw' && !op.modules.find((m) => m.id === stage.module)?.inTw) continue
-      out.push({ stage, match: stage.cn, runs: stage.cn.runs, cnData: true })
+      const inTw = !!op.modules.find((m) => m.id === stage.module)?.inTw
+      if (server === 'tw' && !inTw) continue
+      out.push({ stage, match: stage.cn, runs: stage.cn.runs, cnData: !inTw })
     } else if (server === 'tw') {
       if (stage.tw) out.push({ stage, match: stage.tw, runs: stage.tw.runs, cnData: false })
     } else {

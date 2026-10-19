@@ -145,7 +145,7 @@ export interface ResultStage {
   hit: boolean
   /** 已選關鍵字在這個階段的效果類型。 */
   effects: Record<string, EffectType>
-  /** 文字取自國服資料(模組3 階段)。 */
+  /** 模組3 階段的模組不在台服模組清單,只有國服資料。 */
   cnData?: boolean
   /** 模組3 階段的模組全名(標籤只寫模組代碼)。 */
   module?: string
