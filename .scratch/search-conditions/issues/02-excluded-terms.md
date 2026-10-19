@@ -4,7 +4,7 @@
 
 **Blocked by:** None — can start immediately
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] 新增維護者維護的排除術語資料檔,初始列出上述 5 個術語 id
 - [ ] 建置時排除的術語不進索引的關鍵字清單,敘述中不帶關鍵字標記(一般文字)

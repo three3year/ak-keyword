@@ -4,7 +4,7 @@
 
 **Blocked by:** None — can start immediately
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] 效果類型的值改為施加、利用、反制(識別字 `apply`、`exploit`、`counter`),移除抵抗與其他;介面標籤與淺色、深色模式的顏色跟著改
 - [ ] 索引中每段文字的命中改為「關鍵字 → 效果類型清單」;判定不出時清單為空,文字中的關鍵字照樣高亮;重建索引

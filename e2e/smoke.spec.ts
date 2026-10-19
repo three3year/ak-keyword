@@ -140,10 +140,10 @@ test('類型鈕反灰:關鍵字在目前伺服器沒有該類型的敘述時停�
   await expect(types.getByRole('button', { name: '施加' })).toBeEnabled()
   await expect(types.getByRole('button', { name: '利用' })).toBeEnabled()
 
-  // 利用-浮空 只有國服有資料:切到台服後反灰
-  await page.getByRole('button', { name: '浮空', exact: true }).first().click()
-  const levitate = page.getByRole('group', { name: '浮空的效果類型' }).getByRole('button', { name: '利用' })
-  await expect(levitate).toBeEnabled()
+  // 反制-侵蝕損傷 只有國服有資料:切到台服後反灰
+  await page.getByRole('button', { name: '侵蝕損傷', exact: true }).first().click()
+  const erosion = page.getByRole('group', { name: '侵蝕損傷的效果類型' }).getByRole('button', { name: '反制' })
+  await expect(erosion).toBeEnabled()
   await page.getByRole('radio', { name: '台服' }).click()
-  await expect(levitate).toBeDisabled()
+  await expect(erosion).toBeDisabled()
 })
