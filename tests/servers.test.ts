@@ -137,10 +137,15 @@ describe('模組3 階段的伺服器處理', () => {
     const [twEntry] = query(index, { keywords: ['ba.cold'], server: 'tw' })[0].entries
     expect(twEntry.stages.map((s) => [s.label, plain(s.runs), s.cnData ?? false])).toEqual([
       ['無模組', '攻擊造成法術傷害', false],
-      ['模組3 · 甲模組', '攻击造成法术伤害\n攻击使敌人寒冷', true],
+      ['模組3 · CCR-X', '攻击造成法术伤害\n攻击使敌人寒冷', true],
     ])
+    expect(twEntry.stages[1].module).toBe('甲模組')
 
     const [cnEntry] = query(index, { keywords: ['ba.cold'], server: 'cn' })[0].entries
-    expect(cnEntry.stages.map((s) => s.label)).toEqual(['無模組', '模組3 · 甲模組', '模組3 · 乙模组'])
+    expect(cnEntry.stages.map((s) => [s.label, s.module])).toEqual([
+      ['無模組', undefined],
+      ['模組3 · CCR-X', '甲模組'],
+      ['模組3 · CCR-Y', '乙模组'],
+    ])
   })
 })

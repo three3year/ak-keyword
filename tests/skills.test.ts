@@ -34,18 +34,20 @@ describe('技能敘述的寒冷直通', () => {
       ['專精3', '攻击使敌人寒冷5秒'],
     ])
     expect(highlights(entry.stages[0].runs)).toEqual([['寒冷', 'ba.cold']])
-    expect(entry.only).toBeUndefined()
+    expect(entry.stages.map((s) => s.hit)).toEqual([true, true])
   })
 
-  test('效果只在專精3 出現時標「僅專精3」', () => {
+  test('效果只在專精3 出現時,等級7 未命中、專精3 命中', () => {
     const cn = server({
       terms: COMMON_TERMS,
       operators: { char_001_ice: operator({ name: '冰原', skills: ['sk_ice_1'] }) },
       skills: [masteredSkill('sk_ice_1', '冰封', { description: '攻击力提升' }, { description: '攻击力提升并使敌人<$ba.cold>寒冷</>' })],
     })
     const [r] = query(buildIndex({ cn }).index, { keywords: ['ba.cold'], server: 'cn' })
-    expect(r.entries[0].only).toBe('僅專精3')
-    expect(r.entries[0].stages.map((s) => s.hit)).toEqual([false, true])
+    expect(r.entries[0].stages.map((s) => [s.label, s.hit])).toEqual([
+      ['等級7', false],
+      ['專精3', true],
+    ])
   })
 
   test('沒有專精的技能只顯示最高等級', () => {
@@ -55,8 +57,7 @@ describe('技能敘述的寒冷直通', () => {
       skills: [basicSkill('sk_low_1', '冷风', { description: '使敌人<$ba.cold>寒冷</>{duration}秒', duration: 2 })],
     })
     const [r] = query(buildIndex({ cn }).index, { keywords: ['ba.cold'], server: 'cn' })
-    expect(r.entries[0].stages.map((s) => [s.label, plain(s.runs)])).toEqual([['等級7', '使敌人寒冷2秒']])
-    expect(r.entries[0].only).toBeUndefined()
+    expect(r.entries[0].stages.map((s) => [s.label, plain(s.runs), s.hit])).toEqual([['等級7', '使敌人寒冷2秒', true]])
   })
 
   test('只收錄可取得的幹員,不收錄召喚物、陷阱與預備干員', () => {

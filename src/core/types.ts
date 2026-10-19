@@ -138,6 +138,7 @@ export interface QueryOptions {
 }
 
 export interface ResultStage {
+  /** 例如「等級7」「專精3」「無模組」「模組3 · SUM-X」;沒有其他階段可對照的無模組階段為空字串。 */
   label: string
   runs: Run[]
   /** 這個階段含有已選關鍵字(效果類型符合勾選)。 */
@@ -146,7 +147,7 @@ export interface ResultStage {
   effects: Record<string, EffectType>
   /** 文字取自國服資料(模組3 階段)。 */
   cnData?: boolean
-  /** 模組3 階段的模組名。 */
+  /** 模組3 階段的模組全名(標籤只寫模組代碼)。 */
   module?: string
 }
 
@@ -155,9 +156,8 @@ export interface ResultEntry {
   source: string
   name?: string
   summon?: string
+  /** 各階段依序排列;介面預設顯示第一個命中的階段。 */
   stages: ResultStage[]
-  /** 效果只在部分階段出現時的標記,例如「僅專精3」「僅模組3(SUM-X)」。 */
-  only?: string
 }
 
 export interface ResultOperator {

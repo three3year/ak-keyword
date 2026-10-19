@@ -17,8 +17,9 @@ import type {
 import { PROFESSION_LABELS, PROFESSIONS, type Profession } from './types'
 import { DATA_SOURCES, type DataSource, repoUrl } from './sources'
 
-function moduleName(stage: IndexStage, op: IndexOperator): string {
-  return op.modules.find((m) => m.id === stage.module)?.name ?? stage.module ?? ''
+function moduleOf(stage: IndexStage, op: IndexOperator): { name: string; code: string } {
+  const m = op.modules.find((m) => m.id === stage.module)
+  return { name: m?.name ?? stage.module ?? '', code: m?.code ?? stage.module ?? '' }
 }
 
 /** 某個伺服器模式下看得到的一個階段:比對用的文字與顯示用的文字。 */
@@ -63,7 +64,7 @@ function stageLabel(stage: IndexStage, visible: Visible[], op: IndexOperator): s
       // 沒有模組階段可對照時,不需要標「無模組」
       return visible.some((v) => v.stage.kind === 'module') ? '無模組' : ''
     case 'module':
-      return `模組3 · ${moduleName(stage, op)}`
+      return `模組3 · ${moduleOf(stage, op).code}`
   }
 }
 
@@ -89,18 +90,9 @@ function resultStage(v: Visible, visible: Visible[], op: IndexOperator, opts: Qu
     if (type && (!opts.effectTypes || opts.effectTypes.includes(type))) effects[k] = type
   }
   const result: ResultStage = { label: stageLabel(v.stage, visible, op), runs: v.runs, hit: Object.keys(effects).length > 0, effects }
-  if (v.stage.kind === 'module') result.module = moduleName(v.stage, op)
+  if (v.stage.kind === 'module') result.module = moduleOf(v.stage, op).name
   if (v.cnData) result.cnData = true
   return result
-}
-
-function onlyLabel(stages: ResultStage[]): string | undefined {
-  const hit = stages.filter((s) => s.hit)
-  if (hit.length === 0) return undefined
-  // 只有模組3 才有(包括模組新增的天賦):標出要裝哪個模組
-  if (hit.every((s) => s.module)) return `僅模組3(${hit.map((s) => s.module).join('、')})`
-  if (hit.length === stages.length || stages.some((s) => s.module)) return undefined
-  return `僅${hit.map((s) => s.label).join('、')}`
 }
 
 function resultOperator(op: IndexOperator, opts: QueryOptions): ResultOperator | undefined {
@@ -117,8 +109,6 @@ function resultOperator(op: IndexOperator, opts: QueryOptions): ResultOperator |
     const result: ResultEntry = { source: entrySource(entry), stages }
     if (entry.name) result.name = entry.name
     if (entry.summon) result.summon = summon?.name ?? entry.summon
-    const only = onlyLabel(stages)
-    if (only) result.only = only
     entries.push(result)
   }
   if (!opts.keywords.every((k) => found.has(k))) return undefined

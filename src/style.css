@@ -238,15 +238,36 @@ input:focus-visible {
   color: var(--text-2);
 }
 
-.badge.only {
-  border-color: var(--rem);
-  color: var(--rem);
+.stage-switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
 }
 
-.stages {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 8px;
+.stage-btn {
+  min-height: 32px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  border-radius: 999px;
+  padding: 2px 12px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.stage-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.stage-btn.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.stage-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 .stage {
@@ -254,20 +275,6 @@ input:focus-visible {
   border-radius: 8px;
   padding: 8px 10px;
   min-width: 0;
-}
-
-.stage.miss {
-  opacity: 0.7;
-}
-
-.stage-label {
-  font-size: 0.78rem;
-  color: var(--text-2);
-  margin-bottom: 2px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  align-items: center;
 }
 
 .stage-text {
@@ -367,10 +374,6 @@ input:focus-visible {
     inset: 0;
     z-index: 30;
     background: rgb(0 0 0 / 0.35);
-  }
-
-  .stages {
-    grid-template-columns: minmax(0, 1fr);
   }
 }
 

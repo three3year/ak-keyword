@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, useId, watch } from 'vue'
-import { EFFECT_TYPE_LABELS, PROFESSION_LABELS, type IndexKeyword, type ResultOperator } from '../core/types'
+import { EFFECT_TYPE_LABELS, PROFESSION_LABELS, type IndexKeyword, type ResultEntry, type ResultOperator } from '../core/types'
 import RichText from './RichText.vue'
 
 const props = defineProps<{
@@ -10,15 +10,25 @@ const props = defineProps<{
   branchName: string
 }>()
 
-// 卡片狀態只存在這張卡內;查詢結果重算(op 換成新物件)時回到預設
+// 卡片狀態(目前分頁、各分頁目前階段)只存在這張卡內;查詢結果重算(op 換成新物件)時回到預設
 const tab = ref(0)
+const stageOf = ref<Record<number, number>>({})
 watch(
   () => props.op,
   () => {
     tab.value = 0
+    stageOf.value = {}
   },
 )
+
+/** 預設顯示第一個命中的階段。 */
+function defaultStage(e: ResultEntry): number {
+  return Math.max(0, e.stages.findIndex((s) => s.hit))
+}
+
 const entry = computed(() => props.op.entries[tab.value] ?? props.op.entries[0])
+const stageIndex = computed(() => stageOf.value[tab.value] ?? defaultStage(entry.value))
+const stage = computed(() => entry.value.stages[stageIndex.value] ?? entry.value.stages[0])
 const id = useId()
 
 function onAvatarError(e: Event) {
@@ -70,23 +80,32 @@ function onAvatarError(e: Event) {
       :aria-labelledby="op.entries.length > 1 ? `${id}-tab-${tab}` : undefined"
       data-testid="entry"
     >
+      <div v-if="entry.stages.length > 1" class="stage-switch" role="group" aria-label="階段">
+        <button
+          v-for="(s, j) in entry.stages"
+          :key="j"
+          type="button"
+          class="stage-btn"
+          :class="{ on: j === stageIndex }"
+          :aria-pressed="j === stageIndex"
+          :disabled="!s.hit"
+          @click="stageOf[tab] = j"
+        >
+          {{ s.label }}
+        </button>
+      </div>
       <div class="entry-head">
         <span v-if="op.entries.length === 1" class="source">{{ entry.source }}</span>
         <span v-if="entry.name" class="entry-name">{{ entry.name }}</span>
         <span v-if="entry.summon" class="badge summon">{{ entry.summon }}</span>
-        <span v-if="entry.only" class="badge only">{{ entry.only }}</span>
+        <span v-if="stage.module" class="badge module">{{ stage.module }}</span>
+        <span v-if="stage.cnData" class="badge" title="台服沒有模組數值資料,文字與數值取自國服">國服資料</span>
+        <span v-for="(fx, k) in stage.effects" :key="k" class="fx" :class="`fx-${fx}`">
+          {{ selected.length > 1 ? `${keywords.get(k)?.name ?? k}:` : '' }}{{ EFFECT_TYPE_LABELS[fx] }}
+        </span>
       </div>
-      <div class="stages" :class="{ single: entry.stages.length === 1 }">
-        <div v-for="(s, j) in entry.stages" :key="j" class="stage" :class="{ miss: !s.hit }">
-          <div v-if="s.label || s.cnData" class="stage-label">
-            <span>{{ s.label }}</span>
-            <span v-if="s.cnData" class="badge" title="台服沒有模組數值資料,文字與數值取自國服">國服資料</span>
-            <span v-for="(fx, k) in s.effects" :key="k" class="fx" :class="`fx-${fx}`">
-              {{ selected.length > 1 ? `${keywords.get(k)?.name ?? k}:` : '' }}{{ EFFECT_TYPE_LABELS[fx] }}
-            </span>
-          </div>
-          <RichText class="stage-text" :runs="s.runs" :selected="selected" />
-        </div>
+      <div class="stage">
+        <RichText class="stage-text" :runs="stage.runs" :selected="selected" />
       </div>
     </section>
   </article>
