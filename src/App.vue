@@ -190,7 +190,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
       <template v-for="(item, i) in footer" :key="item.label">
         <template v-if="i > 0"> · </template>
         <a :href="item.source.url" target="_blank" rel="noopener noreferrer" :title="`資料來源:${item.source.name}`">{{ item.label }}</a>
-        <template v-if="item.version">{{ ` ${item.version}` }}</template>
+        <template v-if="item.version">{{ ` ${item.version} · ${item.downloadedAt}` }}</template>
       </template>
     </footer>
     <KeywordTip :keywords="keywordMap" :selected="selected" @toggle="toggle" />

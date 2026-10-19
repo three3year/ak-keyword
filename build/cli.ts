@@ -1,7 +1,7 @@
 // 維護者在本機執行:抓國服與台服原始資料 → 建置索引 → 寫進 public/data/index.json。
 //   npm run build-index            重新下載原始資料
 //   npm run build-index:offline    沿用 .cache/raw 裡已下載的資料
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, stat, writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { prepareAvatars } from './avatars'
@@ -27,6 +27,9 @@ const SOURCES = {
 
 type ServerKey = keyof typeof SOURCES
 
+/** 快取裡記錄某個伺服器資料下載時間的檔案。 */
+const DOWNLOADED_AT = 'downloaded_at.txt'
+
 async function download(server: ServerKey, file: string): Promise<void> {
   const url = `${SOURCES[server].base}/${file}.json`
   const res = await fetch(url)
@@ -35,6 +38,19 @@ async function download(server: ServerKey, file: string): Promise<void> {
   await mkdir(dirname(path), { recursive: true })
   await writeFile(path, Buffer.from(await res.arrayBuffer()))
   console.log(`已下載 ${server}/${file}.json`)
+}
+
+/** 下載某個伺服器的所有檔案,完成後在該服快取記下下載時間。 */
+async function downloadServer(server: ServerKey): Promise<void> {
+  await Promise.all(SOURCES[server].files.map((file) => download(server, file)))
+  await writeFile(join(CACHE, server, DOWNLOADED_AT), new Date().toISOString())
+}
+
+/** 快取裡的下載時間;還沒有記錄的舊快取,以幹員表檔案的修改時間代替。 */
+async function downloadedAt(server: ServerKey): Promise<string> {
+  const record = join(CACHE, server, DOWNLOADED_AT)
+  if (existsSync(record)) return (await readFile(record, 'utf8')).trim()
+  return (await stat(join(CACHE, server, 'character_table.json'))).mtime.toISOString()
 }
 
 async function readJson<T>(path: string): Promise<T> {
@@ -52,17 +68,13 @@ async function loadServer(server: ServerKey): Promise<RawServer> {
     battleEquipTable: await optional('battle_equip_table'),
     charPatchTable: await optional('char_patch_table'),
     itemTable: await optional('item_table'),
+    downloadedAt: await downloadedAt(server),
   }
 }
 
 async function main() {
   const offline = process.argv.includes('--offline')
-  if (!offline) {
-    const jobs: Promise<void>[] = []
-    for (const server of Object.keys(SOURCES) as ServerKey[])
-      for (const file of SOURCES[server].files) jobs.push(download(server, file))
-    await Promise.all(jobs)
-  }
+  if (!offline) await Promise.all((Object.keys(SOURCES) as ServerKey[]).map(downloadServer))
 
   const cn = await loadServer('cn')
   const tw = await loadServer('tw')

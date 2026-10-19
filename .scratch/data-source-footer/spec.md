@@ -1,6 +1,6 @@
 # 規格:頁尾的資料版本下載時間與資料來源連結
 
-Status: ready-for-agent
+Status: resolved
 
 ## 問題陳述
 

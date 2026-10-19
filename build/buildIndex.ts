@@ -6,6 +6,7 @@
 // 模組3 階段只有國服資料(台服資料庫沒有模組戰鬥資料)。
 import { createHash } from 'node:crypto'
 import type {
+  DataVersion,
   EffectType,
   IndexEntry,
   IndexKeyword,
@@ -36,6 +37,10 @@ import type {
 } from './raw'
 import { parseRichText, plainText, toValues } from './richText'
 import { type SupplementMatcher, markSupplements } from './supplements'
+
+function dataVersion(raw: RawServer): DataVersion {
+  return { version: raw.gamedataConst.dataVersion ?? '', downloadedAt: raw.downloadedAt }
+}
 
 /** 維護者清單:關鍵字分組。沒列到的關鍵字歸到「未分組」。 */
 export interface KeywordGroup {
@@ -133,8 +138,8 @@ class Builder {
       if (forms.has(id)) op.name = `${op.name}(${PROFESSION_LABELS[op.profession]})`
       operators.push(op)
     }
-    const versions: SearchIndex['versions'] = { cn: cn.gamedataConst.dataVersion ?? '' }
-    if (tw) versions.tw = tw.gamedataConst.dataVersion ?? ''
+    const versions: SearchIndex['versions'] = { cn: dataVersion(cn) }
+    if (tw) versions.tw = dataVersion(tw)
     return {
       versions,
       groups: this.groups(),

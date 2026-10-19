@@ -195,6 +195,8 @@ function moduleTables(modules: ModuleSpec[]) {
 
 export interface ServerSpec {
   version?: string
+  /** 資料的下載時間(ISO 8601)。 */
+  downloadedAt?: string
   terms?: Record<string, [name: string, description: string]>
   operators: Record<string, RawCharacter>
   skills?: RawSkill[]
@@ -217,6 +219,7 @@ export function server(spec: ServerSpec): RawServer {
     characterTable,
     skillTable: Object.fromEntries((spec.skills ?? []).map((s) => [s.skillId, s])),
     gamedataConst: { dataVersion: spec.version ?? '1.0.0', termDescriptionDict },
+    downloadedAt: spec.downloadedAt ?? '2026-01-01T00:00:00Z',
     itemTable: { items },
     ...(spec.modules ? moduleTables(spec.modules) : {}),
     ...(spec.patches

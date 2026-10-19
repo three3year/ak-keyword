@@ -1,5 +1,6 @@
 // 查詢:索引 + 查詢條件 → 排好序的幹員清單與命中敘述。純函式。
 import type {
+  DataVersion,
   IndexEntry,
   IndexKeyword,
   IndexOperator,
@@ -223,7 +224,20 @@ export interface FooterItem {
   label: string
   /** 伺服器資料的版號;頭像沒有。 */
   version?: string
+  /** 伺服器資料的下載時間,台灣時間,例如「2026-10-19 12:14(UTC+8)」;頭像沒有。 */
+  downloadedAt?: string
   source: { name: string; url: string }
+}
+
+/** 以台灣時間(UTC+8,沒有日光節約時間)顯示到分,不受執行環境的時區影響。 */
+function taiwanTime(iso: string): string {
+  const t = new Date(Date.parse(iso) + 8 * 3600_000)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${t.getUTCFullYear()}-${pad(t.getUTCMonth() + 1)}-${pad(t.getUTCDate())} ${pad(t.getUTCHours())}:${pad(t.getUTCMinutes())}(UTC+8)`
+}
+
+function serverItem(label: string, data: DataVersion, source: DataSource): FooterItem {
+  return { label, version: data.version, downloadedAt: taiwanTime(data.downloadedAt), source: footerSource(source) }
 }
 
 function footerSource(source: DataSource): FooterItem['source'] {
@@ -232,8 +246,8 @@ function footerSource(source: DataSource): FooterItem['source'] {
 
 /** 頁尾:各伺服器的資料版本與資料來源,最後是頭像的資料來源。索引沒有台服資料時不列台服。 */
 export function footerItems(index: SearchIndex): FooterItem[] {
-  const items: FooterItem[] = [{ label: '國服', version: index.versions.cn, source: footerSource(DATA_SOURCES.cn) }]
-  if (index.versions.tw !== undefined) items.push({ label: '台服', version: index.versions.tw, source: footerSource(DATA_SOURCES.tw) })
+  const items: FooterItem[] = [serverItem('國服', index.versions.cn, DATA_SOURCES.cn)]
+  if (index.versions.tw) items.push(serverItem('台服', index.versions.tw, DATA_SOURCES.tw))
   items.push({ label: '頭像', source: footerSource(DATA_SOURCES.avatar) })
   return items
 }

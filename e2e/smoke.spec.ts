@@ -2,9 +2,10 @@ import { expect, test } from '@playwright/test'
 
 test('點一個關鍵字後看到結果卡,切換伺服器後結果更新', async ({ page }) => {
   await page.goto('./')
-  // 頁尾顯示這次建置所用的國服與台服資料版本;「國服」「台服」「頭像」在新分頁開啟各自的資料來源
+  // 頁尾顯示國服與台服的資料版本(版號與台灣時間的下載時間);「國服」「台服」「頭像」在新分頁開啟各自的資料來源
   const footer = page.locator('footer')
-  await expect(footer).toContainText(/國服 \d+\.\d+\.\d+ · 台服 \d+\.\d+\.\d+/)
+  const dataVersion = String.raw`\d+\.\d+\.\d+ · \d{4}-\d{2}-\d{2} \d{2}:\d{2}\(UTC\+8\)`
+  await expect(footer).toContainText(new RegExp(`國服 ${dataVersion} · 台服 ${dataVersion}`))
   for (const [label, repo] of [
     ['國服', 'Kengxxiao/ArknightsGameData'],
     ['台服', 'arkntools/arknights-data-tw-for-maa'],

@@ -128,4 +128,6 @@ export interface RawServer {
   charPatchTable?: RawCharPatchTable
   /** 只有國服用到:以潛能信物編號近似實裝順序。 */
   itemTable?: RawItemTable
+  /** 這份資料的下載時間(ISO 8601)。不在遊戲資料裡,由建置腳本從快取讀出。 */
+  downloadedAt: string
 }

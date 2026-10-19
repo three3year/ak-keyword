@@ -110,8 +110,15 @@ export interface IndexKeyword {
   definition: Run[]
 }
 
+/** 某個伺服器遊戲資料的版號,加上建置時下載這份資料的時間。 */
+export interface DataVersion {
+  version: string
+  /** ISO 8601,帶時區。 */
+  downloadedAt: string
+}
+
 export interface SearchIndex {
-  versions: { cn: string; tw?: string }
+  versions: { cn: DataVersion; tw?: DataVersion }
   groups: string[]
   keywords: IndexKeyword[]
   subProfessions: Record<string, { name: string; profession: Profession }>
