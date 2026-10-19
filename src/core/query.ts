@@ -13,6 +13,7 @@ import type {
   SearchIndex,
   Server,
 } from './types'
+import { PROFESSION_LABELS, PROFESSIONS, type Profession } from './types'
 
 function moduleName(stage: IndexStage, op: IndexOperator): string {
   return op.modules.find((m) => m.id === stage.module)?.name ?? stage.module ?? ''
@@ -131,14 +132,43 @@ function resultOperator(op: IndexOperator, opts: QueryOptions): ResultOperator |
   return result
 }
 
+function passesFilters(op: IndexOperator, opts: QueryOptions): boolean {
+  if (opts.rarities?.length && !opts.rarities.includes(op.rarity)) return false
+  if (opts.professions?.length && !opts.professions.includes(op.profession)) return false
+  if (opts.subProfessions?.length && !opts.subProfessions.includes(op.subProfession)) return false
+  return true
+}
+
+/** 星級高到低,再依職業(遊戲內順序),最後實裝新到舊。 */
+function compareOperators(a: IndexOperator, b: IndexOperator): number {
+  return b.rarity - a.rarity || PROFESSIONS.indexOf(a.profession) - PROFESSIONS.indexOf(b.profession) || b.release - a.release
+}
+
 export function query(index: SearchIndex, opts: QueryOptions): ResultOperator[] {
   if (opts.keywords.length === 0) return []
   const results: ResultOperator[] = []
-  for (const op of index.operators) {
+  for (const op of [...index.operators].sort(compareOperators)) {
+    if (!passesFilters(op, opts)) continue
     const r = resultOperator(op, opts)
     if (r) results.push(r)
   }
   return results
+}
+
+export interface FilterOptions {
+  rarities: number[]
+  professions: { id: Profession; name: string; branches: { id: string; name: string }[] }[]
+}
+
+/** 篩選列的選項:索引裡實際出現的星級、職業(遊戲內順序)與分支。 */
+export function filterOptions(index: SearchIndex): FilterOptions {
+  const rarities = [...new Set(index.operators.map((o) => o.rarity))].sort((a, b) => b - a)
+  const professions = PROFESSIONS.filter((p) => index.operators.some((o) => o.profession === p)).map((p) => {
+    const branches = [...new Set(index.operators.filter((o) => o.profession === p).map((o) => o.subProfession))]
+      .map((id) => ({ id, name: index.subProfessions[id]?.name ?? id }))
+    return { id: p, name: PROFESSION_LABELS[p], branches }
+  })
+  return { rarities, professions }
 }
 
 export interface PanelKeyword {

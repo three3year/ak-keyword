@@ -139,9 +139,32 @@ class Builder {
       versions,
       groups: this.groups(),
       keywords: this.keywords(operators),
-      subProfessions: {},
+      subProfessions: this.subProfessions(operators),
       operators,
     }
+  }
+
+  /** 分支名稱優先用台服。 */
+  subProfessions(operators: IndexOperator[]): SearchIndex['subProfessions'] {
+    const out: SearchIndex['subProfessions'] = {}
+    const twNames = this.input.tw?.uniequipTable?.subProfDict ?? {}
+    const cnNames = this.input.cn.uniequipTable?.subProfDict ?? {}
+    for (const op of operators) {
+      const id = op.subProfession
+      if (out[id]) continue
+      out[id] = { name: twNames[id]?.subProfessionName ?? cnNames[id]?.subProfessionName ?? id, profession: op.profession }
+    }
+    return out
+  }
+
+  /**
+   * 實裝順序:遊戲資料沒有可靠的實裝時間欄位,以潛能信物的排序編號近似
+   * (同星級內依實裝先後遞增);沒有潛能信物的幹員視為最舊。
+   */
+  release(char: RawCharacter): number {
+    const items = this.input.cn.itemTable?.items ?? {}
+    const itemId = [char.potentialItemId, char.classicPotentialItemId, char.activityPotentialItemId].find((i) => i && items[i])
+    return itemId ? items[itemId].sortId : 0
   }
 
   operator(id: string, char: RawCharacter): IndexOperator {
@@ -196,7 +219,7 @@ class Builder {
       rarity: Number(char.rarity.replace('TIER_', '')),
       profession: char.profession as Profession,
       subProfession: char.subProfessionId,
-      release: 0,
+      release: this.release(char),
       inTw: !!twChar,
       modules: indexModules,
       summons,

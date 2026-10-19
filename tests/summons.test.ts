@@ -81,8 +81,8 @@ describe('阿米婭形態', () => {
     })
     const results = query(buildIndex({ cn }).index, { keywords: ['ba.cold'], server: 'cn' })
     expect(results.map((r) => [r.id, r.name, r.profession, r.entries[0].name])).toEqual([
-      ['char_002_amiya', '阿米娅(術師)', 'CASTER', '术'],
       ['char_1001_amiya2', '阿米娅(近衛)', 'WARRIOR', '剑'],
+      ['char_002_amiya', '阿米娅(術師)', 'CASTER', '术'],
     ])
   })
 })

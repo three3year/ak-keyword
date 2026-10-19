@@ -1,8 +1,15 @@
 import { expect, test } from '@playwright/test'
 
-test('點一個關鍵字後看到至少一張結果卡', async ({ page }) => {
+test('點一個關鍵字後看到結果卡,切換伺服器後結果更新', async ({ page }) => {
   await page.goto('./')
-  await page.getByRole('button', { name: '寒冷', exact: true }).first().click()
-  await expect(page.getByTestId('result-card').first()).toBeVisible()
-  await expect(page.getByTestId('result-card').first().locator('mark.hl').first()).toHaveText(/寒冷/)
+  await page.getByRole('button', { name: '暈眩', exact: true }).first().click()
+  const cards = page.getByTestId('result-card')
+  await expect(cards.first()).toBeVisible()
+  await expect(cards.first().locator('mark.hl').first()).toHaveText(/暈眩|晕眩/)
+
+  const count = page.getByTestId('result-count')
+  const cnCount = await count.textContent()
+  await page.getByRole('radio', { name: '台服' }).click()
+  await expect(count).not.toHaveText(cnCount ?? '')
+  await expect(cards.first()).toBeVisible()
 })
