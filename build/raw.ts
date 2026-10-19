@@ -1,5 +1,5 @@
-// 原始遊戲資料的形狀(只列建置用到的欄位)。國服與台服大致相同,差別:
-// 台服的 blackboard 多半是 { key: value } 物件,國服是 [{ key, value, valueStr }] 陣列。
+// 原始遊戲資料的形狀(只列建置用到的欄位)。陸服與台服大致相同,差別:
+// 台服的 blackboard 多半是 { key: value } 物件,陸服是 [{ key, value, valueStr }] 陣列。
 
 export interface RawBlackboardItem {
   key: string
@@ -123,10 +123,10 @@ export interface RawServer {
   skillTable: Record<string, RawSkill>
   gamedataConst: RawGamedataConst
   uniequipTable?: RawUniequipTable
-  /** 只有國服有。 */
+  /** 只有陸服有。 */
   battleEquipTable?: Record<string, RawBattleEquip>
   charPatchTable?: RawCharPatchTable
-  /** 只有國服用到:以潛能信物編號近似實裝順序。 */
+  /** 只有陸服用到:以潛能信物編號近似實裝順序。 */
   itemTable?: RawItemTable
   /** 這份資料的下載時間(ISO 8601)。不在遊戲資料裡,由建置腳本從快取讀出。 */
   downloadedAt: string

@@ -86,7 +86,7 @@ describe('效果類型的規則判定', () => {
       ['exploit', 'counter'],
     ],
     ['立刻清除自身的<$ba.dt.element>元素损伤</>1', '立刻清除自身的<$ba.dt.element>元素損傷</>2', 'ba.dt.element', ['counter']],
-  ])('繁中(台服文字與國服不一致時各自判定):%s → %s', (cnText, twText, keyword, expected) => {
+  ])('繁中(台服文字與陸服不一致時各自判定):%s → %s', (cnText, twText, keyword, expected) => {
     const { index } = buildIndex({ cn: fixture({ 甲: cnText }), tw: fixture({ 甲: twText }), supplements: [DODGE, PULL] })
     expect(typesFound(index, keyword, 'tw')).toEqual(expected)
   })
@@ -216,7 +216,7 @@ describe('覆寫檔與待複核清單', () => {
 describe('類型鈕反灰:關鍵字在目前伺服器有資料的效果類型', () => {
   const operators = {
     char_401_a: operator({ name: '兩服都有', skills: ['sk_a'] }),
-    char_402_b: operator({ name: '只有國服', skills: ['sk_b'] }),
+    char_402_b: operator({ name: '只有陸服', skills: ['sk_b'] }),
   }
   const skills = [
     basicSkill('sk_a', '甲', { description: '使敌人<$ba.cold>寒冷</>' }),
@@ -231,7 +231,7 @@ describe('類型鈕反灰:關鍵字在目前伺服器有資料的效果類型', 
     expect(availableTypes(index, 'cn', 'ba.stun')).toEqual([])
   })
 
-  test('某類型只有國服有時,台服模式下不回傳', () => {
+  test('某類型只有陸服有時,台服模式下不回傳', () => {
     const { index } = buildIndex({ cn, tw })
     expect(availableTypes(index, 'tw', 'ba.cold')).toEqual(['apply'])
   })
@@ -245,7 +245,7 @@ describe('類型鈕反灰:關鍵字在目前伺服器有資料的效果類型', 
 describe('面板點關鍵字時預設亮的效果類型', () => {
   const operators = {
     char_401_a: operator({ name: '兩服都有', skills: ['sk_a'] }),
-    char_402_b: operator({ name: '只有國服', skills: ['sk_b'] }),
+    char_402_b: operator({ name: '只有陸服', skills: ['sk_b'] }),
   }
   const skills = [
     basicSkill('sk_a', '甲', { description: '对<$ba.cold>寒冷</>的敌人伤害提升，免疫<$ba.stun>晕眩</>，自身免疫<$ba.frozen>冻结</>' }),
@@ -267,7 +267,7 @@ describe('面板點關鍵字時預設亮的效果類型', () => {
     expect(defaultType(index, 'cn', 'ba.frozen')).toBe('counter')
   })
 
-  test('某類型只有國服有時,台服亮下一個有資料的類型', () => {
+  test('某類型只有陸服有時,台服亮下一個有資料的類型', () => {
     expect(defaultType(index, 'tw', 'ba.cold')).toBe('exploit')
     expect(defaultType(index, 'tw', 'ba.stun')).toBe('counter')
   })

@@ -1,4 +1,4 @@
-// 維護者在本機執行:抓國服與台服原始資料 → 建置索引 → 寫進 public/data/index.json。
+// 維護者在本機執行:抓陸服與台服原始資料 → 建置索引 → 寫進 public/data/index.json。
 //   npm run build-index            重新下載原始資料
 //   npm run build-index:offline    沿用 .cache/raw 裡已下載的資料
 import { mkdir, readFile, stat, writeFile } from 'node:fs/promises'

@@ -30,7 +30,7 @@ const conditions = computed<SearchCondition[]>(() => selection.value.flatMap((s)
 const server = ref<Server>(loadServer())
 watch(server, saveServer)
 const SERVERS: { value: Server; label: string }[] = [
-  { value: 'cn', label: '國服' },
+  { value: 'cn', label: '陸服' },
   { value: 'tw', label: '台服' },
 ]
 const rarities = ref<number[]>([])
@@ -73,7 +73,7 @@ function hasData(id: string, type: EffectType): boolean {
 const emptyConditions = computed(() => {
   const list = [
     `搜尋條件:${conditions.value.map((c) => `${EFFECT_TYPE_LABELS[c.type]}-${keywordName(c.keyword)}`).join('、')}`,
-    `伺服器:${server.value === 'tw' ? '台服' : '國服'}`,
+    `伺服器:${server.value === 'tw' ? '台服' : '陸服'}`,
   ]
   if (rarities.value.length) list.push(`星級:${[...rarities.value].sort((a, b) => b - a).map((r) => `${r}★`).join('、')}`)
   if (professions.value.length) list.push(`職業:${professions.value.map((p) => PROFESSION_LABELS[p]).join('、')}`)

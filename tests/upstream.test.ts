@@ -11,7 +11,7 @@ describe('比對上游版本', () => {
     ])
   })
 
-  test('只有國服變', () => {
+  test('只有陸服變', () => {
     const result = compareVersions({ cn: '78.1.3', tw: '51.4.0' }, upstream)
     expect(result.map((r) => [r.server, r.updated])).toEqual([
       ['cn', true],

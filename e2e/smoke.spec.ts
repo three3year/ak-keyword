@@ -2,12 +2,12 @@ import { expect, test } from '@playwright/test'
 
 test('點一個關鍵字後看到結果卡,切換伺服器後結果更新', async ({ page }) => {
   await page.goto('./')
-  // 頁尾顯示國服與台服的資料版本(版號與台灣時間的下載時間);「國服」「台服」「頭像」在新分頁開啟各自的資料來源
+  // 頁尾顯示陸服與台服的資料版本(版號與台灣時間的下載時間);「陸服」「台服」「頭像」在新分頁開啟各自的資料來源
   const footer = page.locator('footer')
   const dataVersion = String.raw`\d+\.\d+\.\d+ · \d{4}-\d{2}-\d{2} \d{2}:\d{2}\(UTC\+8\)`
-  await expect(footer).toContainText(new RegExp(`國服 ${dataVersion} · 台服 ${dataVersion}`))
+  await expect(footer).toContainText(new RegExp(`陸服 ${dataVersion} · 台服 ${dataVersion}`))
   for (const [label, repo] of [
-    ['國服', 'Kengxxiao/ArknightsGameData'],
+    ['陸服', 'Kengxxiao/ArknightsGameData'],
     ['台服', 'arkntools/arknights-data-tw-for-maa'],
     ['頭像', 'yuanyan3060/ArknightsGameResource'],
   ]) {
@@ -81,7 +81,7 @@ test('階段切換:預設第一個命中的階段,未命中的階段停用,重�
   // 重新查詢(切伺服器再切回)後所有卡回到預設的分頁與階段
   await card('忍冬').getByRole('tab', { name: '技能3' }).click()
   await page.getByRole('radio', { name: '台服' }).click()
-  await page.getByRole('radio', { name: '國服' }).click()
+  await page.getByRole('radio', { name: '陸服' }).click()
   await expect(card('忍冬').getByRole('tab', { name: '技能2' })).toHaveAttribute('aria-selected', 'true')
   await expect(stages.getByRole('button', { name: '等級7' })).toHaveAttribute('aria-pressed', 'true')
 })
@@ -147,7 +147,7 @@ test('類型鈕反灰:關鍵字在目前伺服器沒有該類型的敘述時停�
   await expect(types.getByRole('button', { name: '施加' })).toBeEnabled()
   await expect(types.getByRole('button', { name: '利用' })).toBeEnabled()
 
-  // 侵蝕損傷只有國服有反制資料,點下去預設亮反制;切到台服後反灰,已亮著的仍可關掉
+  // 侵蝕損傷只有陸服有反制資料,點下去預設亮反制;切到台服後反灰,已亮著的仍可關掉
   await page.getByRole('button', { name: '侵蝕損傷', exact: true }).first().click()
   const erosion = page.getByRole('group', { name: '侵蝕損傷的效果類型' })
   await expect(erosion.getByRole('button', { name: '反制' })).toHaveAttribute('aria-pressed', 'true')
@@ -206,7 +206,7 @@ test('幹員名稱是連到 PRTS 的新分頁連結,頭像不是連結', async (
   await expect(link).toHaveAttribute('rel', /noopener/)
   await expect(link).toHaveAttribute('rel', /noreferrer/)
   await expect(card.getByRole('link')).toHaveCount(1)
-  // 台服譯名與國服名不同時仍連到國服名的頁面
+  // 台服譯名與陸服名不同時仍連到陸服名的頁面
   await page.getByRole('radio', { name: '台服' }).click()
   for (const href of await page.locator('[data-testid=result-card] .op-name a').evaluateAll((as) => as.map((a) => a.getAttribute('href'))))
     expect(href).toMatch(/^https:\/\/prts\.wiki\/w\/.+/)
@@ -287,20 +287,20 @@ test('面板點關鍵字時預設亮第一個有資料的效果類型,切換伺�
 test('面板隱藏目前伺服器沒有幹員的關鍵字,已選的 chip 保留', async ({ page }) => {
   await page.goto('./')
   const panel = page.getByRole('complementary', { name: '關鍵字面板' })
-  // 缚地只有國服有幹員
+  // 缚地只有陸服有幹員
   const groundbind = panel.getByRole('button', { name: '缚地', exact: true })
   await expect(groundbind).toHaveCount(1)
   await page.getByRole('radio', { name: '台服' }).click()
   await expect(groundbind).toHaveCount(0)
   await expect(panel.getByRole('button', { name: '暈眩', exact: true })).toHaveCount(1)
 
-  // 國服選縛地再切台服:chip 仍在,切回國服面板恢復
-  await page.getByRole('radio', { name: '國服' }).click()
+  // 陸服選縛地再切台服:chip 仍在,切回陸服面板恢復
+  await page.getByRole('radio', { name: '陸服' }).click()
   await groundbind.click()
   await page.getByRole('radio', { name: '台服' }).click()
   await expect(groundbind).toHaveCount(0)
   await expect(page.getByTestId('chip').locator('.chip-name')).toHaveText('缚地')
-  await page.getByRole('radio', { name: '國服' }).click()
+  await page.getByRole('radio', { name: '陸服' }).click()
   await expect(groundbind).toHaveAttribute('aria-pressed', 'true')
 })
 

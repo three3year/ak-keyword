@@ -1,4 +1,4 @@
-// 維護者在本機執行:比對國服、台服上游的資料版本與目前索引(public/data/index.json)。
+// 維護者在本機執行:比對陸服、台服上游的資料版本與目前索引(public/data/index.json)。
 //   npm run check-upstream
 // 只下載兩服含資料版號的 gamedata_const.json。最後一行是「結果:已是最新」或「結果:有新版(…)」。
 import { readFile } from 'node:fs/promises'
@@ -9,7 +9,7 @@ import { DATA_SOURCES, rawBase } from '../src/core/sources'
 import type { SearchIndex, Server } from '../src/core/types'
 
 const INDEX = join(import.meta.dirname, '..', 'public', 'data', 'index.json')
-const LABELS: Record<Server, string> = { cn: '國服', tw: '台服' }
+const LABELS: Record<Server, string> = { cn: '陸服', tw: '台服' }
 
 async function upstreamVersion(server: Server): Promise<string> {
   const url = `${rawBase(DATA_SOURCES[server])}/gamedata_const.json`

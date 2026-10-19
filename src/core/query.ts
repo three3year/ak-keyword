@@ -36,8 +36,8 @@ interface Visible {
 
 /**
  * 依伺服器挑出看得到的階段:
- * - 台服模式:比對與顯示都用台服文字;台服沒有的階段不列出。模組3 只列台服已實裝的模組,文字取國服。
- * - 國服模式:比對用國服文字;台服文字一致時顯示繁中,否則顯示簡中。
+ * - 台服模式:比對與顯示都用台服文字;台服沒有的階段不列出。模組3 只列台服已實裝的模組,文字取陸服。
+ * - 陸服模式:比對用陸服文字;台服文字一致時顯示繁中,否則顯示簡中。
  */
 function visibleStages(entry: IndexEntry, op: IndexOperator, server: Server): Visible[] {
   const out: Visible[] = []
@@ -250,7 +250,7 @@ export function keywordGroups(index: SearchIndex, server: Server): PanelGroup[] 
 }
 
 export interface FooterItem {
-  /** 國服、台服或頭像。 */
+  /** 陸服、台服或頭像。 */
   label: string
   /** 伺服器資料的版號;頭像沒有。 */
   version?: string
@@ -276,7 +276,7 @@ function footerSource(source: DataSource): FooterItem['source'] {
 
 /** 頁尾:各伺服器的資料版本與資料來源,最後是頭像的資料來源。索引沒有台服資料時不列台服。 */
 export function footerItems(index: SearchIndex): FooterItem[] {
-  const items: FooterItem[] = [serverItem('國服', index.versions.cn, DATA_SOURCES.cn)]
+  const items: FooterItem[] = [serverItem('陸服', index.versions.cn, DATA_SOURCES.cn)]
   if (index.versions.tw) items.push(serverItem('台服', index.versions.tw, DATA_SOURCES.tw))
   items.push({ label: '頭像', source: footerSource(DATA_SOURCES.avatar) })
   return items

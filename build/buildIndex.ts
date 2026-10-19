@@ -1,9 +1,9 @@
 // 索引建置:原始遊戲資料 → 索引。純函式,不做任何 I/O。
 //
-// 每段敘述(技能、天賦、特性的某個階段)都由一個「產生器」對國服與台服各解析一次:
-// 國服文字用於國服模式的比對;台服文字用於台服模式的比對與顯示,
-// 並在術語、數值、補充關鍵字都和國服一致時,供國服模式改顯示繁中。
-// 模組3 階段只有國服資料(台服資料庫沒有模組戰鬥資料)。
+// 每段敘述(技能、天賦、特性的某個階段)都由一個「產生器」對陸服與台服各解析一次:
+// 陸服文字用於陸服模式的比對;台服文字用於台服模式的比對與顯示,
+// 並在術語、數值、補充關鍵字都和陸服一致時,供陸服模式改顯示繁中。
+// 模組3 階段只有陸服資料(台服資料庫沒有模組戰鬥資料)。
 import { createHash } from 'node:crypto'
 import type {
   DataVersion,
@@ -50,7 +50,7 @@ export type KeywordGroup = IndexGroup
 export interface SupplementKeyword {
   id: string
   name: string
-  /** 簡中比對字串(國服文字)。 */
+  /** 簡中比對字串(陸服文字)。 */
   cn: string[]
   /** 繁中比對字串(台服文字)。 */
   tw: string[]
@@ -87,7 +87,7 @@ export interface BuildInput {
   overrides?: Overrides
   /** 維護者清單:談不上效果類型、不當關鍵字的術語 id(隊伍名等);敘述中顯示為一般文字。 */
   excludedTerms?: string[]
-  /** 維護者對照:幹員 id → PRTS 頁名。國服名與其他幹員重複(例如阿米婭的職業形態)時必填。 */
+  /** 維護者對照:幹員 id → PRTS 頁名。陸服名與其他幹員重複(例如阿米婭的職業形態)時必填。 */
   prtsPages?: Record<string, string>
 }
 
@@ -164,13 +164,13 @@ class Builder {
     }
   }
 
-  /** 國服名重複的幹員都必須在 PRTS 頁名對照裡,否則會連到別人的頁面。 */
+  /** 陸服名重複的幹員都必須在 PRTS 頁名對照裡,否則會連到別人的頁面。 */
   checkPrtsPages(chars: [string, RawCharacter][]) {
     const byName = new Map<string, string[]>()
     for (const [id, char] of chars) byName.set(char.name, [...(byName.get(char.name) ?? []), id])
     const missing = [...byName].filter(([, ids]) => ids.length > 1 && ids.some((id) => !this.input.prtsPages?.[id]))
     if (missing.length > 0)
-      throw new Error(`國服名重複的幹員要在 PRTS 頁名對照裡指定頁名:${missing.map(([name, ids]) => `${name}(${ids.join('、')})`).join(';')}`)
+      throw new Error(`陸服名重複的幹員要在 PRTS 頁名對照裡指定頁名:${missing.map(([name, ids]) => `${name}(${ids.join('、')})`).join(';')}`)
   }
 
   /** 分支名稱優先用台服。 */
@@ -411,7 +411,7 @@ class Builder {
     return out
   }
 
-  /** 以產生器分別產生國服與台服文字,組成一個階段。國服沒有這段敘述時回傳 undefined。 */
+  /** 以產生器分別產生陸服與台服文字,組成一個階段。陸服沒有這段敘述時回傳 undefined。 */
   stage(head: Pick<IndexStage, 'kind' | 'module'>, where: string, produce: Producer): IndexStage | undefined {
     const cnRuns = produce('cn')
     if (!cnRuns) return undefined
@@ -420,7 +420,7 @@ class Builder {
     if (twRuns) {
       const marked = markSupplements(twRuns, this.matchers.tw)
       if (signature(marked) === signature(stage.cn.runs)) {
-        // 與國服一致:沿用國服的效果類型,國服模式可改顯示繁中
+        // 與陸服一致:沿用陸服的效果類型,陸服模式可改顯示繁中
         stage.tw = { runs: marked, hits: structuredClone(stage.cn.hits) }
         stage.twSame = true
       } else {
@@ -500,7 +500,7 @@ class Builder {
   }
 }
 
-/** 警告訊息裡標出台服的文字,方便和國服的同一段區分。 */
+/** 警告訊息裡標出台服的文字,方便和陸服的同一段區分。 */
 function serverPrefix(server: Server): string {
   return server === 'tw' ? '台服' : ''
 }
@@ -562,7 +562,7 @@ function skillValues(level: RawSkillLevel) {
 
 const NUMBER = /\d+(?:\.\d+)?/g
 
-/** 比較國服與台服文字是否「一致」:術語順序、數值、補充關鍵字都相同。 */
+/** 比較陸服與台服文字是否「一致」:術語順序、數值、補充關鍵字都相同。 */
 function signature(runs: Run[]): string {
   const terms = runs.filter((r) => r.k && !r.k.startsWith('sup.')).map((r) => r.k)
   const sups = [...new Set(runs.filter((r) => r.k?.startsWith('sup.')).map((r) => r.k))].sort()

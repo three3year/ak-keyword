@@ -58,11 +58,11 @@ export interface IndexStage {
   level?: number
   /** 模組3 階段所屬的模組 id。 */
   module?: string
-  /** 國服文字(比對用)。模組3 階段只有國服文字。 */
+  /** 陸服文字(比對用)。模組3 階段只有陸服文字。 */
   cn: IndexText
   /** 台服同一段敘述;台服沒有時省略。 */
   tw?: IndexText
-  /** 台服文字與國服的術語、數值、補充關鍵字一致,國服模式可顯示台服文字。 */
+  /** 台服文字與陸服的術語、數值、補充關鍵字一致,陸服模式可顯示台服文字。 */
   twSame?: boolean
 }
 
@@ -102,7 +102,7 @@ export interface IndexOperator {
   release: number
   inTw: boolean
   avatar?: string
-  /** PRTS 的幹員頁名:國服名;國服名與其他幹員重複時依維護者對照。 */
+  /** PRTS 的幹員頁名:陸服名;陸服名與其他幹員重複時依維護者對照。 */
   prtsPage: string
   modules: IndexModule[]
   summons: IndexSummon[]
@@ -162,7 +162,7 @@ export interface ResultStage {
   hit: boolean
   /** 關鍵字 → 這個階段符合的搜尋條件的效果類型;沒有符合的關鍵字不列。 */
   effects: Record<string, EffectType[]>
-  /** 模組3 階段的模組不在台服模組清單,只有國服資料。 */
+  /** 模組3 階段的模組不在台服模組清單,只有陸服資料。 */
   cnData?: boolean
   /** 模組3 階段的模組全名(標籤只寫模組代碼)。 */
   module?: string

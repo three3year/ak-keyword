@@ -12,7 +12,7 @@ const TW_TERMS: Record<string, [string, string]> = {
 const coldCn = (sec: number) => ({ description: '攻击使敌人<$ba.cold>寒冷</>{t}秒', values: { t: sec } })
 const coldTw = (sec: number) => ({ description: '攻擊使敵人<$ba.cold>寒冷</>{t}秒', values: { t: sec } })
 
-/** 國服三位幹員;台服只有前兩位,且「改版者」的數值已過期。 */
+/** 陸服三位幹員;台服只有前兩位,且「改版者」的數值已過期。 */
 function servers() {
   const cn = server({
     version: '78.2.0',
@@ -53,7 +53,7 @@ describe('台服模式', () => {
     expect(diff.stages.map((s) => plain(s.runs))).toEqual(['攻擊使敵人寒冷3秒', '攻擊使敵人寒冷5秒'])
   })
 
-  test('台服敘述也能命中國服沒有的關鍵字', () => {
+  test('台服敘述也能命中陸服沒有的關鍵字', () => {
     const cn = server({ terms: COMMON_TERMS, operators: { char_610_x: operator({ name: '甲', skills: ['sk'] }) }, skills: [masteredSkill('sk', '技', { description: '攻击' }, { description: '攻击' })] })
     const tw = server({
       terms: TW_TERMS,
@@ -66,8 +66,8 @@ describe('台服模式', () => {
   })
 })
 
-describe('國服模式', () => {
-  test('列出所有國服幹員,幹員名優先用台服名', () => {
+describe('陸服模式', () => {
+  test('列出所有陸服幹員,幹員名優先用台服名', () => {
     const { index } = buildIndex(servers())
     expect(query(index, { conditions: applying('ba.cold'), server: 'cn' }).map((r) => r.name)).toEqual(['冰原台', '改版者台', '新幹员'])
   })
@@ -79,22 +79,22 @@ describe('國服模式', () => {
     expect(highlights(same.stages[0].runs)).toEqual([['寒冷', 'ba.cold']])
   })
 
-  test('數值不一致的階段顯示國服簡中,一致的階段仍顯示繁中', () => {
+  test('數值不一致的階段顯示陸服簡中,一致的階段仍顯示繁中', () => {
     const { index } = buildIndex(servers())
     const diff = query(index, { conditions: applying('ba.cold'), server: 'cn' })[1].entries[0]
     expect(diff.stages.map((s) => plain(s.runs))).toEqual(['攻擊使敵人寒冷3秒', '攻击使敌人寒冷6秒'])
   })
 
-  test('台服沒有的幹員顯示國服簡中', () => {
+  test('台服沒有的幹員顯示陸服簡中', () => {
     const { index } = buildIndex(servers())
     const fresh = query(index, { conditions: applying('ba.cold'), server: 'cn' })[2]
     expect(fresh.entries[0].name).toBe('新技')
     expect(plain(fresh.entries[0].stages[0].runs)).toBe('攻击使敌人寒冷3秒')
   })
 
-  test('台服一致的敘述沿用國服的效果類型,不重複列入待複核', () => {
+  test('台服一致的敘述沿用陸服的效果類型,不重複列入待複核', () => {
     const { pending } = buildIndex(servers())
-    // 國服 3 段不同的文字(3 秒、5 秒、6 秒);台服只有「改版者」專精3 的 5 秒版本與國服不一致
+    // 陸服 3 段不同的文字(3 秒、5 秒、6 秒);台服只有「改版者」專精3 的 5 秒版本與陸服不一致
     expect(pending.map((p) => p.text).sort()).toEqual(['攻击使敌人寒冷3秒', '攻击使敌人寒冷5秒', '攻击使敌人寒冷6秒', '攻擊使敵人寒冷5秒'].sort())
   })
 })
@@ -119,7 +119,7 @@ describe('名稱與補充關鍵字', () => {
 })
 
 describe('模組3 階段的伺服器處理', () => {
-  test('模組3 一律用國服資料,只有台服模組清單沒有的模組標「國服資料」;台服模式只列台服已實裝的模組', () => {
+  test('模組3 一律用陸服資料,只有台服模組清單沒有的模組標「陸服資料」;台服模式只列台服已實裝的模組', () => {
     const cn = server({
       terms: COMMON_TERMS,
       operators: { char_630_m: operator({ name: '模組者', trait: '攻击造成法术伤害' }) },

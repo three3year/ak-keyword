@@ -25,7 +25,7 @@ npm run test:e2e     # Playwright 煙霧測試(桌機與手機寬度;先 npm run
 
 ```bash
 npm run check-upstream         # 比對兩服上游與索引的資料版本,最後一行是「已是最新」或「有新版」
-npm run build-index            # 重新下載國服與台服資料、頭像,產出 public/data/index.json
+npm run build-index            # 重新下載陸服與台服資料、頭像,產出 public/data/index.json
 npm run build-index:offline    # 沿用 .cache/ 已下載的資料
 npm run accept-warnings        # 把已知警告清單改成最近一次建置的全部警告
 ```
@@ -41,7 +41,7 @@ npm run accept-warnings        # 把已知警告清單改成最近一次建置�
 
 確認新警告都是上游資料的問題後,執行 `npm run accept-warnings`,下次建置就只列出新的警告。
 
-資料來源:國服 [Kengxxiao/ArknightsGameData](https://github.com/Kengxxiao/ArknightsGameData)、
+資料來源:陸服 [Kengxxiao/ArknightsGameData](https://github.com/Kengxxiao/ArknightsGameData)、
 台服 [arkntools/arknights-data-tw-for-maa](https://github.com/arkntools/arknights-data-tw-for-maa)、
 頭像 [yuanyan3060/ArknightsGameResource](https://github.com/yuanyan3060/ArknightsGameResource)。
 
@@ -68,10 +68,10 @@ npm run accept-warnings        # 把已知警告清單改成最近一次建置�
 | `supplementary-keywords.json` | 補充關鍵字:名稱、簡中與繁中比對字串、定義(顯示為「非官方」)。新增一筆即可,不用改程式;要排進面板的哪一行,改 `keyword-groups.json`。 |
 | `effect-overrides.json` | 效果類型覆寫檔(由 `build/applyReview.ts` 維護)。 |
 | `excluded-terms.json` | 談不上效果類型、不當關鍵字的術語 id(隊伍名、綁定、部署費用下限等)。不進關鍵字面板,敘述中顯示為一般文字。新增一個 id 即可。 |
-| `prts-pages.json` | 幹員 id → PRTS 頁名。結果卡的幹員名稱預設連到國服名的 PRTS 頁;國服名與其他幹員重複(例如阿米婭的職業形態)時必須在這裡照 PRTS 實際頁名指定,否則建置失敗。 |
+| `prts-pages.json` | 幹員 id → PRTS 頁名。結果卡的幹員名稱預設連到陸服名的 PRTS 頁;陸服名與其他幹員重複(例如阿米婭的職業形態)時必須在這裡照 PRTS 實際頁名指定,否則建置失敗。 |
 | `known-warnings.json` | 已知警告清單:確認是上游資料問題的建置警告全文(可含換行)。建置只把清單裡沒有的列為新警告。由 `npm run accept-warnings` 維護,不手動編輯。 |
 
 ## 已知的近似
 
 - 「實裝新到舊」:遊戲資料沒有實裝時間,以潛能信物的排序編號近似(同星級內依實裝先後遞增)。
-- 台服資料庫沒有模組戰鬥資料:模組3 階段一律顯示國服簡中;只有台服尚未實裝的模組另標「國服資料」。
+- 台服資料庫沒有模組戰鬥資料:模組3 階段一律顯示陸服簡中;只有台服尚未實裝的模組另標「陸服資料」。
