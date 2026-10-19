@@ -4,12 +4,13 @@ import type {
   IndexKeyword,
   IndexOperator,
   IndexStage,
+  IndexSummon,
   IndexText,
   Profession,
   Run,
   SearchIndex,
 } from '../src/core/types'
-import { PROFESSIONS } from '../src/core/types'
+import { PROFESSION_LABELS, PROFESSIONS } from '../src/core/types'
 import { withPotentialBonus } from './potential'
 import type {
   RawCharacter,
@@ -62,9 +63,14 @@ class Builder {
   build(): SearchIndex {
     const { cn } = this.input
     const operators: IndexOperator[] = []
-    for (const [id, char] of Object.entries(cn.characterTable)) {
+    // 阿米婭等有多個職業形態的幹員:每個形態各成一位幹員,名字後面標職業
+    const forms = new Set(Object.values(cn.charPatchTable?.infos ?? {}).flatMap((i) => i.tmplIds))
+    const chars = [...Object.entries(cn.characterTable), ...Object.entries(cn.charPatchTable?.patchChars ?? {})]
+    for (const [id, char] of chars) {
       if (!isOperator(id, char)) continue
-      operators.push(this.operator(id, char))
+      const op = this.operator(id, char)
+      if (forms.has(id)) op.name = `${op.name}(${PROFESSION_LABELS[op.profession]})`
+      operators.push(op)
     }
     return {
       versions: { cn: cn.gamedataConst.dataVersion ?? '' },
@@ -90,15 +96,25 @@ class Builder {
       const runs = this.talentRuns(added, (c) => c.upgradeDescription!, `模組 ${m.equip.uniEquipId} 新增天賦`)
       entries.push({ kind: 'talent', name: added[0].name ?? undefined, stages: [{ kind: 'module', module: m.equip.uniEquipId, cn: this.finish(runs) }] })
     }
-    char.skills.forEach((s, i) => {
-      if (!s.skillId) return
-      const skill = this.input.cn.skillTable[s.skillId]
-      if (!skill) {
-        this.warn(`幹員 ${id}:技能表沒有 ${s.skillId}`)
-        return
+    entries.push(...this.skillEntries(id, char))
+
+    // 召喚物的天賦與技能歸到所屬幹員
+    const summons: IndexSummon[] = []
+    for (const tokenId of summonIds(char)) {
+      const token = this.input.cn.characterTable[tokenId]
+      if (!token) {
+        this.warn(`幹員 ${id}:幹員表沒有召喚物 ${tokenId}`)
+        continue
       }
-      entries.push(this.skillEntry(skill, i + 1))
-    })
+      summons.push({ id: tokenId, name: token.name, inTw: false })
+      const tokenEntries: IndexEntry[] = []
+      ;(token.talents ?? []).forEach((t, i) => {
+        const entry = this.talentEntry(tokenId, t.candidates ?? [], i, [])
+        if (entry) tokenEntries.push(entry)
+      })
+      tokenEntries.push(...this.skillEntries(tokenId, token))
+      for (const e of tokenEntries) entries.push({ ...e, summon: tokenId })
+    }
     return {
       id,
       name: char.name,
@@ -108,9 +124,23 @@ class Builder {
       release: 0,
       inTw: false,
       modules: modules.map((m) => ({ id: m.equip.uniEquipId, name: m.equip.uniEquipName, code: m.equip.typeIcon.toUpperCase(), inTw: false })),
-      summons: [],
+      summons,
       entries: entries.filter((e) => e.stages.some((st) => Object.keys(st.cn.hits).length > 0)),
     }
+  }
+
+  skillEntries(ownerId: string, char: RawCharacter): IndexEntry[] {
+    const entries: IndexEntry[] = []
+    char.skills.forEach((s, i) => {
+      if (!s.skillId) return
+      const skill = this.input.cn.skillTable[s.skillId]
+      if (!skill) {
+        this.warn(`${ownerId}:技能表沒有 ${s.skillId}`)
+        return
+      }
+      entries.push(this.skillEntry(skill, i + 1))
+    })
+    return entries
   }
 
   skillEntry(skill: RawSkill, no: number): IndexEntry {
@@ -239,6 +269,14 @@ const PHASES: Record<string, number> = { PHASE_0: 0, PHASE_1: 1, PHASE_2: 2 }
 
 function unlockOrder(c: RawUnlockCondition): number {
   return (PHASES[c.phase] ?? 0) * 1000 + c.level
+}
+
+/** 幹員會部署或產生的召喚物:顯示用召喚物清單、技能指定的召喚物、天賦帶出的召喚物。 */
+function summonIds(char: RawCharacter): string[] {
+  const ids = new Set<string>(Object.keys(char.displayTokenDict ?? {}))
+  for (const s of char.skills) if (s.overrideTokenKey) ids.add(s.overrideTokenKey)
+  for (const t of char.talents ?? []) for (const c of t.candidates ?? []) if (c.tokenKey) ids.add(c.tokenKey)
+  return [...ids]
 }
 
 function moduleTrait(parts: RawEquipPart[]): RawEquipTraitCandidate | undefined {

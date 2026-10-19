@@ -199,6 +199,8 @@ export interface ServerSpec {
   operators: Record<string, RawCharacter>
   skills?: RawSkill[]
   modules?: ModuleSpec[]
+  /** 阿米婭式的職業形態:預設形態 id → 其他形態(在 char_patch_table 裡)。 */
+  patches?: Record<string, Record<string, RawCharacter>>
 }
 
 export function server(spec: ServerSpec): RawServer {
@@ -217,6 +219,16 @@ export function server(spec: ServerSpec): RawServer {
     gamedataConst: { dataVersion: spec.version ?? '1.0.0', termDescriptionDict },
     itemTable: { items },
     ...(spec.modules ? moduleTables(spec.modules) : {}),
+    ...(spec.patches
+      ? {
+          charPatchTable: {
+            infos: Object.fromEntries(
+              Object.entries(spec.patches).map(([main, forms]) => [main, { tmplIds: [main, ...Object.keys(forms)], default: main }]),
+            ),
+            patchChars: Object.assign({}, ...Object.values(spec.patches)),
+          },
+        }
+      : {}),
   }
 }
 

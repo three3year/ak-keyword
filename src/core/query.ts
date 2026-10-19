@@ -32,6 +32,10 @@ function stageLabel(stage: IndexStage, entry: IndexEntry, op: IndexOperator): st
 }
 
 function entrySource(entry: IndexEntry): string {
+  return (entry.summon ? '召喚物' : '') + baseSource(entry)
+}
+
+function baseSource(entry: IndexEntry): string {
   switch (entry.kind) {
     case 'skill':
       return `技能${entry.no}`
@@ -75,6 +79,7 @@ function resultOperator(op: IndexOperator, opts: QueryOptions): ResultOperator |
     for (const s of stages) for (const k of Object.keys(s.effects)) found.add(k)
     const result: ResultEntry = { source: entrySource(entry), stages }
     if (entry.name) result.name = entry.name
+    if (entry.summon) result.summon = op.summons.find((s) => s.id === entry.summon)?.name ?? entry.summon
     const only = onlyLabel(stages)
     if (only) result.only = only
     entries.push(result)

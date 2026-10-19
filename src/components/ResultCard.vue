@@ -16,6 +16,7 @@ defineProps<{
     <section v-for="(e, i) in op.entries" :key="i" class="entry">
       <div class="entry-head">
         <span class="source">{{ e.source }}</span>
+        <span v-if="e.summon" class="badge summon">{{ e.summon }}</span>
         <span v-if="e.name" class="entry-name">{{ e.name }}</span>
         <span v-if="e.only" class="badge only">{{ e.only }}</span>
       </div>
