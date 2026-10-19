@@ -28,6 +28,7 @@ import type {
   RawUnlockCondition,
 } from './raw'
 import { parseRichText, plainText, toValues } from './richText'
+import { type SupplementMatcher, markSupplements } from './supplements'
 
 /** 維護者清單:關鍵字分組。沒列到的關鍵字歸到「未分組」。 */
 export interface KeywordGroup {
@@ -48,9 +49,22 @@ export interface PendingReview {
   where: string[]
 }
 
+/** 維護者清單:補充關鍵字。關鍵字 id 為 sup.<id>。 */
+export interface SupplementKeyword {
+  id: string
+  name: string
+  /** 簡中比對字串(國服文字)。 */
+  cn: string[]
+  /** 繁中比對字串(台服文字)。 */
+  tw: string[]
+  definition: string
+  group: string
+}
+
 export interface BuildInput {
   cn: RawServer
   groups?: KeywordGroup[]
+  supplements?: SupplementKeyword[]
   overrides?: Overrides
 }
 
@@ -76,8 +90,15 @@ class Builder {
     this.warnings.push(message)
   }
   readonly pending = new Map<string, PendingReview>()
+  readonly matchers: { cn: SupplementMatcher[]; tw: SupplementMatcher[] }
 
-  constructor(readonly input: BuildInput) {}
+  constructor(readonly input: BuildInput) {
+    const supplements = input.supplements ?? []
+    this.matchers = {
+      cn: supplements.map((s) => ({ id: supplementId(s), strings: s.cn })),
+      tw: supplements.map((s) => ({ id: supplementId(s), strings: s.tw })),
+    }
+  }
 
   build(): SearchIndex {
     const { cn } = this.input
@@ -93,7 +114,7 @@ class Builder {
     }
     return {
       versions: { cn: cn.gamedataConst.dataVersion ?? '' },
-      groups: [...(this.input.groups ?? []).map((g) => g.name), UNGROUPED],
+      groups: this.groups(),
       keywords: this.keywords(operators),
       subProfessions: {},
       operators,
@@ -251,7 +272,8 @@ class Builder {
    * 解析完成的 runs → 索引文字。每個關鍵字的效果類型:覆寫檔優先,否則用規則判定;
    * 覆寫檔沒有的配對列入待複核清單。where 標出這段敘述在哪裡,供複核時參考。
    */
-  finish(runs: Run[], where: string): IndexText {
+  finish(parsed: Run[], where: string): IndexText {
+    const runs = markSupplements(parsed, this.matchers.cn)
     const text = plainText(runs)
     const hash = textHash(text)
     const hits: IndexText['hits'] = {}
@@ -268,6 +290,13 @@ class Builder {
     return { runs, hits }
   }
 
+  /** 分組順序:維護者分組清單,再加上補充關鍵字清單裡新出現的分組,最後是「未分組」。 */
+  groups(): string[] {
+    const names = (this.input.groups ?? []).map((g) => g.name)
+    for (const s of this.input.supplements ?? []) if (!names.includes(s.group)) names.push(s.group)
+    return [...names, UNGROUPED]
+  }
+
   keywords(operators: IndexOperator[]): IndexKeyword[] {
     const used = new Set<string>()
     for (const op of operators)
@@ -280,8 +309,10 @@ class Builder {
         groupOf.set(k, g.name)
         order.set(k, order.size)
       }
-    const sorted = [...used].sort((a, b) => (order.get(a) ?? Infinity) - (order.get(b) ?? Infinity) || a.localeCompare(b))
+    const sorted = [...used].filter((id) => !id.startsWith('sup.')).sort((a, b) => (order.get(a) ?? Infinity) - (order.get(b) ?? Infinity) || a.localeCompare(b))
     const keywords: IndexKeyword[] = []
+    for (const s of this.input.supplements ?? [])
+      keywords.push({ id: supplementId(s), name: s.name, kind: 'supplement', group: s.group, definition: [{ t: s.definition }] })
     for (const id of sorted) {
       const term = dict[id]
       if (!term) this.warn(`術語字典沒有 ${id}`)
@@ -293,8 +324,18 @@ class Builder {
         definition: term ? parseRichText(term.description, { values: new Map(), where: `術語 ${id} 定義`, warn: this.warn }) : [],
       })
     }
+    // 依分組順序排列;同一組內術語在前、補充關鍵字在後
+    const groups = this.groups()
+    const kindOrder = (k: IndexKeyword) => (k.kind === 'term' ? 0 : 1)
     return keywords
+      .map((k, i) => ({ k, i }))
+      .sort((a, b) => groups.indexOf(a.k.group) - groups.indexOf(b.k.group) || kindOrder(a.k) - kindOrder(b.k) || a.i - b.i)
+      .map(({ k }) => k)
   }
+}
+
+function supplementId(s: SupplementKeyword): string {
+  return `sup.${s.id}`
 }
 
 function isOperator(id: string, char: RawCharacter): boolean {
