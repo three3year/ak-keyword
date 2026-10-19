@@ -139,6 +139,8 @@ export interface ResultStage {
   effects: Record<string, EffectType>
   /** 文字取自國服資料(模組3 階段)。 */
   cnData?: boolean
+  /** 模組3 階段的模組名。 */
+  module?: string
 }
 
 export interface ResultEntry {

@@ -21,7 +21,10 @@ defineProps<{
       </div>
       <div class="stages" :class="{ single: e.stages.length === 1 }">
         <div v-for="(s, j) in e.stages" :key="j" class="stage" :class="{ miss: !s.hit }">
-          <div v-if="s.label" class="stage-label">{{ s.label }}</div>
+          <div v-if="s.label || s.cnData" class="stage-label">
+            <span>{{ s.label }}</span>
+            <span v-if="s.cnData" class="badge" title="台服沒有模組數值資料,文字與數值取自國服">國服資料</span>
+          </div>
           <RichText class="stage-text" :runs="s.runs" :selected="selected" />
         </div>
       </div>

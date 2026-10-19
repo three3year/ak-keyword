@@ -1,7 +1,10 @@
 // 手寫的小型原始資料片段。形狀照真實遊戲資料,只放案例需要的欄位。
 import type {
+  RawBattleEquip,
   RawBlackboard,
   RawCharacter,
+  RawEquip,
+  RawEquipPart,
   RawServer,
   RawSkill,
   RawSkillLevel,
@@ -127,11 +130,75 @@ export function operator(spec: OperatorSpec): RawCharacter {
   }
 }
 
+export interface ModuleSpec {
+  id: string
+  charId: string
+  name: string
+  /** 例如 SUM-X */
+  code: string
+  /** 模組3 對特性的改寫:override 取代整段特性,add 追加在特性之後。 */
+  trait?: { override?: string; add?: string; values?: Values }
+  /** 模組3 對天賦的改寫:index 是天賦位置(0 起算),-1 表示模組新增的天賦。 */
+  talents?: { index: number; name: string; description: string; potentials?: { rank: number; description: string }[] }[]
+}
+
+function moduleTables(modules: ModuleSpec[]) {
+  const equipDict: Record<string, RawEquip> = {}
+  const battle: Record<string, RawBattleEquip> = {}
+  for (const m of modules) {
+    equipDict[m.id] = { uniEquipId: m.id, uniEquipName: m.name, typeIcon: m.code.toLowerCase(), charId: m.charId, type: 'ADVANCED' }
+    const parts = (level: number): RawEquipPart[] => {
+      // 模組1、2 的文字刻意不同,確認只取模組3
+      const lv = (t: string) => (level === 3 ? t : `${t}(模組${level})`)
+      const out: RawEquipPart[] = []
+      if (m.trait)
+        out.push({
+          target: 'TRAIT',
+          isToken: false,
+          addOrOverrideTalentDataBundle: { candidates: null },
+          overrideTraitDataBundle: {
+            candidates: [
+              {
+                unlockCondition: { phase: 'PHASE_2', level: 1 },
+                requiredPotentialRank: 0,
+                overrideDescripton: m.trait.override ? lv(m.trait.override) : null,
+                additionalDescription: m.trait.add ? lv(m.trait.add) : null,
+                blackboard: blackboard(m.trait.values, 'array'),
+              },
+            ],
+          },
+        })
+      for (const t of m.talents ?? [])
+        out.push({
+          target: 'TALENT_DATA_ONLY',
+          isToken: false,
+          overrideTraitDataBundle: { candidates: null },
+          addOrOverrideTalentDataBundle: {
+            candidates: [{ rank: 0, description: t.description }, ...(t.potentials ?? [])].map((p) => ({
+              talentIndex: t.index,
+              unlockCondition: { phase: 'PHASE_2', level: 1 },
+              requiredPotentialRank: p.rank,
+              name: t.name,
+              description: null,
+              upgradeDescription: lv(p.description),
+              blackboard: [],
+              isHideTalent: false,
+            })),
+          },
+        })
+      return out
+    }
+    battle[m.id] = { phases: [1, 2, 3].map((equipLevel) => ({ equipLevel, parts: parts(equipLevel) })) }
+  }
+  return { uniequipTable: { equipDict }, battleEquipTable: battle }
+}
+
 export interface ServerSpec {
   version?: string
   terms?: Record<string, [name: string, description: string]>
   operators: Record<string, RawCharacter>
   skills?: RawSkill[]
+  modules?: ModuleSpec[]
 }
 
 export function server(spec: ServerSpec): RawServer {
@@ -149,6 +216,7 @@ export function server(spec: ServerSpec): RawServer {
     skillTable: Object.fromEntries((spec.skills ?? []).map((s) => [s.skillId, s])),
     gamedataConst: { dataVersion: spec.version ?? '1.0.0', termDescriptionDict },
     itemTable: { items },
+    ...(spec.modules ? moduleTables(spec.modules) : {}),
   }
 }
 

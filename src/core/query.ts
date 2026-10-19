@@ -11,7 +11,11 @@ import type {
   SearchIndex,
 } from './types'
 
-function stageLabel(stage: IndexStage, entry: IndexEntry): string {
+function moduleName(stage: IndexStage, op: IndexOperator): string {
+  return op.modules.find((m) => m.id === stage.module)?.name ?? stage.module ?? ''
+}
+
+function stageLabel(stage: IndexStage, entry: IndexEntry, op: IndexOperator): string {
   switch (stage.kind) {
     case 'lv7':
       return '等級7'
@@ -23,7 +27,7 @@ function stageLabel(stage: IndexStage, entry: IndexEntry): string {
       // 沒有模組階段可對照時,不需要標「無模組」
       return entry.stages.some((s) => s.kind === 'module') ? '無模組' : ''
     case 'module':
-      return '模組3'
+      return `模組3 · ${moduleName(stage, op)}`
   }
 }
 
@@ -32,25 +36,33 @@ function entrySource(entry: IndexEntry): string {
     case 'skill':
       return `技能${entry.no}`
     case 'talent':
-      return `天賦${entry.no ?? ''}`
+      return entry.no ? `天賦${entry.no}` : '模組天賦'
     case 'trait':
       return '特性'
   }
 }
 
-function resultStage(stage: IndexStage, entry: IndexEntry, opts: QueryOptions): ResultStage {
+function resultStage(stage: IndexStage, entry: IndexEntry, op: IndexOperator, opts: QueryOptions): ResultStage {
   const text = stage.cn
   const effects: ResultStage['effects'] = {}
   for (const k of opts.keywords) {
     const type = text.hits[k]
     if (type && (!opts.effectTypes || opts.effectTypes.includes(type))) effects[k] = type
   }
-  return { label: stageLabel(stage, entry), runs: text.runs, hit: Object.keys(effects).length > 0, effects }
+  const result: ResultStage = { label: stageLabel(stage, entry, op), runs: text.runs, hit: Object.keys(effects).length > 0, effects }
+  if (stage.kind === 'module') {
+    result.module = moduleName(stage, op)
+    result.cnData = true
+  }
+  return result
 }
 
 function onlyLabel(stages: ResultStage[]): string | undefined {
   const hit = stages.filter((s) => s.hit)
-  if (hit.length === 0 || hit.length === stages.length) return undefined
+  if (hit.length === 0) return undefined
+  // 只有模組3 才有(包括模組新增的天賦):標出要裝哪個模組
+  if (hit.every((s) => s.module)) return `僅模組3(${hit.map((s) => s.module).join('、')})`
+  if (hit.length === stages.length || stages.some((s) => s.module)) return undefined
   return `僅${hit.map((s) => s.label).join('、')}`
 }
 
@@ -58,7 +70,7 @@ function resultOperator(op: IndexOperator, opts: QueryOptions): ResultOperator |
   const entries: ResultEntry[] = []
   const found = new Set<string>()
   for (const entry of op.entries) {
-    const stages = entry.stages.map((st) => resultStage(st, entry, opts))
+    const stages = entry.stages.map((st) => resultStage(st, entry, op, opts))
     if (!stages.some((s) => s.hit)) continue
     for (const s of stages) for (const k of Object.keys(s.effects)) found.add(k)
     const result: ResultEntry = { source: entrySource(entry), stages }

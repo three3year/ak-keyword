@@ -11,7 +11,18 @@ import type {
 } from '../src/core/types'
 import { PROFESSIONS } from '../src/core/types'
 import { withPotentialBonus } from './potential'
-import type { RawCharacter, RawServer, RawSkill, RawSkillLevel, RawTalentCandidate, RawUnlockCondition } from './raw'
+import type {
+  RawCharacter,
+  RawEquip,
+  RawEquipPart,
+  RawEquipTalentCandidate,
+  RawEquipTraitCandidate,
+  RawServer,
+  RawSkill,
+  RawSkillLevel,
+  RawTalentCandidate,
+  RawUnlockCondition,
+} from './raw'
 import { parseRichText, toValues } from './richText'
 
 /** 維護者清單:關鍵字分組。沒列到的關鍵字歸到「未分組」。 */
@@ -31,6 +42,14 @@ export interface BuildOutput {
 }
 
 const UNGROUPED = '未分組'
+
+/** 一個模組在第3級對特性與天賦的改寫。 */
+interface ModuleLevel3 {
+  equip: RawEquip
+  trait?: RawEquipTraitCandidate
+  /** 天賦位置 → 改寫後的候選版本(各潛能);-1 為模組新增的天賦。 */
+  talents: Map<number, RawEquipTalentCandidate[]>
+}
 
 class Builder {
   readonly warnings: string[] = []
@@ -57,13 +76,20 @@ class Builder {
   }
 
   operator(id: string, char: RawCharacter): IndexOperator {
+    const modules = this.modules(id)
     const entries: IndexEntry[] = []
-    const trait = this.traitEntry(id, char)
+    const trait = this.traitEntry(id, char, modules)
     if (trait) entries.push(trait)
     ;(char.talents ?? []).forEach((t, i) => {
-      const entry = this.talentEntry(id, t.candidates ?? [], i + 1)
+      const entry = this.talentEntry(id, t.candidates ?? [], i, modules)
       if (entry) entries.push(entry)
     })
+    for (const m of modules) {
+      const added = m.talents.get(-1)
+      if (!added) continue
+      const runs = this.talentRuns(added, (c) => c.upgradeDescription!, `模組 ${m.equip.uniEquipId} 新增天賦`)
+      entries.push({ kind: 'talent', name: added[0].name ?? undefined, stages: [{ kind: 'module', module: m.equip.uniEquipId, cn: this.finish(runs) }] })
+    }
     char.skills.forEach((s, i) => {
       if (!s.skillId) return
       const skill = this.input.cn.skillTable[s.skillId]
@@ -81,7 +107,7 @@ class Builder {
       subProfession: char.subProfessionId,
       release: 0,
       inTw: false,
-      modules: [],
+      modules: modules.map((m) => ({ id: m.equip.uniEquipId, name: m.equip.uniEquipName, code: m.equip.typeIcon.toUpperCase(), inTw: false })),
       summons: [],
       entries: entries.filter((e) => e.stages.some((st) => Object.keys(st.cn.hits).length > 0)),
     }
@@ -96,20 +122,53 @@ class Builder {
     return { kind: 'skill', no, name: skill.levels[0]?.name, stages }
   }
 
-  traitEntry(id: string, char: RawCharacter): IndexEntry | undefined {
+  traitEntry(id: string, char: RawCharacter, modules: ModuleLevel3[]): IndexEntry | undefined {
     const candidates = char.trait?.candidates ?? []
     const top = [...candidates].filter((c) => c.requiredPotentialRank === 0).sort((a, b) => unlockOrder(b.unlockCondition) - unlockOrder(a.unlockCondition))[0]
     const raw = top?.overrideDescripton ?? char.description
     if (!raw) return undefined
-    return { kind: 'trait', stages: [{ kind: 'base', cn: this.text(raw, toValues(top?.blackboard), `幹員 ${id} 特性`) }] }
+    const baseRuns = this.parse(raw, toValues(top?.blackboard), `幹員 ${id} 特性`)
+    const stages: IndexStage[] = [{ kind: 'base', cn: this.finish(baseRuns) }]
+    for (const m of modules) {
+      if (!m.trait) continue
+      const where = `模組 ${m.equip.uniEquipId} 特性`
+      const values = toValues(m.trait.blackboard)
+      const runs = m.trait.overrideDescripton ? this.parse(m.trait.overrideDescripton, values, where) : [...baseRuns]
+      if (m.trait.additionalDescription) runs.push({ t: '\n' }, ...this.parse(m.trait.additionalDescription, values, where))
+      stages.push({ kind: 'module', module: m.equip.uniEquipId, cn: this.finish(runs) })
+    }
+    return { kind: 'trait', stages }
   }
 
-  talentEntry(id: string, candidates: RawTalentCandidate[], no: number): IndexEntry | undefined {
+  talentEntry(id: string, candidates: RawTalentCandidate[], index: number, modules: ModuleLevel3[]): IndexEntry | undefined {
+    const no = index + 1
     const visible = candidates.filter((c) => !c.isHideTalent && c.description)
-    if (visible.length === 0) return undefined
-    const where = `幹員 ${id} 天賦${no}`
-    const runs = this.talentRuns(visible, (c) => c.description!, where)
-    return { kind: 'talent', no, name: visible[0].name ?? undefined, stages: [{ kind: 'base', cn: { runs, hits: hitsOf(runs) } }] }
+    const stages: IndexStage[] = []
+    if (visible.length > 0) stages.push({ kind: 'base', cn: this.finish(this.talentRuns(visible, (c) => c.description!, `幹員 ${id} 天賦${no}`)) })
+    for (const m of modules) {
+      const rewrite = m.talents.get(index)
+      if (!rewrite) continue
+      const runs = this.talentRuns(rewrite, (c) => c.upgradeDescription!, `模組 ${m.equip.uniEquipId} 天賦${no}`)
+      stages.push({ kind: 'module', module: m.equip.uniEquipId, cn: this.finish(runs) })
+    }
+    if (stages.length === 0) return undefined
+    const name = visible[0]?.name ?? modules.map((m) => m.talents.get(index)?.[0].name).find(Boolean)
+    return { kind: 'talent', no, name: name ?? undefined, stages }
+  }
+
+  /** 幹員的進階模組,各取第3級對特性與天賦的改寫(只看幹員本身,不看召喚物)。 */
+  modules(charId: string): ModuleLevel3[] {
+    const { uniequipTable, battleEquipTable } = this.input.cn
+    if (!uniequipTable || !battleEquipTable) return []
+    const out: ModuleLevel3[] = []
+    for (const equip of Object.values(uniequipTable.equipDict)) {
+      if (equip.charId !== charId || equip.type !== 'ADVANCED') continue
+      const level3 = battleEquipTable[equip.uniEquipId]?.phases.find((p) => p.equipLevel === 3)
+      if (!level3) continue
+      const parts = level3.parts.filter((p) => !p.isToken)
+      out.push({ equip, trait: moduleTrait(parts), talents: moduleTalents(parts) })
+    }
+    return out
   }
 
   /** 取最高解鎖條件(精英二)的潛能1 版本,並以高潛能版本補上「(+B)」。 */
@@ -130,8 +189,16 @@ class Builder {
     return merged
   }
 
+  parse(raw: string, values: Map<string, number | string>, where: string): Run[] {
+    return parseRichText(raw, { values, where, warn: this.warn })
+  }
+
   text(raw: string, values: Map<string, number | string>, where: string): IndexText {
-    const runs = parseRichText(raw, { values, where, warn: this.warn })
+    return this.finish(this.parse(raw, values, where))
+  }
+
+  /** 解析完成的 runs → 索引文字(含關鍵字與效果類型)。 */
+  finish(runs: Run[]): IndexText {
     return { runs, hits: hitsOf(runs) }
   }
 
@@ -172,6 +239,24 @@ const PHASES: Record<string, number> = { PHASE_0: 0, PHASE_1: 1, PHASE_2: 2 }
 
 function unlockOrder(c: RawUnlockCondition): number {
   return (PHASES[c.phase] ?? 0) * 1000 + c.level
+}
+
+function moduleTrait(parts: RawEquipPart[]): RawEquipTraitCandidate | undefined {
+  for (const p of parts) {
+    const c = (p.overrideTraitDataBundle?.candidates ?? []).find((c) => c.overrideDescripton || c.additionalDescription)
+    if (c) return c
+  }
+  return undefined
+}
+
+function moduleTalents(parts: RawEquipPart[]): Map<number, RawEquipTalentCandidate[]> {
+  const talents = new Map<number, RawEquipTalentCandidate[]>()
+  for (const p of parts) {
+    const candidates = (p.addOrOverrideTalentDataBundle?.candidates ?? []).filter((c) => c.upgradeDescription && !c.isHideTalent)
+    if (candidates.length === 0 || talents.has(candidates[0].talentIndex)) continue
+    talents.set(candidates[0].talentIndex, candidates)
+  }
+  return talents
 }
 
 function skillStages(skill: RawSkill): { kind: IndexStage['kind']; level: RawSkillLevel; levelNo: number }[] {
