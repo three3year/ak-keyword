@@ -7,6 +7,7 @@ import { dirname, join } from 'node:path'
 import { prepareAvatars } from './avatars'
 import { buildIndex, type KeywordGroup, type Overrides, type SupplementKeyword } from './buildIndex'
 import type { RawServer } from './raw'
+import { diffWarnings, KNOWN_WARNINGS, NEW_WARNINGS, RESOLVED_WARNINGS } from './warnings'
 import { DATA_SOURCES, rawBase } from '../src/core/sources'
 
 const ROOT = join(import.meta.dirname, '..')
@@ -83,6 +84,7 @@ async function main() {
   const supplements = await readJson<SupplementKeyword[]>(join(ROOT, 'data', 'supplementary-keywords.json'))
   const excludedTerms = await readJson<string[]>(join(ROOT, 'data', 'excluded-terms.json'))
   const prtsPages = await readJson<Record<string, string>>(join(ROOT, 'data', 'prts-pages.json'))
+  const knownWarnings = await readJson<string[]>(KNOWN_WARNINGS)
   const { index, warnings, pending } = buildIndex({ cn, tw, groups, supplements, overrides, excludedTerms, prtsPages })
 
   // 頭像:職業形態(阿米婭)沒有專屬頭像時改用預設形態
@@ -106,9 +108,16 @@ async function main() {
   await writeFile(join(REVIEW_DIR, 'build-warnings.txt'), warnings.join('\n') + '\n')
   await writeFile(join(REVIEW_DIR, 'pending-review.json'), JSON.stringify(pending, null, 1))
   console.log(`待複核:${pending.length} 個配對(review/pending-review.json)`)
-  if (warnings.length > 0) {
-    console.warn(`⚠ ${warnings.length} 則警告(全文見 review/build-warnings.txt),前 10 則:`)
-    for (const w of warnings.slice(0, 10)) console.warn('  ' + w)
+
+  const { newWarnings, resolvedWarnings } = diffWarnings(warnings, knownWarnings)
+  await writeFile(NEW_WARNINGS, JSON.stringify(newWarnings, null, 2) + '\n')
+  await writeFile(RESOLVED_WARNINGS, JSON.stringify(resolvedWarnings, null, 2) + '\n')
+  console.log(`警告:共 ${warnings.length} 則(review/build-warnings.txt)`)
+  console.log(`  新警告:${newWarnings.length} 則(review/new-warnings.json)`)
+  console.log(`  已消失的已知警告:${resolvedWarnings.length} 則(review/resolved-warnings.json)`)
+  if (newWarnings.length > 0) {
+    console.warn('⚠ 新警告前 10 則:')
+    for (const w of newWarnings.slice(0, 10)) console.warn('  ' + w)
   }
 }
 

@@ -17,15 +17,29 @@ npm run test:e2e     # Playwright 煙霧測試(桌機與手機寬度;先 npm run
 
 ## 更新遊戲資料
 
+在 Claude Code session 裡輸入 `/update-data`(或說「強制」照樣完整跑):比對上游版本、建置索引、效果類型複核、
+新術語分組、新警告、單元測試與 e2e,最後整次更新放在一個 commit(不 push)。步驟見
+[.claude/skills/update-data/SKILL.md](.claude/skills/update-data/SKILL.md)。
+
+不在 session 時手動更新:
+
 ```bash
+npm run check-upstream         # 比對兩服上游與索引的資料版本,最後一行是「已是最新」或「有新版」
 npm run build-index            # 重新下載國服與台服資料、頭像,產出 public/data/index.json
 npm run build-index:offline    # 沿用 .cache/ 已下載的資料
+npm run accept-warnings        # 把已知警告清單改成最近一次建置的全部警告
 ```
+
+接著依下一節複核效果類型、把「未分組」的術語排進 `data/keyword-groups.json`,再跑 `npm test`、`npm run build`、`npm run test:e2e`。
 
 建置會輸出:
 
-- `review/build-warnings.txt`:無法辨識的標記、找不到數值的佔位符、潛能加成對不齊、找不到的頭像等。
+- `review/build-warnings.txt`:全部警告:無法辨識的標記、找不到數值的佔位符、潛能加成對不齊、找不到的頭像等。
+- `review/new-warnings.json`:已知警告清單(`data/known-warnings.json`)裡沒有的新警告。
+- `review/resolved-warnings.json`:已知警告清單裡有、這次沒出現的警告(上游已修好)。
 - `review/pending-review.json`:效果類型還沒複核的「敘述 × 關鍵字」配對(覆寫檔裡沒有的)。
+
+確認新警告都是上游資料的問題後,執行 `npm run accept-warnings`,下次建置就只列出新的警告。
 
 資料來源:國服 [Kengxxiao/ArknightsGameData](https://github.com/Kengxxiao/ArknightsGameData)、
 台服 [arkntools/arknights-data-tw-for-maa](https://github.com/arkntools/arknights-data-tw-for-maa)、
@@ -55,6 +69,7 @@ npm run build-index:offline    # 沿用 .cache/ 已下載的資料
 | `effect-overrides.json` | 效果類型覆寫檔(由 `build/applyReview.ts` 維護)。 |
 | `excluded-terms.json` | 談不上效果類型、不當關鍵字的術語 id(隊伍名、綁定、部署費用下限等)。不進關鍵字面板,敘述中顯示為一般文字。新增一個 id 即可。 |
 | `prts-pages.json` | 幹員 id → PRTS 頁名。結果卡的幹員名稱預設連到國服名的 PRTS 頁;國服名與其他幹員重複(例如阿米婭的職業形態)時必須在這裡照 PRTS 實際頁名指定,否則建置失敗。 |
+| `known-warnings.json` | 已知警告清單:確認是上游資料問題的建置警告全文(可含換行)。建置只把清單裡沒有的列為新警告。由 `npm run accept-warnings` 維護,不手動編輯。 |
 
 ## 已知的近似
 

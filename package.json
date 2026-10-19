@@ -11,7 +11,9 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "build-index": "tsx build/cli.ts",
-    "build-index:offline": "tsx build/cli.ts --offline"
+    "build-index:offline": "tsx build/cli.ts --offline",
+    "check-upstream": "tsx build/checkUpstream.ts",
+    "accept-warnings": "tsx build/acceptWarnings.ts"
   },
   "dependencies": {
     "vue": "^3.5.44"

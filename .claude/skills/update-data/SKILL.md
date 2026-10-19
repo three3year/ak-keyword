@@ -1,0 +1,115 @@
+---
+name: update-data
+description: 更新國服、台服遊戲資料:比對上游版本、建置索引、效果類型複核、新術語分組、新警告、測試,最後一個 commit。
+disable-model-invocation: true
+---
+
+# 更新遊戲資料
+
+照順序做完每一步;每一步的「完成」寫在步驟最後。標著 **停下** 的地方,把內容列給維護者,等維護者回覆再往下。名詞見 `CONTEXT.md`。
+
+每一次建置(`npm run build-index`、`npm run build-index:offline`)都看結束碼:非 0 就**停下**,原樣回報錯誤訊息。`data/` 裡的維護者清單(例如 `prts-pages.json`)缺什麼,一律由維護者決定怎麼補。PowerShell 會把建置的警告輸出顯示成紅色錯誤區塊,結束碼 0 就是成功。
+
+## 1. 比對上游版本
+
+執行 `npm run check-upstream`,記下兩服的索引版號與上游版號(摘要與 commit 訊息要用)。
+
+- 最後一行是「結果:已是最新」,而且維護者沒有說「強制」:回報「已是最新」與兩服版號,結束。
+- 有新版,或維護者說「強制」:往下。
+- 結束碼非 0:**停下**,原樣回報錯誤訊息。
+
+## 2. 下載並建置索引
+
+執行 `npm run build-index`。
+
+完成:結束碼 0,`public/data/index.json` 已更新。
+
+## 3. 效果類型複核
+
+讀 `review/pending-review.json`。0 筆就跳到第 4 步。
+
+每一筆依 `CONTEXT.md` 的「效果類型」定義判定 `types`(`apply`/`exploit`/`counter`,可多種;談不上任何一種就是空清單),理由見 `docs/adr/0002-three-effect-types-no-fallback.md`。在 session 裡判定,不呼叫外部 API。
+
+**停下**:每一筆都列給維護者,一筆一列:幹員名(從 `public/data/index.json` 的 `operators` 依 `where` 裡的幹員 id 查)、敘述來源(`where`)、關鍵字名、規則判定(`ruleTypes`)、敘述原文(`text`)、你的判定與一句理由。維護者確認或改掉幾筆後,才把確認後的判定寫成 `review/decisions/<今天日期>.json`:
+
+```json
+[{ "key": "<pending 的 key>", "types": ["apply"] }]
+```
+
+然後:
+
+```bash
+npx tsx build/applyReview.ts review/decisions/<今天日期>.json
+npm run build-index:offline
+```
+
+完成:`review/pending-review.json` 是空陣列。不是空的就對剩下的配對重複這一步。
+
+## 4. 新術語分組
+
+從 `public/data/index.json` 的 `groups` 找名稱為「未分組」的分組;沒有就跳到第 5 步。對其中每個關鍵字 id,讀 `keywords` 裡它的官方定義,決定位置:
+
+- 是戰鬥效果:放進 `data/keyword-groups.json` 最貼近的分組與行(控場、減益、增益、元素傷害、機制、傷害),排在性質最接近的關鍵字旁邊。
+- 談不上效果類型(隊伍名、綁定這類)的術語:加進 `data/excluded-terms.json`。補充關鍵字(`sup.` 開頭)一律放進分組。
+
+寫進檔案,執行 `npm run build-index:offline`。
+
+**停下**:列給維護者每個關鍵字的名稱、定義、放的位置(分組、第幾行、排在誰旁邊,或排除)與理由。維護者改位置就照改,再離線建置一次。
+
+完成:索引的 `groups` 沒有「未分組」。
+
+## 5. 新警告
+
+讀 `review/new-warnings.json` 與 `review/resolved-warnings.json`。
+
+- 新警告:每一則說明影響,例如「幹員 X 技能2 專精3 的敘述標記沒有關閉:寒冷之後的文字沒有高亮」、「天賦的潛能加成對不齊:只顯示潛能1 敘述」,並判斷是上游資料的問題還是本專案建置的問題。**停下**:列給維護者,問是否都是上游問題。維護者認為要修的,結束流程,交給維護者。
+- 已消失的已知警告:上游已修好,列進摘要,不用問。
+
+有新警告(維護者確認後)或有已消失的警告時:
+
+```bash
+npm run accept-warnings
+npm run build-index:offline
+```
+
+完成:建置摘要的新警告與已消失的已知警告都是 0 則。
+
+## 6. 測試
+
+```bash
+npm test
+npm run build
+npm run test:e2e
+```
+
+e2e 因為沒有瀏覽器而失敗(訊息提到 `npx playwright install`)時,執行 `npx playwright install chromium` 後重跑 e2e。
+
+任何一項失敗:**停下**,原樣回報失敗的測試與錯誤訊息,不 commit。
+
+完成:三項都通過。
+
+## 7. 摘要
+
+給維護者一份摘要:
+
+- 兩服的舊版號 → 新版號(第 1 步記下的)。
+- 新增幹員:`public/data/index.json` 有、`git show HEAD:public/data/index.json` 沒有的幹員,列出名稱。
+- 新術語:名稱、位置、理由(第 4 步)。
+- 複核筆數與維護者改掉的筆數(第 3 步)。
+- 新警告與已消失的警告(第 5 步)。
+- 測試結果(第 6 步)。
+
+## 8. Commit
+
+把這次的改動放在一個 commit:
+
+```bash
+git add public/data public/avatars data
+```
+
+commit 訊息第一行:
+
+- 任一服有新版:`data: 更新至國服 <國服上游版號>、台服 <台服上游版號>`
+- 強制跑且兩服版號都沒變:`data: 重新建置(上游版本未更新:國服 <版號>、台服 <版號>)`
+
+內文放第 7 步的摘要。只 commit;push 由維護者自己做。
