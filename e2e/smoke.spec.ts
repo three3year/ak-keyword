@@ -177,6 +177,21 @@ test('命中敘述裡的關鍵字只供查定義:游標為問號,點擊不改搜
   }
 })
 
+test('點 A 的定義後再點 B:關掉 A、改顯示 B', async ({ page }) => {
+  await page.goto('./')
+  await page.getByRole('button', { name: '暈眩', exact: true }).first().click()
+  const tip = page.getByTestId('tip')
+
+  await page.getByTestId('chip').locator('.chip-name').click()
+  await expect(tip).toContainText('暈眩')
+
+  // 敘述裡未選的詞(不是暈眩)
+  await page.locator('[data-testid=entry] .stage-text .term').first().click()
+  await expect(tip).toHaveCount(1)
+  await expect(tip).toBeVisible()
+  await expect(tip.locator('.tip-title')).not.toContainText('暈眩')
+})
+
 test('幹員名稱是連到 PRTS 的新分頁連結,頭像不是連結', async ({ page }) => {
   await page.goto('./')
   await page.getByRole('button', { name: '暈眩', exact: true }).first().click()

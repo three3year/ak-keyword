@@ -140,6 +140,9 @@ function onClick(e: MouseEvent) {
   } else if (el.dataset.k && el.closest('.rich') && isTouch()) {
     // 命中敘述裡的詞只供查定義、不切換選取:觸控裝置沒有懸停,點了顯示定義;桌機點擊不做事
     showTip(el, { keyword: el.dataset.k }, { pinned: true })
+  } else if (el.dataset.k && tip.pinned) {
+    // 桌機點不釘選的詞:關掉釘住的提示框,改顯示這個詞的懸停提示
+    showTip(el, { keyword: el.dataset.k })
   }
 }
 
