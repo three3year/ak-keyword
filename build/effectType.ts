@@ -6,7 +6,7 @@ import { type EffectType, type Run, sortTypes } from '../src/core/types'
 const CLAUSE_END = /[，。；,;\n]/
 
 /** 關鍵字前方同一子句內出現這些詞:不受該效果影響,或無視敵人的該效果。 */
-const COUNTER_BEFORE = /(免疫|不会被|不會被|不受|无视|無視|抵抗|不会陷入|不會陷入|解除|驱散|驅散|移除|净化|淨化)/
+const COUNTER_BEFORE = /(免疫|不会被|不會被|不受|无视|無視|抵抗|不会陷入|不會陷入|解除|驱散|驅散|清除|移除|净化|淨化)/
 /** 關鍵字後方緊接這些詞:減輕該效果,或使敵人的該效果失效。 */
 const COUNTER_AFTER = /^((的)?(持续时间|持續時間)(减少|減少|减半|減半|缩短|縮短|降低)|(效果)?失效)/
 
@@ -17,6 +17,8 @@ const EXPLOIT_BEFORE = /(对|對|攻击|攻擊|处于|處於|针对|針對|命�
  * 關鍵字直接接「敵人」(例如「晕眩敌人」)是動詞用法,屬施加,不算。
  */
 const EXPLOIT_AFTER = /^(状态|狀態|下|中|的|之)+(敌人|敵人|目标|目標|单位|單位|敌方|敵方)/
+/** 關鍵字後方緊接「期間」:該效果持續期間獲得加成(「拖拽期間敵人受到傷害」「該次束縛期間」)。 */
+const EXPLOIT_DURING = /^(期间|期間)/
 /** 關鍵字後方緊接「後」:該效果發生後獲得加成。效果可能就是前方施加的(「使敌人陷入沉睡后」),所以不排除施加。 */
 const EXPLOIT_AFTER_OCCUR = /^(后|後)/
 
@@ -39,7 +41,7 @@ function judge(before: string, after: string): EffectType[] {
   const apply = APPLY_BEFORE.test(before) || APPLY_AFTER.test(after)
   if (COUNTER_BEFORE.test(before) || COUNTER_AFTER.test(after)) return ['counter']
   if (EXPLOIT_AFTER_OCCUR.test(after)) return apply ? ['apply', 'exploit'] : ['exploit']
-  if (EXPLOIT_BEFORE.test(before) || EXPLOIT_AFTER.test(after)) return ['exploit']
+  if (EXPLOIT_BEFORE.test(before) || EXPLOIT_AFTER.test(after) || EXPLOIT_DURING.test(after)) return ['exploit']
   return apply ? ['apply'] : []
 }
 

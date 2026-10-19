@@ -228,3 +228,54 @@ test('關鍵字面板:補充關鍵字叫推、拉;頂端沒有過濾欄位與清
   await expect(page.getByTestId('chip')).toHaveCount(0)
   await expect(page.getByText('點選關鍵字開始搜尋')).toBeVisible()
 })
+
+test('效果類型判定:鉤索師模組特性只算利用-拉;佩佩利用與反制異常狀態;酒神利用束縛', async ({ page }) => {
+  await page.goto('./')
+  const panel = page.getByRole('complementary', { name: '關鍵字面板' })
+  const cards = page.getByTestId('result-card')
+  const card = (name: string) => cards.filter({ has: page.getByRole('heading', { name, exact: true }) })
+  const typeButton = (keyword: string, type: string) => page.getByRole('group', { name: `${keyword}的效果類型` }).getByRole('button', { name: type })
+
+  // 施加-拉:暗索因技能列入,特性(模組「拖拽期間」)不是命中敘述
+  await panel.getByRole('button', { name: '拉', exact: true }).click()
+  await expect(typeButton('拉', '施加')).toHaveAttribute('aria-pressed', 'true')
+  await expect(card('暗索')).toHaveCount(1)
+  await expect(card('暗索').getByRole('tab', { name: '特性' })).toHaveCount(0)
+  // 利用-拉:特性是命中敘述
+  await typeButton('拉', '利用').click()
+  await typeButton('拉', '施加').click()
+  await card('暗索').getByRole('tab', { name: '特性' }).click()
+  await expect(card('暗索').getByRole('tabpanel')).toContainText(/拖拽期[間间]/)
+  await panel.getByRole('button', { name: '拉', exact: true }).click()
+
+  // 異常狀態沒有施加資料,預設亮利用
+  await panel.getByRole('button', { name: '異常狀態', exact: true }).click()
+  await expect(typeButton('異常狀態', '利用')).toHaveAttribute('aria-pressed', 'true')
+  await expect(card('佩佩')).toHaveCount(1)
+  await typeButton('異常狀態', '反制').click()
+  await typeButton('異常狀態', '利用').click()
+  await expect(typeButton('異常狀態', '反制')).toHaveAttribute('aria-pressed', 'true')
+  await expect(card('佩佩')).toHaveCount(1)
+  await panel.getByRole('button', { name: '異常狀態', exact: true }).click()
+
+  await panel.getByRole('button', { name: '束縛', exact: true }).click()
+  await typeButton('束縛', '利用').click()
+  await typeButton('束縛', '施加').click()
+  await expect(card('酒神')).toHaveCount(1)
+})
+
+test('面板點關鍵字時預設亮第一個有資料的效果類型,切換伺服器後 chip 不變', async ({ page }) => {
+  await page.goto('./')
+  const panel = page.getByRole('complementary', { name: '關鍵字面板' })
+  const pressed = (keyword: string) =>
+    page.getByRole('group', { name: `${keyword}的效果類型` }).locator('button[aria-pressed=true]')
+
+  await panel.getByRole('button', { name: '異常狀態', exact: true }).click()
+  await expect(pressed('異常狀態')).toHaveText(['利用'])
+  await panel.getByRole('button', { name: '暈眩', exact: true }).click()
+  await expect(pressed('暈眩')).toHaveText(['施加'])
+
+  await page.getByRole('radio', { name: '台服' }).click()
+  await expect(pressed('異常狀態')).toHaveText(['利用'])
+  await expect(pressed('暈眩')).toHaveText(['施加'])
+})

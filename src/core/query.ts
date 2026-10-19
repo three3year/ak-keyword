@@ -189,6 +189,11 @@ export function availableTypes(index: SearchIndex, server: Server, keyword: stri
   return sortTypes(found)
 }
 
+/** 面板點選關鍵字時新 chip 預設亮的效果類型:該伺服器有資料的第一個(依 EFFECT_TYPES 順序);都沒有時為施加。 */
+export function defaultType(index: SearchIndex, server: Server, keyword: string): EffectType {
+  return availableTypes(index, server, keyword)[0] ?? 'apply'
+}
+
 export interface FilterOptions {
   rarities: number[]
   professions: { id: Profession; name: string }[]

@@ -1,10 +1,11 @@
 import { describe, expect, test } from 'vitest'
 import { type Overrides, buildIndex } from '../build/buildIndex'
-import { availableTypes, query } from '../src/core/query'
+import { availableTypes, defaultType, query } from '../src/core/query'
 import { EFFECT_TYPES, type EffectType, type SearchIndex, type Server } from '../src/core/types'
 import { COMMON_TERMS, basicSkill, operator, server } from './fixtures'
 
 const DODGE = { id: 'dodge', name: '閃避', cn: ['闪避'], tw: ['閃避'], definition: '使攻擊無效', group: '增益' }
+const PULL = { id: 'pull', name: '拉', cn: ['拖拽'], tw: ['拖拽'], definition: '把敵人拉近', group: '控場' }
 
 /** 每位幹員一個技能,技能敘述由參數給定。 */
 function fixture(descriptions: Record<string, string>) {
@@ -13,7 +14,15 @@ function fixture(descriptions: Record<string, string>) {
   )
   const skills = Object.values(descriptions).map((d, i) => basicSkill(`sk_${i}`, `技${i}`, { description: d }))
   return server({
-    terms: { ...COMMON_TERMS, 'ba.inspire': ['鼓舞', '攻击力提升'], 'ba.sleep': ['沉睡', '无法行动'], 'ba.invisible': ['隐匿', '不会成为目标'] },
+    terms: {
+      ...COMMON_TERMS,
+      'ba.inspire': ['鼓舞', '攻击力提升'],
+      'ba.sleep': ['沉睡', '无法行动'],
+      'ba.invisible': ['隐匿', '不会成为目标'],
+      'ba.root': ['束缚', '无法移动'],
+      'ba.debuff': ['异常状态', '负面效果'],
+      'ba.dt.element': ['元素损伤', '元素伤害'],
+    },
     operators,
     skills,
   })
@@ -25,7 +34,7 @@ function typesFound(index: SearchIndex, keyword: string, server: Server = 'cn'):
 }
 
 function effectOf(description: string, keyword: string): EffectType[] {
-  return typesFound(buildIndex({ cn: fixture({ 甲: description }), supplements: [DODGE] }).index, keyword)
+  return typesFound(buildIndex({ cn: fixture({ 甲: description }), supplements: [DODGE, PULL] }).index, keyword)
 }
 
 function results(index: SearchIndex, conditions: [EffectType, string][]) {
@@ -51,6 +60,10 @@ describe('效果類型的規則判定', () => {
     ['攻击范围内敌人的<$ba.invisible>隐匿</>效果失效', 'ba.invisible', ['counter']],
     ['攻击无视目标的物理闪避', 'sup.dodge', ['counter']],
     ['使敌人<$ba.sleep>沉睡</>，攻击<$ba.sleep>沉睡</>的目标时攻击力提升', 'ba.sleep', ['apply', 'exploit']],
+    ['技能可以使敌人产生位移\n拖拽期间敌人受到正比于距离的法术伤害', 'sup.pull', ['exploit']],
+    ['使目标<$ba.root>束缚</>3秒，该次<$ba.root>束缚</>期间目标受到的神经损伤提升', 'ba.root', ['apply', 'exploit']],
+    ['处于<$ba.debuff>异常状态</>时可以释放技能并清除<$ba.debuff>异常状态</>', 'ba.debuff', ['exploit', 'counter']],
+    ['立刻清除自身的<$ba.dt.element>元素损伤</>', 'ba.dt.element', ['counter']],
   ])('%s → %s 為 %j', (description, keyword, expected) => {
     expect(effectOf(description, keyword)).toEqual(expected)
   })
@@ -59,8 +72,22 @@ describe('效果類型的規則判定', () => {
     ['成功闪避后自身下一次攻击攻击力+100%', '成功閃避後自身下一次攻擊攻擊力+120%', 'sup.dodge', ['exploit']],
     ['攻击范围扩大并使敌人<$ba.invisible>隐匿</>失效1', '攻擊範圍擴大並使敵人<$ba.invisible>隱匿</>失效2', 'ba.invisible', ['counter']],
     ['自身免疫<$ba.stun>晕眩</>1', '自身免疫<$ba.stun>暈眩</>2', 'ba.stun', ['counter']],
+    ['拖拽期间敌人受到1倍伤害', '拖拽期間敵人受到2倍傷害', 'sup.pull', ['exploit']],
+    [
+      '使目标<$ba.root>束缚</>3秒，该次<$ba.root>束缚</>期间伤害提升1',
+      '使目標<$ba.root>束縛</>3秒，該次<$ba.root>束縛</>期間傷害提升2',
+      'ba.root',
+      ['apply', 'exploit'],
+    ],
+    [
+      '处于<$ba.debuff>异常状态</>时可以释放技能并清除<$ba.debuff>异常状态</>1',
+      '處於<$ba.debuff>異常狀態</>時可以釋放技能並清除<$ba.debuff>異常狀態</>2',
+      'ba.debuff',
+      ['exploit', 'counter'],
+    ],
+    ['立刻清除自身的<$ba.dt.element>元素损伤</>1', '立刻清除自身的<$ba.dt.element>元素損傷</>2', 'ba.dt.element', ['counter']],
   ])('繁中(台服文字與國服不一致時各自判定):%s → %s', (cnText, twText, keyword, expected) => {
-    const { index } = buildIndex({ cn: fixture({ 甲: cnText }), tw: fixture({ 甲: twText }), supplements: [DODGE] })
+    const { index } = buildIndex({ cn: fixture({ 甲: cnText }), tw: fixture({ 甲: twText }), supplements: [DODGE, PULL] })
     expect(typesFound(index, keyword, 'tw')).toEqual(expected)
   })
 
@@ -212,5 +239,40 @@ describe('類型鈕反灰:關鍵字在目前伺服器有資料的效果類型', 
   test('判定不出效果類型的敘述不提供任何類型', () => {
     const { index } = buildIndex({ cn: fixture({ 甲: '场上存在<$ba.cold>寒冷</>相关的效果时攻击力提升' }) })
     expect(availableTypes(index, 'cn', 'ba.cold')).toEqual([])
+  })
+})
+
+describe('面板點關鍵字時預設亮的效果類型', () => {
+  const operators = {
+    char_401_a: operator({ name: '兩服都有', skills: ['sk_a'] }),
+    char_402_b: operator({ name: '只有國服', skills: ['sk_b'] }),
+  }
+  const skills = [
+    basicSkill('sk_a', '甲', { description: '对<$ba.cold>寒冷</>的敌人伤害提升，免疫<$ba.stun>晕眩</>，自身免疫<$ba.frozen>冻结</>' }),
+    basicSkill('sk_b', '乙', { description: '使敌人<$ba.cold>寒冷</>，攻击<$ba.stun>晕眩</>的敌人伤害提升，使敌人<$ba.levitate>浮空</>' }),
+  ]
+  const cn = server({ terms: COMMON_TERMS, operators, skills })
+  const tw = server({ terms: COMMON_TERMS, operators: { char_401_a: operators.char_401_a }, skills: [skills[0]] })
+  const { index } = buildIndex({ cn, tw })
+
+  test('有施加資料時亮施加', () => {
+    expect(defaultType(index, 'cn', 'ba.cold')).toBe('apply')
+  })
+
+  test('只有利用與反制時亮利用', () => {
+    expect(defaultType(index, 'cn', 'ba.stun')).toBe('exploit')
+  })
+
+  test('只有反制時亮反制', () => {
+    expect(defaultType(index, 'cn', 'ba.frozen')).toBe('counter')
+  })
+
+  test('某類型只有國服有時,台服亮下一個有資料的類型', () => {
+    expect(defaultType(index, 'tw', 'ba.cold')).toBe('exploit')
+    expect(defaultType(index, 'tw', 'ba.stun')).toBe('counter')
+  })
+
+  test('都沒有資料時亮施加', () => {
+    expect(defaultType(index, 'tw', 'ba.levitate')).toBe('apply')
   })
 })

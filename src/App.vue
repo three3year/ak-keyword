@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import { loadIndex } from './core/loadIndex'
-import { availableTypes, filterOptions, footerItems, query } from './core/query'
+import { availableTypes, defaultType, filterOptions, footerItems, query } from './core/query'
 import {
   EFFECT_TYPE_LABELS,
   EFFECT_TYPES,
@@ -84,10 +84,13 @@ function keywordName(id: string): string {
   return keywordMap.value.get(id)?.name ?? id
 }
 
-/** 關鍵字面板的點選:未選就加入並只亮「施加」(最常問的「誰能上 X」),已選就移除。 */
+/**
+ * 關鍵字面板的點選:未選就加入,只亮目前伺服器有資料的第一個類型(通常是施加,最常問的「誰能上 X」);已選就移除。
+ * 之後切換伺服器不改已加入的 chip。
+ */
 function toggle(id: string) {
   if (selected.value.includes(id)) remove(id)
-  else selection.value = [...selection.value, { keyword: id, types: ['apply'] }]
+  else if (index.value) selection.value = [...selection.value, { keyword: id, types: [defaultType(index.value, server.value, id)] }]
 }
 
 function remove(id: string) {
