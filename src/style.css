@@ -175,10 +175,38 @@ input:focus-visible {
   font-size: 1.05rem;
 }
 
-.entry {
-  border-top: 1px dashed var(--border);
-  padding-top: 8px;
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
   margin-top: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.tab {
+  min-height: 36px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  background: transparent;
+  color: var(--text-2);
+  padding: 4px 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tab:hover {
+  color: var(--text);
+}
+
+.tab.on {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.entry {
+  padding-top: 8px;
 }
 
 .entry-head {

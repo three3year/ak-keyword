@@ -28,3 +28,25 @@ test('點一個關鍵字後看到結果卡,切換伺服器後結果更新', asyn
   await expect(count).not.toHaveText(cnCount ?? '')
   await expect(cards.first()).toBeVisible()
 })
+
+test('結果卡一次只顯示一段命中敘述,點分頁後換成該段', async ({ page }) => {
+  await page.goto('./')
+  await page.getByRole('button', { name: '暈眩', exact: true }).first().click()
+  const cards = page.getByTestId('result-card')
+  await expect(cards.first()).toBeVisible()
+  // 每張卡同一時間只有一段命中敘述
+  for (const card of await cards.all()) await expect(card.getByTestId('entry')).toHaveCount(1)
+
+  // 忍冬的技能2 與技能3 都會暈眩
+  const card = cards.filter({ has: page.getByRole('heading', { name: '忍冬', exact: true }) })
+  const tabs = card.getByRole('tab')
+  await expect(tabs).toHaveText(['技能2', '技能3'])
+  await expect(tabs.first()).toHaveAttribute('aria-selected', 'true')
+  const panel = card.getByRole('tabpanel')
+  const first = await panel.textContent()
+  await card.getByRole('tab', { name: '技能3' }).click()
+  await expect(card.getByRole('tab', { name: '技能3' })).toHaveAttribute('aria-selected', 'true')
+  await expect(tabs.first()).toHaveAttribute('aria-selected', 'false')
+  await expect(panel).not.toHaveText(first ?? '')
+  await expect(panel.locator('mark.hl').first()).toHaveText(/暈眩|晕眩/)
+})
