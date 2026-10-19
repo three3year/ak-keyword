@@ -84,7 +84,7 @@ function keywordName(id: string): string {
   return keywordMap.value.get(id)?.name ?? id
 }
 
-/** 面板、命中敘述、提示框的點選:未選就加入並只亮「施加」(最常問的「誰能上 X」),已選就移除。 */
+/** 關鍵字面板的點選:未選就加入並只亮「施加」(最常問的「誰能上 X」),已選就移除。 */
 function toggle(id: string) {
   if (selected.value.includes(id)) remove(id)
   else selection.value = [...selection.value, { keyword: id, types: ['apply'] }]
@@ -134,7 +134,6 @@ function onClick(e: MouseEvent) {
     if (tip.pinned) hideTip()
     return
   }
-  const inText = !!el.closest('.rich')
   if (el.dataset.p) {
     showTip(el, { text: el.dataset.p }, { pinned: true })
   } else if (el.dataset.k && el.classList.contains('chip-name')) {
@@ -142,13 +141,9 @@ function onClick(e: MouseEvent) {
   } else if (el.dataset.k && el.classList.contains('kw') && isTouch()) {
     // 觸控裝置沒有懸停:點面板的關鍵字按鈕時,除了切換選取也顯示定義
     showTip(el, { keyword: el.dataset.k }, { pinned: true })
-  } else if (el.dataset.k && inText) {
-    // 命中敘述裡的詞:桌機直接切換選取;觸控裝置先顯示定義,再由提示框切換
-    if (isTouch()) showTip(el, { keyword: el.dataset.k }, { pinned: true, toggle: true })
-    else {
-      hideTip()
-      toggle(el.dataset.k)
-    }
+  } else if (el.dataset.k && el.closest('.rich') && isTouch()) {
+    // 命中敘述裡的詞只供查定義、不切換選取:觸控裝置沒有懸停,點了顯示定義;桌機點擊不做事
+    showTip(el, { keyword: el.dataset.k }, { pinned: true })
   }
 }
 
@@ -247,6 +242,6 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
         <template v-if="item.version">{{ ` ${item.version} · ${item.downloadedAt}` }}</template>
       </template>
     </footer>
-    <KeywordTip :keywords="keywordMap" :selected="selected" @toggle="toggle" />
+    <KeywordTip :keywords="keywordMap" />
   </div>
 </template>

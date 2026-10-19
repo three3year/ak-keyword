@@ -128,8 +128,14 @@ test('沒有結果時列出搜尋條件', async ({ page }) => {
   await page.getByRole('button', { name: '暈眩', exact: true }).first().click()
   await page.getByRole('button', { name: '停頓', exact: true }).first().click()
   await page.getByRole('group', { name: '停頓的效果類型' }).getByRole('button', { name: '利用' }).click()
+  // 搜尋條件是 OR:要靠星級與職業篩掉所有命中的幹員
   await page.getByRole('checkbox', { name: '1★' }).check()
-  await expect(page.getByTestId('empty')).toContainText('搜尋條件:施加-暈眩、施加-停頓、利用-停頓')
+  await page.getByRole('button', { name: '醫療', exact: true }).click()
+  const empty = page.getByTestId('empty')
+  await expect(empty).toContainText('搜尋條件:施加-暈眩、施加-停頓、利用-停頓')
+  await expect(empty).toContainText('星級:1★')
+  await expect(empty).toContainText('職業:醫療')
+  await expect(empty).not.toContainText('分支')
 })
 
 test('類型鈕反灰:關鍵字在目前伺服器沒有該類型的敘述時停用', async ({ page }) => {
@@ -147,4 +153,26 @@ test('類型鈕反灰:關鍵字在目前伺服器沒有該類型的敘述時停�
   await expect(erosion).toBeEnabled()
   await page.getByRole('radio', { name: '台服' }).click()
   await expect(erosion).toBeDisabled()
+})
+
+test('效果文字裡的關鍵字只供查定義:游標為問號,點擊不改搜尋', async ({ page }) => {
+  await page.goto('./')
+  await page.getByRole('button', { name: '暈眩', exact: true }).first().click()
+  const count = page.getByTestId('result-count')
+  await expect(count).not.toHaveText('共 0 位幹員')
+  const before = await count.textContent()
+  const chips = page.getByTestId('chip')
+
+  const highlighted = page.locator('[data-testid=entry] .stage-text mark.hl').first()
+  const unselected = page.locator('[data-testid=entry] .stage-text .term').first()
+  for (const word of [highlighted, unselected]) {
+    await expect(word).toHaveCSS('cursor', 'help')
+    // 懸停照常顯示定義
+    await word.hover()
+    await expect(page.getByTestId('tip')).toBeVisible()
+    await word.click()
+    await expect(chips).toHaveCount(1)
+    await expect(chips.first().locator('.chip-name')).toHaveText('暈眩')
+    await expect(count).toHaveText(before ?? '')
+  }
 })

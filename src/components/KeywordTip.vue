@@ -1,14 +1,10 @@
 <script setup lang="ts">
 import { computed, ref, watchEffect } from 'vue'
 import type { IndexKeyword } from '../core/types'
-import { hideTip, tip } from '../ui/tip'
+import { tip } from '../ui/tip'
 import RichText from './RichText.vue'
 
-const props = defineProps<{
-  keywords: Map<string, IndexKeyword>
-  selected: string[]
-}>()
-const emit = defineEmits<{ toggle: [id: string] }>()
+const props = defineProps<{ keywords: Map<string, IndexKeyword> }>()
 
 const left = ref(0)
 const kw = computed(() => (tip.keyword ? props.keywords.get(tip.keyword) : undefined))
@@ -35,9 +31,6 @@ watchEffect(() => {
         <span v-if="kw.kind === 'supplement'" class="badge unofficial">非官方</span>
       </div>
       <div class="tip-body"><RichText :runs="kw.definition" :selected="[]" /></div>
-      <button v-if="tip.toggle" class="tip-action" @click="emit('toggle', kw.id), hideTip()">
-        {{ selected.includes(kw.id) ? '移出選擇' : '加入選擇' }}
-      </button>
     </template>
     <div v-else class="tip-body">{{ tip.text }}</div>
   </div>
