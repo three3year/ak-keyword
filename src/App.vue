@@ -29,6 +29,10 @@ const selected = computed(() => selection.value.map((s) => s.keyword))
 const conditions = computed<SearchCondition[]>(() => selection.value.flatMap((s) => s.types.map((type) => ({ keyword: s.keyword, type }))))
 const server = ref<Server>(loadServer())
 watch(server, saveServer)
+const SERVERS: { value: Server; label: string }[] = [
+  { value: 'cn', label: '國服' },
+  { value: 'tw', label: '台服' },
+]
 const rarities = ref<number[]>([])
 const professions = ref<Profession[]>([])
 const branch = ref('')
@@ -165,6 +169,18 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   <div class="app" @mouseover="onOver" @mouseout="onOut" @click="onClick">
     <header class="top">
       <h1>明日方舟關鍵字搜尋</h1>
+      <div v-if="index" class="segmented" role="radiogroup" aria-label="伺服器">
+        <button
+          v-for="sv in SERVERS"
+          :key="sv.value"
+          role="radio"
+          :aria-checked="server === sv.value"
+          :class="{ on: server === sv.value }"
+          @click="server = sv.value"
+        >
+          {{ sv.label }}
+        </button>
+      </div>
       <button v-if="index" class="btn drawer-btn" :aria-expanded="drawerOpen" @click.stop="drawerOpen = !drawerOpen">
         關鍵字<template v-if="selected.length">({{ selected.length }})</template>
       </button>
@@ -181,7 +197,6 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
       </aside>
       <section class="results">
         <FilterBar
-          v-model:server="server"
           v-model:rarities="rarities"
           v-model:professions="professions"
           v-model:branch="branch"
@@ -197,7 +212,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
                 :key="t"
                 type="button"
                 class="chip-type"
-                :class="[`fx-${t}`, { on: s.types.includes(t), empty: !hasData(s.keyword, t) }]"
+                :class="[`fx-${t}`, { on: s.types.includes(t), 'no-data': !hasData(s.keyword, t) }]"
                 :aria-pressed="s.types.includes(t)"
                 :disabled="!hasData(s.keyword, t) && !s.types.includes(t)"
                 :title="hasData(s.keyword, t) ? undefined : `目前伺服器沒有${EFFECT_TYPE_LABELS[t]}-${keywordName(s.keyword)}的敘述`"

@@ -1,19 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { FilterOptions } from '../core/query'
-import type { Profession, Server } from '../core/types'
+import type { Profession } from '../core/types'
 
 const props = defineProps<{ options: FilterOptions }>()
 
-const server = defineModel<Server>('server', { required: true })
 const rarities = defineModel<number[]>('rarities', { required: true })
 const professions = defineModel<Profession[]>('professions', { required: true })
 const branch = defineModel<string>('branch', { required: true })
-
-const SERVERS: { value: Server; label: string }[] = [
-  { value: 'cn', label: '國服' },
-  { value: 'tw', label: '台服' },
-]
 
 // 分支選單只列已選職業的分支(沒選職業時列全部)
 const branches = computed(() =>
@@ -30,18 +24,6 @@ function toggleProfession(p: Profession) {
 
 <template>
   <div class="filters">
-    <div class="segmented" role="radiogroup" aria-label="伺服器">
-      <button
-        v-for="s in SERVERS"
-        :key="s.value"
-        role="radio"
-        :aria-checked="server === s.value"
-        :class="{ on: server === s.value }"
-        @click="server = s.value"
-      >
-        {{ s.label }}
-      </button>
-    </div>
     <fieldset class="filter">
       <legend>星級</legend>
       <label v-for="r in options.rarities" :key="r" class="check">

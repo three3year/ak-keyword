@@ -29,8 +29,12 @@ function defaultStage(e: ResultEntry): number {
 const entry = computed(() => props.op.entries[tab.value] ?? props.op.entries[0])
 const stageIndex = computed(() => stageOf.value[tab.value] ?? defaultStage(entry.value))
 const stage = computed(() => entry.value.stages[stageIndex.value] ?? entry.value.stages[0])
-// 模組3 階段在敘述名後接模組名,例如「及鋒而試-筆跡」;特性沒有名稱時只顯示模組名
-const entryName = computed(() => [entry.value.name, stage.value.module].filter(Boolean).join('-'))
+// 模組3 階段在敘述名後接模組名,例如「及鋒而試-筆跡」;特性沒有名稱,改接在分支名後,例如「術戰者-筆跡」
+const entryName = computed(() => {
+  const module = stage.value.module
+  if (!module) return entry.value.name ?? ''
+  return [entry.value.kind === 'trait' ? props.branchName : entry.value.name, module].filter(Boolean).join('-')
+})
 const id = useId()
 
 function onAvatarError(e: Event) {
