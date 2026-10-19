@@ -13,7 +13,7 @@
 
 **Blocked by:** 03 — /update-data skill 與 README
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] 照 skill 跑完全部步驟,沒有跳過任何一步
 - [ ] 已知警告清單有 6 則警告,再建置一次時新警告為 0

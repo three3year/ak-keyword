@@ -32,7 +32,7 @@
     "name": "機制",
     "rows": [
       [
-        "ba.charged", "ba.overdrive", "ba.chant", "ba.magicpoint", "ba.magicarcane", "ba.addbullet", "ba.addash",
+        "ba.charged", "ba.overdrive", "ba.chant", "ba.magicpoint", "ba.fever", "ba.magicarcane", "ba.addbullet", "ba.addash",
         "ba.permanentatk", "ba.alter", "ba.weaknessatk", "ba.dying", "ba.triggereffect"
       ]
     ]
