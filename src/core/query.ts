@@ -17,7 +17,7 @@ import type {
   Server,
 } from './types'
 import { PROFESSION_LABELS, PROFESSIONS, type Profession, sortTypes } from './types'
-import { DATA_SOURCES, type DataSource, repoUrl } from './sources'
+import { DATA_SOURCES, type DataSource, prtsUrl, repoUrl } from './sources'
 
 function moduleOf(stage: IndexStage, op: IndexOperator): { name: string; code: string } {
   const m = op.modules.find((m) => m.id === stage.module)
@@ -127,6 +127,7 @@ function resultOperator(op: IndexOperator, opts: QueryOptions): ResultOperator |
     rarity: op.rarity,
     profession: op.profession,
     subProfession: op.subProfession,
+    prts: prtsUrl(op.prts),
     entries: mergeSummonEntries(entries),
   }
   if (op.avatar) result.avatar = op.avatar

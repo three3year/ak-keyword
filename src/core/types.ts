@@ -102,6 +102,8 @@ export interface IndexOperator {
   release: number
   inTw: boolean
   avatar?: string
+  /** PRTS 的幹員頁名:國服名;國服名與其他幹員重複時依維護者對照。 */
+  prts: string
   modules: IndexModule[]
   summons: IndexSummon[]
   entries: IndexEntry[]
@@ -180,5 +182,7 @@ export interface ResultOperator {
   profession: Profession
   subProfession: string
   avatar?: string
+  /** PRTS 幹員頁的完整網址。 */
+  prts: string
   entries: ResultEntry[]
 }

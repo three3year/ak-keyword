@@ -92,7 +92,8 @@ describe('阿米婭形態', () => {
         masteredSkill('sk_amiya3_1', '医', { description: '治疗' }, { description: '治疗' }),
       ],
     })
-    const results = query(buildIndex({ cn }).index, { conditions: applying('ba.cold'), server: 'cn' })
+    const prtsPages = { char_002_amiya: '阿米娅', char_1001_amiya2: '阿米娅(近卫)', char_1037_amiya3: '阿米娅(医疗)' }
+    const results = query(buildIndex({ cn, prtsPages }).index, { conditions: applying('ba.cold'), server: 'cn' })
     expect(results.map((r) => [r.id, r.name, r.profession, r.entries[0].name])).toEqual([
       ['char_1001_amiya2', '阿米娅(近衛)', 'WARRIOR', '剑'],
       ['char_002_amiya', '阿米娅(術師)', 'CASTER', '术'],

@@ -56,7 +56,9 @@ function onAvatarError(e: Event) {
         @error="onAvatarError"
       />
       <div class="op-meta">
-        <h3 class="op-name">{{ op.name }}</h3>
+        <h3 class="op-name">
+          <a :href="op.prts" target="_blank" rel="noopener noreferrer" :title="`在 PRTS 查看${op.name}(新分頁)`">{{ op.name }}</a>
+        </h3>
         <div class="op-sub">
           <span class="stars" :class="`r${op.rarity}`" :aria-label="`${op.rarity} 星`">{{ '★'.repeat(op.rarity) }}</span>
           <span>{{ PROFESSION_LABELS[op.profession] }} · {{ branchName }}</span>

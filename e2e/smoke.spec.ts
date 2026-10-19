@@ -176,3 +176,19 @@ test('效果文字裡的關鍵字只供查定義:游標為問號,點擊不改搜
     await expect(count).toHaveText(before ?? '')
   }
 })
+
+test('幹員名稱是連到 PRTS 的新分頁連結,頭像不是連結', async ({ page }) => {
+  await page.goto('./')
+  await page.getByRole('button', { name: '暈眩', exact: true }).first().click()
+  const card = page.getByTestId('result-card').filter({ has: page.getByRole('heading', { name: '忍冬', exact: true }) })
+  const link = card.getByRole('heading').getByRole('link', { name: '忍冬', exact: true })
+  await expect(link).toHaveAttribute('href', `https://prts.wiki/w/${encodeURIComponent('忍冬')}`)
+  await expect(link).toHaveAttribute('target', '_blank')
+  await expect(link).toHaveAttribute('rel', /noopener/)
+  await expect(link).toHaveAttribute('rel', /noreferrer/)
+  await expect(card.getByRole('link')).toHaveCount(1)
+  // 台服譯名與國服名不同時仍連到國服名的頁面
+  await page.getByRole('radio', { name: '台服' }).click()
+  for (const href of await page.locator('[data-testid=result-card] .op-name a').evaluateAll((as) => as.map((a) => a.getAttribute('href'))))
+    expect(href).toMatch(/^https:\/\/prts\.wiki\/w\/.+/)
+})

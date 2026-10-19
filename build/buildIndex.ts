@@ -90,6 +90,8 @@ export interface BuildInput {
   overrides?: Overrides
   /** 維護者清單:談不上效果類型、不當關鍵字的術語 id(隊伍名等);敘述中顯示為一般文字。 */
   excludedTerms?: string[]
+  /** 維護者對照:幹員 id → PRTS 頁名。國服名與其他幹員重複(例如阿米婭的職業形態)時必填。 */
+  prtsPages?: Record<string, string>
 }
 
 export interface BuildOutput {
@@ -144,9 +146,11 @@ class Builder {
     const operators: IndexOperator[] = []
     // 阿米婭等有多個職業形態的幹員:每個形態各成一位幹員,名字後面標職業
     const forms = new Set(Object.values(cn.charPatchTable?.infos ?? {}).flatMap((i) => i.tmplIds))
-    const chars = [...Object.entries(cn.characterTable), ...Object.entries(cn.charPatchTable?.patchChars ?? {})]
+    const chars = [...Object.entries(cn.characterTable), ...Object.entries(cn.charPatchTable?.patchChars ?? {})].filter(([id, char]) =>
+      isOperator(id, char),
+    )
+    this.checkPrtsPages(chars)
     for (const [id, char] of chars) {
-      if (!isOperator(id, char)) continue
       const op = this.operator(id, char)
       if (forms.has(id)) op.name = `${op.name}(${PROFESSION_LABELS[op.profession]})`
       operators.push(op)
@@ -160,6 +164,15 @@ class Builder {
       subProfessions: this.subProfessions(operators),
       operators,
     }
+  }
+
+  /** 國服名重複的幹員都必須在 PRTS 頁名對照裡,否則會連到別人的頁面。 */
+  checkPrtsPages(chars: [string, RawCharacter][]) {
+    const byName = new Map<string, string[]>()
+    for (const [id, char] of chars) byName.set(char.name, [...(byName.get(char.name) ?? []), id])
+    const missing = [...byName].filter(([, ids]) => ids.length > 1 && ids.some((id) => !this.input.prtsPages?.[id]))
+    if (missing.length > 0)
+      throw new Error(`國服名重複的幹員要在 PRTS 頁名對照裡指定頁名:${missing.map(([name, ids]) => `${name}(${ids.join('、')})`).join(';')}`)
   }
 
   /** 分支名稱優先用台服。 */
@@ -235,6 +248,7 @@ class Builder {
       subProfession: char.subProfessionId,
       release: this.release(char),
       inTw: !!twChar,
+      prts: this.input.prtsPages?.[id] ?? char.name,
       modules: indexModules,
       summons,
       entries: entries.filter((e) => e.stages.some((st) => hasHits(st.cn) || (st.tw && hasHits(st.tw)))),
