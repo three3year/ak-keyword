@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { type Overrides, buildIndex } from '../build/buildIndex'
-import { query } from '../src/core/query'
+import { availableTypes, query } from '../src/core/query'
 import { EFFECT_TYPES, type EffectType, type SearchIndex, type Server } from '../src/core/types'
 import { COMMON_TERMS, basicSkill, operator, server } from './fixtures'
 
@@ -165,5 +165,34 @@ describe('覆寫檔與待複核清單', () => {
     const { pending } = buildIndex({ cn: fixture({ 甲: '使敌人<$ba.cold>寒冷</>', 乙: '使敌人<$ba.cold>寒冷</>' }) })
     expect(pending).toHaveLength(1)
     expect(pending[0].where).toHaveLength(2)
+  })
+})
+
+describe('類型鈕反灰:關鍵字在目前伺服器有資料的效果類型', () => {
+  const operators = {
+    char_401_a: operator({ name: '兩服都有', skills: ['sk_a'] }),
+    char_402_b: operator({ name: '只有國服', skills: ['sk_b'] }),
+  }
+  const skills = [
+    basicSkill('sk_a', '甲', { description: '使敌人<$ba.cold>寒冷</>' }),
+    basicSkill('sk_b', '乙', { description: '对<$ba.cold>寒冷</>的敌人伤害提升' }),
+  ]
+  const cn = server({ terms: COMMON_TERMS, operators, skills })
+  const tw = server({ terms: COMMON_TERMS, operators: { char_401_a: operators.char_401_a }, skills: [skills[0]] })
+
+  test('只回傳有資料的類型', () => {
+    const { index } = buildIndex({ cn, tw })
+    expect(availableTypes(index, 'cn', 'ba.cold')).toEqual(['apply', 'exploit'])
+    expect(availableTypes(index, 'cn', 'ba.stun')).toEqual([])
+  })
+
+  test('某類型只有國服有時,台服模式下不回傳', () => {
+    const { index } = buildIndex({ cn, tw })
+    expect(availableTypes(index, 'tw', 'ba.cold')).toEqual(['apply'])
+  })
+
+  test('判定不出效果類型的敘述不提供任何類型', () => {
+    const { index } = buildIndex({ cn: fixture({ 甲: '场上存在<$ba.cold>寒冷</>相关的效果时攻击力提升' }) })
+    expect(availableTypes(index, 'cn', 'ba.cold')).toEqual([])
   })
 })

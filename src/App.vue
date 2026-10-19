@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import { loadIndex } from './core/loadIndex'
-import { filterOptions, footerItems, query } from './core/query'
+import { availableTypes, filterOptions, footerItems, query } from './core/query'
 import {
   EFFECT_TYPE_LABELS,
   EFFECT_TYPES,
@@ -56,6 +56,16 @@ const results = computed(() =>
       })
     : [],
 )
+
+/** 各已選關鍵字在目前伺服器有資料的效果類型;沒資料的類型鈕反灰。 */
+const available = computed(
+  () => new Map(selection.value.map((s) => [s.keyword, index.value ? availableTypes(index.value, server.value, s.keyword) : []])),
+)
+
+/** 沒資料的類型鈕不能點;但已亮著的(例如切換伺服器後才沒資料)仍可關掉。 */
+function hasData(id: string, type: EffectType): boolean {
+  return !!available.value.get(id)?.includes(type)
+}
 
 /** 沒有結果時列出目前生效的條件,讓使用者知道要放寬哪一項。 */
 const emptyConditions = computed(() => {
@@ -186,8 +196,10 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
                 :key="t"
                 type="button"
                 class="chip-type"
-                :class="[`fx-${t}`, { on: s.types.includes(t) }]"
+                :class="[`fx-${t}`, { on: s.types.includes(t), empty: !hasData(s.keyword, t) }]"
                 :aria-pressed="s.types.includes(t)"
+                :disabled="!hasData(s.keyword, t) && !s.types.includes(t)"
+                :title="hasData(s.keyword, t) ? undefined : `目前伺服器沒有${EFFECT_TYPE_LABELS[t]}-${keywordName(s.keyword)}的敘述`"
                 @click.stop="toggleType(s.keyword, t)"
               >
                 {{ EFFECT_TYPE_LABELS[t] }}

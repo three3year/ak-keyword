@@ -1,10 +1,12 @@
 // 查詢:索引 + 查詢條件 → 排好序的幹員清單與命中敘述。純函式。
 import type {
   DataVersion,
+  EffectType,
   IndexEntry,
   IndexKeyword,
   IndexOperator,
   IndexStage,
+  IndexSummon,
   IndexText,
   QueryOptions,
   ResultEntry,
@@ -14,7 +16,7 @@ import type {
   SearchIndex,
   Server,
 } from './types'
-import { PROFESSION_LABELS, PROFESSIONS, type Profession } from './types'
+import { EFFECT_TYPES, PROFESSION_LABELS, PROFESSIONS, type Profession } from './types'
 import { DATA_SOURCES, type DataSource, repoUrl } from './sources'
 
 function moduleOf(stage: IndexStage, op: IndexOperator): { name: string; code: string } {
@@ -97,14 +99,21 @@ function resultStage(v: Visible, visible: Visible[], op: IndexOperator, opts: Qu
   return result
 }
 
+/** 某個伺服器模式下看得到的敘述:台服模式略過台服未實裝的幹員與召喚物。 */
+function* visibleEntries(op: IndexOperator, server: Server): Generator<{ entry: IndexEntry; summon?: IndexSummon }> {
+  if (server === 'tw' && !op.inTw) return
+  for (const entry of op.entries) {
+    const summon = entry.summon ? op.summons.find((s) => s.id === entry.summon) : undefined
+    if (server === 'tw' && summon && !summon.inTw) continue
+    yield { entry, summon }
+  }
+}
+
 function resultOperator(op: IndexOperator, opts: QueryOptions): ResultOperator | undefined {
-  if (opts.server === 'tw' && !op.inTw) return undefined
   const entries: ResultEntry[] = []
   /** 已有命中階段的搜尋條件,以「關鍵字 效果類型」記錄。 */
   const found = new Set<string>()
-  for (const entry of op.entries) {
-    const summon = entry.summon ? op.summons.find((s) => s.id === entry.summon) : undefined
-    if (opts.server === 'tw' && summon && !summon.inTw) continue
+  for (const { entry, summon } of visibleEntries(op, opts.server)) {
     const visible = visibleStages(entry, op, opts.server)
     const stages = visible.map((v) => resultStage(v, visible, op, opts))
     if (!stages.some((s) => s.hit)) continue
@@ -171,6 +180,18 @@ export function query(index: SearchIndex, opts: QueryOptions): ResultOperator[] 
     if (r) results.push(r)
   }
   return results
+}
+
+/**
+ * 某關鍵字在某伺服器下有資料的效果類型(依 EFFECT_TYPES 順序),供 chip 的類型鈕反灰。
+ * 只看關鍵字本身,不考慮篩選或其他搜尋條件;伺服器可見性與查詢一致。
+ */
+export function availableTypes(index: SearchIndex, server: Server, keyword: string): EffectType[] {
+  const found = new Set<EffectType>()
+  for (const op of index.operators)
+    for (const { entry } of visibleEntries(op, server))
+      for (const v of visibleStages(entry, op, server)) for (const t of v.match.hits[keyword] ?? []) found.add(t)
+  return EFFECT_TYPES.filter((t) => found.has(t))
 }
 
 export interface FilterOptions {

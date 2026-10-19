@@ -545,8 +545,12 @@ input:focus-visible {
   color: var(--surface);
 }
 
-.chip-type:disabled {
+/* 目前伺服器沒有資料的類型:變淡;沒亮的停用,亮著的仍可點掉 */
+.chip-type.empty {
   opacity: 0.35;
+}
+
+.chip-type:disabled {
   cursor: not-allowed;
 }
 
