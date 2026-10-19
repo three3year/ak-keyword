@@ -28,8 +28,12 @@ function effectOf(description: string, keyword: string): EffectType[] {
   return typesFound(buildIndex({ cn: fixture({ 甲: description }), supplements: [DODGE] }).index, keyword)
 }
 
+function results(index: SearchIndex, conditions: [EffectType, string][]) {
+  return query(index, { conditions: conditions.map(([type, keyword]) => ({ keyword, type })), server: 'cn' })
+}
+
 function names(index: SearchIndex, conditions: [EffectType, string][]): string[] {
-  return query(index, { conditions: conditions.map(([type, keyword]) => ({ keyword, type })), server: 'cn' }).map((r) => r.name)
+  return results(index, conditions).map((r) => r.name)
 }
 
 describe('效果類型的規則判定', () => {
@@ -101,8 +105,7 @@ describe('搜尋條件', () => {
       ['exploit', 'ba.cold'],
     ]
     expect(names(index, conditions)).toEqual(['分兩段', '只施加', '只利用'])
-    const results = query(index, { conditions: conditions.map(([type, keyword]) => ({ keyword, type })), server: 'cn' })
-    expect(results.map((r) => [r.name, r.entries.map((e) => [e.source, e.stages[0].effects])])).toEqual([
+    expect(results(index, conditions).map((r) => [r.name, r.entries.map((e) => [e.source, e.stages[0].effects])])).toEqual([
       ['分兩段', [['技能1', { 'ba.cold': ['apply'] }], ['技能2', { 'ba.cold': ['exploit'] }]]],
       ['只施加', [['技能1', { 'ba.cold': ['apply'] }]]],
       ['只利用', [['技能1', { 'ba.cold': ['exploit'] }]]],
@@ -123,8 +126,7 @@ describe('搜尋條件', () => {
       ['exploit', 'ba.cold'],
     ]
     expect(names(index, conditions)).toEqual(['施加暈眩利用寒冷', '只施加暈眩', '只利用寒冷'])
-    const results = query(index, { conditions: conditions.map(([type, keyword]) => ({ keyword, type })), server: 'cn' })
-    expect(results.map((r) => r.entries[0].stages[0].effects)).toEqual([
+    expect(results(index, conditions).map((r) => r.entries[0].stages[0].effects)).toEqual([
       { 'ba.stun': ['apply'], 'ba.cold': ['exploit'] },
       { 'ba.stun': ['apply'] },
       { 'ba.cold': ['exploit'] },

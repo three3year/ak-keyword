@@ -248,7 +248,7 @@ class Builder {
       subProfession: char.subProfessionId,
       release: this.release(char),
       inTw: !!twChar,
-      prts: this.input.prtsPages?.[id] ?? char.name,
+      prtsPage: this.input.prtsPages?.[id] ?? char.name,
       modules: indexModules,
       summons,
       entries: entries.filter((e) => e.stages.some((st) => hasHits(st.cn) || (st.tw && hasHits(st.tw)))),

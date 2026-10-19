@@ -57,7 +57,7 @@ function onAvatarError(e: Event) {
       />
       <div class="op-meta">
         <h3 class="op-name">
-          <a :href="op.prts" target="_blank" rel="noopener noreferrer" :title="`在 PRTS 查看${op.name}(新分頁)`">{{ op.name }}</a>
+          <a :href="op.prtsUrl" target="_blank" rel="noopener noreferrer" :title="`在 PRTS 查看${op.name}(新分頁)`">{{ op.name }}</a>
         </h3>
         <div class="op-sub">
           <span class="stars" :class="`r${op.rarity}`" :aria-label="`${op.rarity} 星`">{{ '★'.repeat(op.rarity) }}</span>

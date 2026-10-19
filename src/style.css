@@ -11,7 +11,7 @@
   --hl-bg: #ffe28a;
   --hl-bg-hover: #ffcf45;
   --hl-text: #3a2a00;
-  /* 效果文字裡可懸停看定義的關鍵字:虛線底線與懸停底色 */
+  /* 命中敘述裡可懸停看定義的關鍵字:虛線底線與懸停底色 */
   --tip-line: #1f6fd1;
   --tip-hover: #d3e3fa;
   --up: #1a7f37;
@@ -626,7 +626,7 @@ input:focus-visible {
   cursor: pointer;
 }
 
-/* 效果文字裡的關鍵字(已選與未選)只供懸停看定義:較粗的強調色虛線底線、問號游標;
+/* 命中敘述裡的關鍵字(已選與未選)只供懸停看定義:較粗的強調色虛線底線、問號游標;
    和潛能加成的細點狀底線區分。已選的底線疊在高亮底色上 */
 .stage-text [data-k] {
   text-decoration: underline dashed var(--tip-line);

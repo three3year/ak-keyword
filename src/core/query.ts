@@ -127,7 +127,7 @@ function resultOperator(op: IndexOperator, opts: QueryOptions): ResultOperator |
     rarity: op.rarity,
     profession: op.profession,
     subProfession: op.subProfession,
-    prts: prtsUrl(op.prts),
+    prtsUrl: prtsUrl(op.prtsPage),
     entries: mergeSummonEntries(entries),
   }
   if (op.avatar) result.avatar = op.avatar

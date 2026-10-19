@@ -266,3 +266,6 @@ export function highlights(runs: Run[]): [string, string][] {
 export function applying(...keywords: string[]): SearchCondition[] {
   return keywords.map((keyword) => ({ keyword, type: 'apply' }))
 }
+
+/** 阿米婭三個職業形態的國服名都是「阿米娅」,PRTS 頁名要另外對照。 */
+export const AMIYA_PRTS_PAGES = { char_002_amiya: '阿米娅', char_1001_amiya2: '阿米娅(近卫)', char_1037_amiya3: '阿米娅(医疗)' }

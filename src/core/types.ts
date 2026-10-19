@@ -103,7 +103,7 @@ export interface IndexOperator {
   inTw: boolean
   avatar?: string
   /** PRTS 的幹員頁名:國服名;國服名與其他幹員重複時依維護者對照。 */
-  prts: string
+  prtsPage: string
   modules: IndexModule[]
   summons: IndexSummon[]
   entries: IndexEntry[]
@@ -183,6 +183,6 @@ export interface ResultOperator {
   subProfession: string
   avatar?: string
   /** PRTS 幹員頁的完整網址。 */
-  prts: string
+  prtsUrl: string
   entries: ResultEntry[]
 }

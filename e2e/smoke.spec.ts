@@ -155,7 +155,7 @@ test('類型鈕反灰:關鍵字在目前伺服器沒有該類型的敘述時停�
   await expect(erosion).toBeDisabled()
 })
 
-test('效果文字裡的關鍵字只供查定義:游標為問號,點擊不改搜尋', async ({ page }) => {
+test('命中敘述裡的關鍵字只供查定義:游標為問號,點擊不改搜尋', async ({ page }) => {
   await page.goto('./')
   await page.getByRole('button', { name: '暈眩', exact: true }).first().click()
   const count = page.getByTestId('result-count')
