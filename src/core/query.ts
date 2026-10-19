@@ -227,22 +227,26 @@ export interface PanelKeyword {
 
 export interface PanelGroup {
   name: string
-  keywords: PanelKeyword[]
+  /** 每行從新的一行開始,順序就是面板順序。 */
+  rows: PanelKeyword[][]
 }
 
 /**
- * 關鍵字面板:依分組列出該伺服器有幹員具有任一效果類型的關鍵字,略過空的分組。
+ * 關鍵字面板:依索引的分組與行,列出該伺服器有幹員具有任一效果類型的關鍵字;拿掉後變空的行與分組不列。
  * 星級、職業篩選不影響面板。
  */
 export function keywordGroups(index: SearchIndex, server: Server): PanelGroup[] {
   const withData = keywordsWithData(index, server)
-  const groups = new Map<string, PanelKeyword[]>(index.groups.map((g) => [g, []]))
-  for (const k of index.keywords) {
-    if (!withData.has(k.id)) continue
-    if (!groups.has(k.group)) groups.set(k.group, [])
-    groups.get(k.group)!.push({ id: k.id, name: k.name, definition: k.definition, unofficial: k.kind === 'supplement' })
-  }
-  return [...groups].filter(([, ks]) => ks.length > 0).map(([name, keywords]) => ({ name, keywords }))
+  const keywords = new Map(index.keywords.map((k) => [k.id, k]))
+  const panelKeyword = (k: IndexKeyword): PanelKeyword => ({ id: k.id, name: k.name, definition: k.definition, unofficial: k.kind === 'supplement' })
+  return index.groups
+    .map((g) => ({
+      name: g.name,
+      rows: g.rows
+        .map((row) => row.filter((id) => withData.has(id)).flatMap((id) => (keywords.has(id) ? [panelKeyword(keywords.get(id)!)] : [])))
+        .filter((row) => row.length > 0),
+    }))
+    .filter((g) => g.rows.length > 0)
 }
 
 export interface FooterItem {

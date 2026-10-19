@@ -113,8 +113,13 @@ export interface IndexKeyword {
   id: string
   name: string
   kind: 'term' | 'supplement'
-  group: string
   definition: Run[]
+}
+
+/** 關鍵字面板的一個分組:每行是一串關鍵字 id,順序就是面板順序。 */
+export interface IndexGroup {
+  name: string
+  rows: string[][]
 }
 
 /** 某個伺服器遊戲資料的版號,加上建置時下載這份資料的時間。 */
@@ -126,7 +131,8 @@ export interface DataVersion {
 
 export interface SearchIndex {
   versions: { cn: DataVersion; tw?: DataVersion }
-  groups: string[]
+  /** 面板排列:維護者清單的分組與行,最後是「未分組」;只含索引裡的關鍵字,不含空行與空分組。 */
+  groups: IndexGroup[]
   keywords: IndexKeyword[]
   subProfessions: Record<string, { name: string; profession: Profession }>
   operators: IndexOperator[]

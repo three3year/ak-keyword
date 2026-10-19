@@ -17,9 +17,10 @@ const groups = computed(() => keywordGroups(props.index, props.server))
   <div class="kw-panel">
     <section v-for="g in groups" :key="g.name" class="kw-group">
       <h2 class="kw-group-name">{{ g.name }}</h2>
-      <div class="kw-list">
+      <!-- 每行從新的一行開始,行內放不下時折行 -->
+      <div v-for="(row, i) in g.rows" :key="i" class="kw-list">
         <button
-          v-for="k in g.keywords"
+          v-for="k in row"
           :key="k.id"
           class="kw"
           :class="{ on: selected.includes(k.id), sup: k.unofficial }"

@@ -9,6 +9,7 @@ import type {
   DataVersion,
   EffectType,
   IndexEntry,
+  IndexGroup,
   IndexKeyword,
   IndexModule,
   IndexOperator,
@@ -42,10 +43,13 @@ function dataVersion(raw: RawServer): DataVersion {
   return { version: raw.gamedataConst.dataVersion ?? '', downloadedAt: raw.downloadedAt }
 }
 
-/** 維護者清單:關鍵字分組。沒列到的關鍵字歸到「未分組」。 */
+/**
+ * 維護者清單:關鍵字面板的分組。每組由多行組成,每行是一串關鍵字 id(術語或 sup.<id> 補充關鍵字),順序就是面板順序。
+ * 沒列到的關鍵字歸到「未分組」。
+ */
 export interface KeywordGroup {
   name: string
-  keywords: string[]
+  rows: string[][]
 }
 
 /** 維護者清單:補充關鍵字。關鍵字 id 為 sup.<id>。 */
@@ -57,7 +61,6 @@ export interface SupplementKeyword {
   /** 繁中比對字串(台服文字)。 */
   tw: string[]
   definition: string
-  group: string
 }
 
 /** 效果類型覆寫檔:以「敘述文字雜湊:關鍵字」為鍵,建置時優先於規則判定。types 為空表示複核後判定沒有效果類型。 */
@@ -157,10 +160,11 @@ class Builder {
     }
     const versions: SearchIndex['versions'] = { cn: dataVersion(cn) }
     if (tw) versions.tw = dataVersion(tw)
+    const keywords = this.keywords(operators)
     return {
       versions,
-      groups: this.groups(),
-      keywords: this.keywords(operators),
+      groups: this.groups(keywords),
+      keywords,
       subProfessions: this.subProfessions(operators),
       operators,
     }
@@ -456,13 +460,22 @@ class Builder {
 
   // ---------- 關鍵字 ----------
 
-  /** 分組順序:維護者分組清單,再加上補充關鍵字清單裡新出現的分組,最後是「未分組」。 */
-  groups(): string[] {
-    const names = (this.input.groups ?? []).map((g) => g.name)
-    for (const s of this.input.supplements ?? []) if (!names.includes(s.group)) names.push(s.group)
-    return [...names, UNGROUPED]
+  /**
+   * 面板排列:維護者清單的分組與行,只留索引裡的關鍵字(重複列出的取第一次);
+   * 沒列到的關鍵字歸到最後的「未分組」,為一行。空行與空分組不列。
+   */
+  groups(keywords: IndexKeyword[]): IndexGroup[] {
+    const ids = new Set(keywords.map((k) => k.id))
+    const listed = new Set<string>()
+    const take = (id: string) => ids.has(id) && !listed.has(id) && !!listed.add(id)
+    const groups = (this.input.groups ?? []).map((g) => ({ name: g.name, rows: g.rows.map((row) => row.filter(take)) }))
+    groups.push({ name: UNGROUPED, rows: [keywords.map((k) => k.id).filter(take)] })
+    return groups
+      .map((g) => ({ name: g.name, rows: g.rows.filter((row) => row.length > 0) }))
+      .filter((g) => g.rows.length > 0)
   }
 
+  /** 索引裡的關鍵字:敘述中用到的術語(依 id),再來是補充關鍵字(依維護者清單)。 */
   keywords(operators: IndexOperator[]): IndexKeyword[] {
     const used = new Set<string>()
     for (const op of operators)
@@ -470,20 +483,8 @@ class Builder {
         for (const st of e.stages) for (const k of [...Object.keys(st.cn.hits), ...Object.keys(st.tw?.hits ?? {})]) used.add(k)
     const cnTerms = this.input.cn.gamedataConst.termDescriptionDict
     const twTerms = this.input.tw?.gamedataConst.termDescriptionDict ?? {}
-    const groupOf = new Map<string, string>()
-    const order = new Map<string, number>()
-    for (const g of this.input.groups ?? [])
-      for (const k of g.keywords) {
-        groupOf.set(k, g.name)
-        order.set(k, order.size)
-      }
-    const terms = [...used]
-      .filter((id) => !id.startsWith('sup.'))
-      .sort((a, b) => (order.get(a) ?? Infinity) - (order.get(b) ?? Infinity) || a.localeCompare(b))
     const keywords: IndexKeyword[] = []
-    for (const s of this.input.supplements ?? [])
-      keywords.push({ id: supplementId(s), name: s.name, kind: 'supplement', group: s.group, definition: [{ t: s.definition }] })
-    for (const id of terms) {
+    for (const id of [...used].filter((id) => !id.startsWith('sup.')).sort((a, b) => a.localeCompare(b))) {
       // 名稱與定義優先用台服
       const term = twTerms[id] ?? cnTerms[id]
       if (!term) this.warn(`術語字典沒有 ${id}`)
@@ -491,17 +492,12 @@ class Builder {
         id,
         name: term?.termName ?? id,
         kind: 'term',
-        group: groupOf.get(id) ?? UNGROUPED,
         definition: term ? this.parse(term.description, new Map(), `術語 ${id} 定義`) : [],
       })
     }
-    // 依分組順序排列;同一組內術語在前、補充關鍵字在後
-    const groups = this.groups()
-    const kindOrder = (k: IndexKeyword) => (k.kind === 'term' ? 0 : 1)
+    for (const s of this.input.supplements ?? [])
+      keywords.push({ id: supplementId(s), name: s.name, kind: 'supplement', definition: [{ t: s.definition }] })
     return keywords
-      .map((k, i) => ({ k, i }))
-      .sort((a, b) => groups.indexOf(a.k.group) - groups.indexOf(b.k.group) || kindOrder(a.k) - kindOrder(b.k) || a.i - b.i)
-      .map(({ k }) => k)
   }
 }
 

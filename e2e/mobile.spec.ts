@@ -10,6 +10,9 @@ test('手機寬度:抽屜選關鍵字、點擊顯示定義、點高亮詞只顯�
   await expect(panel).toBeHidden()
   await page.getByRole('button', { name: /^關鍵字/ }).click()
   await expect(panel).toBeVisible()
+  // 抽屜裡的面板照同樣分組分行,一行放不下時在行內折行
+  await expect(panel.locator('.kw-group').first().locator('.kw-list').first().locator('.kw').first()).toHaveText('減速')
+  expect(await noHorizontalScroll()).toBe(true)
   // 抽屜裡的面板一樣沒有過濾欄位與清除按鈕
   await expect(panel.getByRole('searchbox')).toHaveCount(0)
   await expect(panel.getByRole('button', { name: '清除' })).toHaveCount(0)

@@ -152,6 +152,10 @@ input {
   gap: 6px;
 }
 
+.kw-list + .kw-list {
+  margin-top: 6px;
+}
+
 .kw {
   border: 1px solid var(--border);
   background: var(--surface-2);

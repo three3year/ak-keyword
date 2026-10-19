@@ -1,39 +1,44 @@
 [
   {
     "name": "控場",
-    "keywords": [
-      "ba.stun", "ba.sleep", "ba.frozen", "ba.levitate", "ba.root", "ba.sluggish", "ba.fear",
-      "ba.attract", "ba.palsy", "ba.tremble", "ba.weightless", "ba.groundbind", "ba.slowdown"
+    "rows": [
+      ["sup.slow", "ba.sluggish", "ba.root", "ba.stun", "ba.sleep", "ba.slowdown", "ba.frozen"],
+      ["sup.knockback", "sup.pull", "ba.levitate", "ba.groundbind", "ba.tremble", "ba.attract", "ba.palsy", "ba.fear"]
     ]
   },
   {
     "name": "減益",
-    "keywords": [
-      "ba.cold", "ba.fragile", "ba.magicfragile", "ba.physicfragile", "ba.elementfragile",
-      "ba.weaken", "ba.steal", "ba.debuff"
+    "rows": [
+      ["sup.silence", "ba.cold", "ba.weightless", "ba.steal", "ba.debuff"],
+      ["ba.weaken", "ba.fragile", "ba.physicfragile", "ba.magicfragile", "ba.elementfragile"]
     ]
   },
   {
     "name": "增益",
-    "keywords": [
-      "ba.inspire", "ba.shield", "ba.physhield", "ba.protect", "ba.airprotect", "ba.barrier",
-      "ba.epbarrier", "ba.dmgresistance", "ba.invisible", "ba.camou", "ba.buffres", "ba.strong",
-      "ba.berserk", "ba.refraction", "ba.float", "ba.liftoff"
+    "rows": [
+      ["ba.invisible", "ba.camou", "ba.buffres", "sup.dodge", "ba.liftoff", "ba.float"],
+      ["ba.protect", "ba.airprotect", "ba.shield", "ba.barrier", "ba.physhield", "ba.epbarrier", "ba.dmgresistance"],
+      ["ba.berserk", "ba.strong", "ba.inspire", "ba.refraction"]
     ]
   },
   {
     "name": "元素傷害",
-    "keywords": [
-      "ba.dt.element", "ba.dt.neural", "ba.dt.erosion", "ba.dt.burning", "ba.dt.apoptosis",
-      "ba.dt.rampage", "ba.dt.neural2", "ba.dt.erosion2", "ba.dt.burning2", "ba.dt.apoptosis2"
+    "rows": [
+      ["ba.dt.neural2", "ba.dt.erosion2", "ba.dt.burning2", "ba.dt.apoptosis2"],
+      ["ba.dt.element", "ba.dt.apoptosis", "ba.dt.erosion", "ba.dt.neural", "ba.dt.burning", "ba.dt.rampage"]
     ]
   },
   {
     "name": "機制",
-    "keywords": [
-      "ba.charged", "ba.overdrive", "ba.chant", "ba.magicpoint", "ba.magicarcane",
-      "ba.addbullet", "ba.addash", "ba.permanentatk", "ba.alter", "ba.weaknessatk", "ba.dying",
-      "ba.triggereffect"
+    "rows": [
+      [
+        "ba.charged", "ba.overdrive", "ba.chant", "ba.magicpoint", "ba.magicarcane", "ba.addbullet", "ba.addash",
+        "ba.permanentatk", "ba.alter", "ba.weaknessatk", "ba.dying", "ba.triggereffect"
+      ]
     ]
+  },
+  {
+    "name": "傷害",
+    "rows": [["sup.truedmg"]]
   }
 ]

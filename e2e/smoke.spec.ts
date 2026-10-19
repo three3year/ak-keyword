@@ -302,3 +302,20 @@ test('面板隱藏目前伺服器沒有幹員的關鍵字,已選的 chip 保留'
   await page.getByRole('radio', { name: '國服' }).click()
   await expect(groundbind).toHaveAttribute('aria-pressed', 'true')
 })
+
+test('關鍵字面板依分組分行:控場第一行以減速開頭,沉默與失重在減益', async ({ page }) => {
+  await page.goto('./')
+  const panel = page.getByRole('complementary', { name: '關鍵字面板' })
+  const group = (name: string) => panel.locator('.kw-group').filter({ has: page.getByRole('heading', { name, exact: true }) })
+  const firstRow = group('控場').locator('.kw-list').first().locator('.kw')
+  await expect(firstRow).toHaveText(['減速', '停頓', '束縛', '暈眩', '沉睡', '迟钝', '凍結'])
+  await expect(group('控場').locator('.kw-list')).toHaveCount(2)
+  for (const name of ['沉默', '失重']) {
+    await expect(group('減益').getByRole('button', { name, exact: true })).toHaveCount(1)
+    await expect(group('控場').getByRole('button', { name, exact: true })).toHaveCount(0)
+  }
+  // 每行從新的一行開始:第二行的第一顆在第一行下方
+  const rows = group('控場').locator('.kw-list')
+  const top = async (i: number) => (await rows.nth(i).locator('.kw').first().boundingBox())!.y
+  expect(await top(1)).toBeGreaterThan(await top(0))
+})

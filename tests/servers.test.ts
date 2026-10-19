@@ -102,12 +102,12 @@ describe('國服模式', () => {
 describe('名稱與補充關鍵字', () => {
   test('關鍵字名稱與定義優先用台服', () => {
     const { index } = buildIndex(servers())
-    const cold = keywordGroups(index, 'tw').flatMap((g) => g.keywords).find((k) => k.name === '寒冷')!
+    const cold = keywordGroups(index, 'tw').flatMap((g) => g.rows.flat()).find((k) => k.name === '寒冷')!
     expect(plain(cold.definition)).toBe('攻擊速度下降,如果在持續時間內再次受到寒冷效果則會變為凍結')
   })
 
   test('補充關鍵字在台服敘述上以繁中字串比對', () => {
-    const supplements: SupplementKeyword[] = [{ id: 'knockback', name: '擊退', cn: ['推开'], tw: ['推開'], definition: '推', group: '控場' }]
+    const supplements: SupplementKeyword[] = [{ id: 'knockback', name: '擊退', cn: ['推开'], tw: ['推開'], definition: '推' }]
     const cn = server({ terms: COMMON_TERMS, operators: { char_620_p: operator({ name: '推', skills: ['sk'] }) }, skills: [masteredSkill('sk', '技', { description: '将敌人推开' }, { description: '将敌人推开' })] })
     const tw = server({ terms: TW_TERMS, operators: { char_620_p: operator({ name: '推', skills: ['sk'] }) }, skills: [masteredSkill('sk', '技', { description: '將敵人推開' }, { description: '將敵人推開' })] })
     const { index } = buildIndex({ cn, tw, supplements })

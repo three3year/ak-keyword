@@ -4,8 +4,8 @@ import { availableTypes, defaultType, query } from '../src/core/query'
 import { EFFECT_TYPES, type EffectType, type SearchIndex, type Server } from '../src/core/types'
 import { COMMON_TERMS, basicSkill, operator, server } from './fixtures'
 
-const DODGE = { id: 'dodge', name: '閃避', cn: ['闪避'], tw: ['閃避'], definition: '使攻擊無效', group: '增益' }
-const PULL = { id: 'pull', name: '拉', cn: ['拖拽'], tw: ['拖拽'], definition: '把敵人拉近', group: '控場' }
+const DODGE = { id: 'dodge', name: '閃避', cn: ['闪避'], tw: ['閃避'], definition: '使攻擊無效' }
+const PULL = { id: 'pull', name: '拉', cn: ['拖拽'], tw: ['拖拽'], definition: '把敵人拉近' }
 
 /** 每位幹員一個技能,技能敘述由參數給定。 */
 function fixture(descriptions: Record<string, string>) {

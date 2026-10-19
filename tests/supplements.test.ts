@@ -4,9 +4,9 @@ import { keywordGroups, query } from '../src/core/query'
 import { applying, COMMON_TERMS, basicSkill, highlights, operator, plain, server } from './fixtures'
 
 const supplements: SupplementKeyword[] = [
-  { id: 'knockback', name: '擊退', cn: ['推开', '击退'], tw: ['推開', '擊退'], definition: '把敵人往遠離自己的方向推動', group: '控場' },
-  { id: 'truedmg', name: '真實傷害', cn: ['真实伤害'], tw: ['真實傷害'], definition: '無視防禦與法術抗性的傷害', group: '傷害' },
-  { id: 'lift', name: '浮起', cn: ['浮空'], tw: ['浮空'], definition: '測試用', group: '控場' },
+  { id: 'knockback', name: '擊退', cn: ['推开', '击退'], tw: ['推開', '擊退'], definition: '把敵人往遠離自己的方向推動' },
+  { id: 'truedmg', name: '真實傷害', cn: ['真实伤害'], tw: ['真實傷害'], definition: '無視防禦與法術抗性的傷害' },
+  { id: 'lift', name: '浮起', cn: ['浮空'], tw: ['浮空'], definition: '測試用' },
 ]
 
 function fixture(descriptions: Record<string, string>) {
@@ -53,18 +53,21 @@ describe('補充關鍵字', () => {
     ])
   })
 
-  test('面板依清單分組,定義標為非官方', () => {
+  test('面板依清單排列,定義標為非官方', () => {
     const { index } = buildIndex({
       cn: fixture({ 甲: '将敌人推开', 乙: '造成真实伤害', 丙: '使敌人浮空2秒' }),
-      groups: [{ name: '控場', keywords: ['ba.stun'] }],
+      groups: [
+        { name: '控場', rows: [['ba.stun', 'sup.lift', 'sup.knockback']] },
+        { name: '傷害', rows: [['sup.truedmg']] },
+      ],
       supplements,
     })
     const panel = keywordGroups(index, 'cn')
-    expect(panel.map((g) => [g.name, g.keywords.map((k) => k.name)])).toEqual([
-      ['控場', ['擊退', '浮起']],
-      ['傷害', ['真實傷害']],
+    expect(panel.map((g) => [g.name, g.rows.map((r) => r.map((k) => k.name))])).toEqual([
+      ['控場', [['浮起', '擊退']]],
+      ['傷害', [['真實傷害']]],
     ])
-    const knockback = panel[0].keywords[0]
+    const knockback = panel[0].rows[0][1]
     expect(knockback.unofficial).toBe(true)
     expect(plain(knockback.definition)).toBe('把敵人往遠離自己的方向推動')
   })
