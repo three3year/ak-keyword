@@ -14,6 +14,7 @@ import type {
   Server,
 } from './types'
 import { PROFESSION_LABELS, PROFESSIONS, type Profession } from './types'
+import { DATA_SOURCES, type DataSource, repoUrl } from './sources'
 
 function moduleName(stage: IndexStage, op: IndexOperator): string {
   return op.modules.find((m) => m.id === stage.module)?.name ?? stage.module ?? ''
@@ -215,4 +216,24 @@ export function keywordGroups(index: SearchIndex, filter: string): PanelGroup[] 
     groups.get(k.group)!.push({ id: k.id, name: k.name, definition: k.definition, unofficial: k.kind === 'supplement' })
   }
   return [...groups].filter(([, ks]) => ks.length > 0).map(([name, keywords]) => ({ name, keywords }))
+}
+
+export interface FooterItem {
+  /** 國服、台服或頭像。 */
+  label: string
+  /** 伺服器資料的版號;頭像沒有。 */
+  version?: string
+  source: { name: string; url: string }
+}
+
+function footerSource(source: DataSource): FooterItem['source'] {
+  return { name: source.name, url: repoUrl(source) }
+}
+
+/** 頁尾:各伺服器的資料版本與資料來源,最後是頭像的資料來源。索引沒有台服資料時不列台服。 */
+export function footerItems(index: SearchIndex): FooterItem[] {
+  const items: FooterItem[] = [{ label: '國服', version: index.versions.cn, source: footerSource(DATA_SOURCES.cn) }]
+  if (index.versions.tw !== undefined) items.push({ label: '台服', version: index.versions.tw, source: footerSource(DATA_SOURCES.tw) })
+  items.push({ label: '頭像', source: footerSource(DATA_SOURCES.avatar) })
+  return items
 }

@@ -4,8 +4,9 @@ import { existsSync } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import sharp from 'sharp'
+import { DATA_SOURCES, rawBase } from '../src/core/sources'
 
-const SOURCE = 'https://raw.githubusercontent.com/yuanyan3060/ArknightsGameResource/main/avatar'
+const SOURCE = rawBase(DATA_SOURCES.avatar)
 const SIZE = 80
 
 export interface AvatarJob {

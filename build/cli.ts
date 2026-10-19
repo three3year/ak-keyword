@@ -7,6 +7,7 @@ import { dirname, join } from 'node:path'
 import { prepareAvatars } from './avatars'
 import { buildIndex, type KeywordGroup, type Overrides, type SupplementKeyword } from './buildIndex'
 import type { RawServer } from './raw'
+import { DATA_SOURCES, rawBase } from '../src/core/sources'
 
 const ROOT = join(import.meta.dirname, '..')
 const CACHE = join(ROOT, '.cache', 'raw')
@@ -15,11 +16,11 @@ const REVIEW_DIR = join(ROOT, 'review')
 
 const SOURCES = {
   cn: {
-    base: 'https://raw.githubusercontent.com/Kengxxiao/ArknightsGameData/master/zh_CN/gamedata/excel',
+    base: rawBase(DATA_SOURCES.cn),
     files: ['character_table', 'skill_table', 'gamedata_const', 'uniequip_table', 'battle_equip_table', 'char_patch_table', 'item_table'],
   },
   tw: {
-    base: 'https://raw.githubusercontent.com/arkntools/arknights-data-tw-for-maa/main',
+    base: rawBase(DATA_SOURCES.tw),
     files: ['character_table', 'skill_table', 'gamedata_const', 'uniequip_table', 'char_patch_table'],
   },
 } as const

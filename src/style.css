@@ -693,7 +693,8 @@ input:focus-visible {
   border-top: 1px solid var(--border);
   color: var(--text-2);
   font-size: 0.82rem;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 16px;
+}
+
+.footer a {
+  color: var(--accent);
 }

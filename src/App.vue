@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import { loadIndex } from './core/loadIndex'
-import { filterOptions, query } from './core/query'
+import { filterOptions, footerItems, query } from './core/query'
 import {
   EFFECT_TYPE_LABELS,
   PROFESSION_LABELS,
@@ -40,6 +40,7 @@ onMounted(async () => {
 })
 
 const keywordMap = computed(() => new Map<string, IndexKeyword>((index.value?.keywords ?? []).map((k) => [k.id, k])))
+const footer = computed(() => (index.value ? footerItems(index.value) : []))
 const options = computed(() => (index.value ? filterOptions(index.value) : { rarities: [], professions: [] }))
 const results = computed(() =>
   index.value
@@ -186,8 +187,11 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
     </main>
     <p v-else class="hint">載入中…</p>
     <footer v-if="index" class="footer">
-      資料版本:國服 {{ index.versions.cn }}<template v-if="index.versions.tw"> · 台服 {{ index.versions.tw }}</template>
-      <span class="footer-note">遊戲資料來自 Kengxxiao/ArknightsGameData 與 arkntools/arknights-data-tw-for-maa</span>
+      <template v-for="(item, i) in footer" :key="item.label">
+        <template v-if="i > 0"> · </template>
+        <a :href="item.source.url" target="_blank" rel="noopener noreferrer" :title="`資料來源:${item.source.name}`">{{ item.label }}</a>
+        <template v-if="item.version">{{ ` ${item.version}` }}</template>
+      </template>
     </footer>
     <KeywordTip :keywords="keywordMap" :selected="selected" @toggle="toggle" />
   </div>
