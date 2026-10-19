@@ -1,6 +1,6 @@
 # 規格:結果卡分頁、階段切換與底色
 
-Status: ready-for-agent
+Status: resolved
 
 ## 問題陳述
 

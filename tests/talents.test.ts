@@ -136,7 +136,7 @@ describe('特性', () => {
     expect(plain(results[0].entries[0].stages[0].runs)).toBe('攻击使目标浮空1.5秒')
   })
 
-  test('結果依特性、天賦、技能的順序列出', () => {
+  test('結果依特性、天賦、技能的順序列出,並帶各自的敘述來源種類', () => {
     const cn = server({
       terms: COMMON_TERMS,
       operators: {
@@ -150,6 +150,10 @@ describe('特性', () => {
       skills: [{ skillId: 'sk_1', levels: Array(7).fill({ name: '技', description: '<$ba.cold>寒冷</>', blackboard: [] }) }],
     })
     const [r] = query(buildIndex({ cn }).index, { keywords: ['ba.cold'], server: 'cn' })
-    expect(r.entries.map((e) => e.source)).toEqual(['特性', '天賦1', '技能1'])
+    expect(r.entries.map((e) => [e.source, e.kind])).toEqual([
+      ['特性', 'trait'],
+      ['天賦1', 'talent'],
+      ['技能1', 'skill'],
+    ])
   })
 })

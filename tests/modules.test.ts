@@ -100,7 +100,7 @@ describe('模組3 階段', () => {
       'ba.cold',
     )
     const [entry] = results[0].entries
-    expect([entry.source, entry.name]).toEqual(['天賦3', '寒流'])
+    expect([entry.source, entry.name, entry.kind]).toEqual(['天賦3', '寒流', 'talent'])
     expect(entry.stages.map((s) => [s.label, plain(s.runs), s.hit, s.absent ?? false])).toEqual([
       ['無模組', '', false, true],
       ['模組3 · CCR-X', '攻击使敌人寒冷2（+1）秒', true, false],

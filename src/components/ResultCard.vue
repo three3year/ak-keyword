@@ -38,7 +38,7 @@ function onAvatarError(e: Event) {
 </script>
 
 <template>
-  <article class="card" data-testid="result-card">
+  <article class="card" :class="op.rarity >= 3 ? `glow-${op.rarity}` : 'glow-low'" data-testid="result-card">
     <header class="card-head">
       <img
         class="avatar"
@@ -104,7 +104,7 @@ function onAvatarError(e: Event) {
           {{ selected.length > 1 ? `${keywords.get(k)?.name ?? k}:` : '' }}{{ EFFECT_TYPE_LABELS[fx] }}
         </span>
       </div>
-      <div class="stage">
+      <div class="stage" :class="`src-${entry.kind}`">
         <RichText class="stage-text" :runs="stage.runs" :selected="selected" />
       </div>
     </section>

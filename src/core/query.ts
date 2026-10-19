@@ -108,7 +108,7 @@ function resultOperator(op: IndexOperator, opts: QueryOptions): ResultOperator |
     // 模組新增的天賦沒有無模組階段:補一個不存在的,讓介面看得出要裝模組才有
     if (visible[0].stage.kind === 'module') stages.unshift({ label: '無模組', runs: [], hit: false, effects: {}, absent: true })
     for (const s of stages) for (const k of Object.keys(s.effects)) found.add(k)
-    const result: ResultEntry = { source: entrySource(entry), stages }
+    const result: ResultEntry = { source: entrySource(entry), kind: entry.kind, stages }
     if (entry.name) result.name = entry.name
     if (entry.summon) result.summon = summon?.name ?? entry.summon
     entries.push(result)

@@ -18,6 +18,16 @@
   --exploit: #b25d00;
   --resist: #1565c0;
   --other: #607080;
+  /* 結果卡左緣的星數光暈,色系同星號 */
+  --glow-6: rgb(240 138 36 / 0.2);
+  --glow-5: rgb(224 178 58 / 0.22);
+  --glow-4: rgb(167 127 216 / 0.2);
+  --glow-3: rgb(74 159 224 / 0.18);
+  --glow-low: rgb(150 160 175 / 0.18);
+  /* 文字框依敘述來源上色,避開星數光暈的色系 */
+  --src-skill: #e8f5ec;
+  --src-talent: #fcecf2;
+  --src-trait: #e3f4f4;
   --radius: 10px;
   color-scheme: light;
 }
@@ -43,6 +53,14 @@
     --exploit: #ffb45a;
     --resist: #74b4ff;
     --other: #9aa8b8;
+    --glow-6: rgb(240 138 36 / 0.26);
+    --glow-5: rgb(224 178 58 / 0.24);
+    --glow-4: rgb(167 127 216 / 0.26);
+    --glow-3: rgb(74 159 224 / 0.24);
+    --glow-low: rgb(150 160 175 / 0.16);
+    --src-skill: #1c2d23;
+    --src-talent: #322029;
+    --src-trait: #1a2d30;
     color-scheme: dark;
   }
 }
@@ -157,10 +175,30 @@ input:focus-visible {
 }
 
 .card {
-  background: var(--surface);
+  background: linear-gradient(90deg, var(--glow, transparent), transparent 160px) var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 12px 14px;
+}
+
+.card.glow-6 {
+  --glow: var(--glow-6);
+}
+
+.card.glow-5 {
+  --glow: var(--glow-5);
+}
+
+.card.glow-4 {
+  --glow: var(--glow-4);
+}
+
+.card.glow-3 {
+  --glow: var(--glow-3);
+}
+
+.card.glow-low {
+  --glow: var(--glow-low);
 }
 
 .card-head {
@@ -275,6 +313,18 @@ input:focus-visible {
   border-radius: 8px;
   padding: 8px 10px;
   min-width: 0;
+}
+
+.stage.src-skill {
+  background: var(--src-skill);
+}
+
+.stage.src-talent {
+  background: var(--src-talent);
+}
+
+.stage.src-trait {
+  background: var(--src-trait);
 }
 
 .stage-text {

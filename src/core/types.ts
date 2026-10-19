@@ -156,6 +156,8 @@ export interface ResultStage {
 export interface ResultEntry {
   /** 敘述來源,例如「技能2」「天賦1」「特性」「召喚物技能1」。 */
   source: string
+  /** 敘述來源種類,供介面決定文字框顏色。 */
+  kind: EntryKind
   name?: string
   summon?: string
   /** 各階段依序排列;介面預設顯示第一個命中的階段。 */
