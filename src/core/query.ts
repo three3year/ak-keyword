@@ -77,7 +77,7 @@ function baseSource(entry: IndexEntry): string {
     case 'skill':
       return `技能${entry.no}`
     case 'talent':
-      return entry.no ? `天賦${entry.no}` : '模組天賦'
+      return `天賦${entry.no}`
     case 'trait':
       return '特性'
   }
@@ -105,6 +105,8 @@ function resultOperator(op: IndexOperator, opts: QueryOptions): ResultOperator |
     const visible = visibleStages(entry, op, opts.server)
     const stages = visible.map((v) => resultStage(v, visible, op, opts))
     if (!stages.some((s) => s.hit)) continue
+    // 模組新增的天賦沒有無模組階段:補一個不存在的,讓介面看得出要裝模組才有
+    if (visible[0].stage.kind === 'module') stages.unshift({ label: '無模組', runs: [], hit: false, effects: {}, absent: true })
     for (const s of stages) for (const k of Object.keys(s.effects)) found.add(k)
     const result: ResultEntry = { source: entrySource(entry), stages }
     if (entry.name) result.name = entry.name

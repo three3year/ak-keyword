@@ -65,7 +65,7 @@ export type EntryKind = 'skill' | 'talent' | 'trait'
 
 export interface IndexEntry {
   kind: EntryKind
-  /** 技能或天賦的編號(1 起算);模組新增的天賦沒有編號。 */
+  /** 技能或天賦的編號(1 起算);模組新增的天賦接續幹員原有天賦。特性沒有編號。 */
   no?: number
   name?: string
   /** 召喚物 id;敘述屬於召喚物時才有。 */
@@ -149,6 +149,8 @@ export interface ResultStage {
   cnData?: boolean
   /** 模組3 階段的模組全名(標籤只寫模組代碼)。 */
   module?: string
+  /** 不存在的階段:模組新增的天賦沒有無模組階段,仍列出一個沒有文字、未命中的「無模組」供對照。 */
+  absent?: boolean
 }
 
 export interface ResultEntry {

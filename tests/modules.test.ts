@@ -73,9 +73,15 @@ describe('模組3 階段', () => {
     expect(results[0].entries.map((e) => [e.source, e.stages.map((s) => s.label)])).toEqual([['天賦1', ['']]])
   })
 
-  test('模組新增的天賦只有模組3 階段;模組天賦也呈現潛能加成', () => {
+  test('模組新增的天賦接續編號成為天賦N,最前面是不存在的無模組階段;也呈現潛能加成', () => {
     const { results } = search(
-      { name: '新天賦', talents: [{ name: '原天赋', description: '攻击力+10%' }] },
+      {
+        name: '新天賦',
+        talents: [
+          { name: '原天赋一', description: '攻击力+10%' },
+          { name: '原天赋二', description: '防御力+10%' },
+        ],
+      },
       [
         {
           id: 'uniequip_002_m',
@@ -94,7 +100,29 @@ describe('模組3 階段', () => {
       'ba.cold',
     )
     const [entry] = results[0].entries
-    expect([entry.source, entry.name]).toEqual(['模組天賦', '寒流'])
-    expect(stagesOf(entry)).toEqual([['模組3 · CCR-X', '攻击使敌人寒冷2（+1）秒', true]])
+    expect([entry.source, entry.name]).toEqual(['天賦3', '寒流'])
+    expect(entry.stages.map((s) => [s.label, plain(s.runs), s.hit, s.absent ?? false])).toEqual([
+      ['無模組', '', false, true],
+      ['模組3 · CCR-X', '攻击使敌人寒冷2（+1）秒', true, false],
+    ])
+    expect(entry.stages.map((s) => s.module)).toEqual([undefined, '新增模組'])
+  })
+
+  test('兩個模組各新增天賦時併成同一段天賦,各有一個模組3 階段;天賦名不同時發警告並取第一個', () => {
+    const { results, warnings } = search(
+      { name: '雙新增', talents: [{ name: '原天赋', description: '攻击力+10%' }] },
+      [
+        { id: 'uniequip_002_m', name: '甲模組', code: 'CCR-X', talents: [{ index: -1, name: '寒流', description: '攻击力+5%' }] },
+        { id: 'uniequip_003_m', name: '乙模組', code: 'CCR-Y', talents: [{ index: -1, name: '霜降', description: '攻击使敌人<$ba.cold>寒冷</>' }] },
+      ],
+      'ba.cold',
+    )
+    expect(results[0].entries.map((e) => [e.source, e.name])).toEqual([['天賦2', '寒流']])
+    expect(stagesOf(results[0].entries[0])).toEqual([
+      ['無模組', '', false],
+      ['模組3 · CCR-X', '攻击力+5%', false],
+      ['模組3 · CCR-Y', '攻击使敌人寒冷', true],
+    ])
+    expect(warnings.filter((w) => w.includes('寒流') && w.includes('霜降'))).toHaveLength(1)
   })
 })
