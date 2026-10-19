@@ -28,6 +28,8 @@ watch(server, saveServer)
 const rarities = ref<number[]>([])
 const professions = ref<Profession[]>([])
 const branch = ref('')
+// 窄螢幕上關鍵字面板收合成抽屜
+const drawerOpen = ref(false)
 
 onMounted(async () => {
   try {
@@ -114,7 +116,9 @@ function onClick(e: MouseEvent) {
 }
 
 function onKey(e: KeyboardEvent) {
-  if (e.key === 'Escape') hideTip()
+  if (e.key !== 'Escape') return
+  hideTip()
+  drawerOpen.value = false
 }
 
 onMounted(() => window.addEventListener('keydown', onKey))
@@ -125,10 +129,18 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   <div class="app" @mouseover="onOver" @mouseout="onOut" @click="onClick">
     <header class="top">
       <h1>明日方舟關鍵字搜尋</h1>
+      <button v-if="index" class="btn drawer-btn" :aria-expanded="drawerOpen" @click.stop="drawerOpen = !drawerOpen">
+        關鍵字<template v-if="selected.length">({{ selected.length }})</template>
+      </button>
     </header>
     <p v-if="error" class="error">{{ error }}</p>
     <main v-else-if="index" class="layout">
-      <aside class="panel">
+      <div v-if="drawerOpen" class="backdrop" @click="drawerOpen = false"></div>
+      <aside class="panel" :class="{ open: drawerOpen }" aria-label="關鍵字面板">
+        <div class="drawer-head">
+          <strong>關鍵字</strong>
+          <button class="btn" @click="drawerOpen = false">完成</button>
+        </div>
         <KeywordPanel :index="index" :selected="selected" @toggle="toggle" @clear="clear" />
       </aside>
       <section class="results">

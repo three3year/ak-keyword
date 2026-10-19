@@ -279,14 +279,76 @@ input:focus-visible {
   color: var(--pot);
 }
 
+/* ---- 抽屜(只在窄螢幕) ---- */
+
+.drawer-btn,
+.drawer-head,
+.backdrop {
+  display: none;
+}
+
 @media (max-width: 760px) {
   .layout {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .top {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: var(--bg);
+  }
+
+  .top h1 {
+    font-size: 1.05rem;
+  }
+
+  .drawer-btn {
+    display: inline-block;
+  }
+
   .panel {
-    position: static;
+    position: fixed;
+    z-index: 40;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: min(86vw, 360px);
     max-height: none;
+    border-radius: 0 var(--radius) var(--radius) 0;
+    transform: translateX(-105%);
+    transition: transform 0.2s ease;
+    visibility: hidden;
+  }
+
+  .panel.open {
+    transform: none;
+    visibility: visible;
+  }
+
+  .drawer-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    background: rgb(0 0 0 / 0.35);
+  }
+
+  .stages {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel {
+    transition: none;
   }
 }
 
