@@ -12,6 +12,7 @@ import {
   type SearchCondition,
   type SearchIndex,
   type Server,
+  sortTypes,
 } from './core/types'
 import FilterBar from './components/FilterBar.vue'
 import KeywordPanel from './components/KeywordPanel.vue'
@@ -22,7 +23,7 @@ import { hideTip, isTouch, showTip, tip } from './ui/tip'
 
 const index = shallowRef<SearchIndex>()
 const error = ref('')
-/** 已選關鍵字(依加入順序)與各自亮著的效果類型;每亮一顆就是一個搜尋條件。 */
+/** 搜尋條件:每個 chip 一個關鍵字(依加入順序)與它亮著的效果類型,每亮一顆就是一個搜尋條件。 */
 const selection = ref<{ keyword: string; types: EffectType[] }[]>([])
 const selected = computed(() => selection.value.map((s) => s.keyword))
 const conditions = computed<SearchCondition[]>(() => selection.value.flatMap((s) => s.types.map((type) => ({ keyword: s.keyword, type }))))
@@ -57,12 +58,11 @@ const results = computed(() =>
     : [],
 )
 
-/** 各已選關鍵字在目前伺服器有資料的效果類型;沒資料的類型鈕反灰。 */
+/** 各 chip 的關鍵字在目前伺服器有資料的效果類型;沒資料的類型鈕反灰。 */
 const available = computed(
   () => new Map(selection.value.map((s) => [s.keyword, index.value ? availableTypes(index.value, server.value, s.keyword) : []])),
 )
 
-/** 沒資料的類型鈕不能點;但已亮著的(例如切換伺服器後才沒資料)仍可關掉。 */
 function hasData(id: string, type: EffectType): boolean {
   return !!available.value.get(id)?.includes(type)
 }
@@ -99,7 +99,7 @@ function toggleType(id: string, type: EffectType) {
     .map((s) => {
       if (s.keyword !== id) return s
       const on = s.types.includes(type) ? s.types.filter((t) => t !== type) : [...s.types, type]
-      return { keyword: id, types: EFFECT_TYPES.filter((t) => on.includes(t)) }
+      return { keyword: id, types: sortTypes(on) }
     })
     .filter((s) => s.types.length > 0)
 }
@@ -191,6 +191,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
           <span v-for="s in selection" :key="s.keyword" class="chip" data-testid="chip">
             <span :data-k="s.keyword" class="chip-name">{{ keywordName(s.keyword) }}</span>
             <span class="chip-types" role="group" :aria-label="`${keywordName(s.keyword)}的效果類型`">
+              <!-- 沒資料的類型鈕不能點;已亮著的(例如切換伺服器後才沒資料)仍可關掉 -->
               <button
                 v-for="t in EFFECT_TYPES"
                 :key="t"

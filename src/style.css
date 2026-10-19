@@ -494,7 +494,7 @@ input:focus-visible {
   padding: 8px 0;
 }
 
-/* ---- 已選關鍵字 ---- */
+/* ---- 搜尋條件 chip ---- */
 
 .chips {
   display: flex;

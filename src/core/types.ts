@@ -7,6 +7,12 @@ export type EffectType = 'apply' | 'exploit' | 'counter'
 
 export const EFFECT_TYPES: EffectType[] = ['apply', 'exploit', 'counter']
 
+/** 去重並依 EFFECT_TYPES 順序排列。 */
+export function sortTypes(types: Iterable<EffectType>): EffectType[] {
+  const set = new Set(types)
+  return EFFECT_TYPES.filter((t) => set.has(t))
+}
+
 export const EFFECT_TYPE_LABELS: Record<EffectType, string> = {
   apply: '施加',
   exploit: '利用',

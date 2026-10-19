@@ -16,7 +16,7 @@ import type {
   SearchIndex,
   Server,
 } from './types'
-import { EFFECT_TYPES, PROFESSION_LABELS, PROFESSIONS, type Profession } from './types'
+import { PROFESSION_LABELS, PROFESSIONS, type Profession, sortTypes } from './types'
 import { DATA_SOURCES, type DataSource, repoUrl } from './sources'
 
 function moduleOf(stage: IndexStage, op: IndexOperator): { name: string; code: string } {
@@ -88,11 +88,8 @@ function baseSource(entry: IndexEntry): string {
 
 function resultStage(v: Visible, visible: Visible[], op: IndexOperator, opts: QueryOptions): ResultStage {
   const effects: ResultStage['effects'] = {}
-  for (const c of opts.conditions) {
-    if (!v.match.hits[c.keyword]?.includes(c.type)) continue
-    // 依索引中的效果類型順序排列
-    effects[c.keyword] = v.match.hits[c.keyword].filter((t) => t === c.type || effects[c.keyword]?.includes(t))
-  }
+  for (const c of opts.conditions)
+    if (v.match.hits[c.keyword]?.includes(c.type)) effects[c.keyword] = sortTypes([...(effects[c.keyword] ?? []), c.type])
   const result: ResultStage = { label: stageLabel(v.stage, visible, op), runs: v.runs, hit: Object.keys(effects).length > 0, effects }
   if (v.stage.kind === 'module') result.module = moduleOf(v.stage, op).name
   if (v.cnData) result.cnData = true
@@ -111,21 +108,25 @@ function* visibleEntries(op: IndexOperator, server: Server): Generator<{ entry: 
 
 function resultOperator(op: IndexOperator, opts: QueryOptions): ResultOperator | undefined {
   const entries: ResultEntry[] = []
-  /** 已有命中階段的搜尋條件,以「關鍵字 效果類型」記錄。 */
-  const found = new Set<string>()
+  /** 已有命中階段的搜尋條件:關鍵字 → 效果類型。 */
+  const found = new Map<string, Set<EffectType>>()
   for (const { entry, summon } of visibleEntries(op, opts.server)) {
     const visible = visibleStages(entry, op, opts.server)
     const stages = visible.map((v) => resultStage(v, visible, op, opts))
     if (!stages.some((s) => s.hit)) continue
     // 模組新增的天賦沒有無模組階段:補一個不存在的,讓介面看得出要裝模組才有
     if (entry.kind === 'talent' && !entry.stages.some((s) => s.kind === 'base')) stages.unshift({ label: '無模組', runs: [], hit: false, effects: {}, absent: true })
-    for (const s of stages) for (const [k, types] of Object.entries(s.effects)) for (const t of types) found.add(`${k} ${t}`)
+    for (const s of stages)
+      for (const [k, types] of Object.entries(s.effects)) {
+        if (!found.has(k)) found.set(k, new Set())
+        for (const t of types) found.get(k)!.add(t)
+      }
     const result: ResultEntry = { source: entrySource(entry), kind: entry.kind, stages }
     if (entry.name) result.name = entry.name
     if (entry.summon) result.summon = summon?.name ?? entry.summon
     entries.push(result)
   }
-  if (!opts.conditions.every((c) => found.has(`${c.keyword} ${c.type}`))) return undefined
+  if (!opts.conditions.every((c) => found.get(c.keyword)?.has(c.type))) return undefined
   const result: ResultOperator = {
     id: op.id,
     name: op.name,
@@ -187,11 +188,11 @@ export function query(index: SearchIndex, opts: QueryOptions): ResultOperator[] 
  * 只看關鍵字本身,不考慮篩選或其他搜尋條件;伺服器可見性與查詢一致。
  */
 export function availableTypes(index: SearchIndex, server: Server, keyword: string): EffectType[] {
-  const found = new Set<EffectType>()
+  const found: EffectType[] = []
   for (const op of index.operators)
     for (const { entry } of visibleEntries(op, server))
-      for (const v of visibleStages(entry, op, server)) for (const t of v.match.hits[keyword] ?? []) found.add(t)
-  return EFFECT_TYPES.filter((t) => found.has(t))
+      for (const v of visibleStages(entry, op, server)) found.push(...(v.match.hits[keyword] ?? []))
+  return sortTypes(found)
 }
 
 export interface FilterOptions {

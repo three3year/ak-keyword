@@ -6,8 +6,7 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { type Overrides, formatOverrides } from './buildIndex'
-import { sortTypes } from './effectType'
-import { EFFECT_TYPES, type EffectType } from '../src/core/types'
+import { EFFECT_TYPES, type EffectType, sortTypes } from '../src/core/types'
 
 interface Decision {
   key: string

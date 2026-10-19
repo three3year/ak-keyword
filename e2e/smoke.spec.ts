@@ -111,7 +111,7 @@ test('搜尋條件 chip:加入時只亮施加,再亮一顆後結果更新,關掉
   const both = total(await count.textContent())
   expect(both).toBeGreaterThan(0)
   expect(both).toBeLessThan(applyOnly)
-  // 命中敘述的效果類型標籤列出它符合的類型
+  // 命中敘述列出它符合的效果類型
   await expect(page.getByTestId('result-card').first().locator('.fx')).not.toHaveCount(0)
 
   // 關掉所有亮著的類型鈕:chip 消失,回到初始提示

@@ -20,8 +20,8 @@ import type {
   SearchIndex,
   Server,
 } from '../src/core/types'
-import { PROFESSION_LABELS, PROFESSIONS } from '../src/core/types'
-import { ruleEffectTypes, sortTypes } from './effectType'
+import { PROFESSION_LABELS, PROFESSIONS, sortTypes } from '../src/core/types'
+import { ruleEffectTypes } from './effectType'
 import { withPotentialBonus } from './potential'
 import type {
   RawCharacter,

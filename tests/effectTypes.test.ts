@@ -41,6 +41,7 @@ describe('效果類型的規則判定', () => {
     ['攻击处于<$ba.levitate>浮空</>的敌人时攻击力提升', 'ba.levitate', ['exploit']],
     ['成功闪避后自身下一次攻击攻击力+100%', 'sup.dodge', ['exploit']],
     ['自身有23%的概率<$ba.stun>晕眩</>敌人0.7秒', 'ba.stun', ['apply']],
+    ['使敌人陷入<$ba.sleep>沉睡</>后攻击力提升', 'ba.sleep', ['apply', 'exploit']],
     ['自身免疫<$ba.stun>晕眩</>', 'ba.stun', ['counter']],
     ['技能期间不会被<$ba.frozen>冻结</>', 'ba.frozen', ['counter']],
     ['攻击范围内敌人的<$ba.invisible>隐匿</>效果失效', 'ba.invisible', ['counter']],
