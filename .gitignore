@@ -4,4 +4,5 @@ dist/
 review/
 test-results/
 playwright-report/
+.playwright-mcp/
 *.local
