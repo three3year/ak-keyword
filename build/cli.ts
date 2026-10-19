@@ -4,7 +4,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import { buildIndex, type KeywordGroup } from './buildIndex'
+import { buildIndex, type KeywordGroup, type Overrides } from './buildIndex'
 import type { RawServer } from './raw'
 
 const ROOT = join(import.meta.dirname, '..')
@@ -64,7 +64,8 @@ async function main() {
 
   const cn = await loadServer('cn')
   const groups = await readJson<KeywordGroup[]>(join(ROOT, 'data', 'keyword-groups.json'))
-  const { index, warnings } = buildIndex({ cn, groups })
+  const overrides = await readJson<Overrides>(join(ROOT, 'data', 'effect-overrides.json'))
+  const { index, warnings, pending } = buildIndex({ cn, groups, overrides })
 
   await mkdir(dirname(OUT_INDEX), { recursive: true })
   const json = JSON.stringify(index)
@@ -73,6 +74,8 @@ async function main() {
 
   await mkdir(REVIEW_DIR, { recursive: true })
   await writeFile(join(REVIEW_DIR, 'build-warnings.txt'), warnings.join('\n') + '\n')
+  await writeFile(join(REVIEW_DIR, 'pending-review.json'), JSON.stringify(pending, null, 1))
+  console.log(`待複核:${pending.length} 個配對(review/pending-review.json)`)
   if (warnings.length > 0) {
     console.warn(`⚠ ${warnings.length} 則警告(全文見 review/build-warnings.txt),前 10 則:`)
     for (const w of warnings.slice(0, 10)) console.warn('  ' + w)

@@ -2,7 +2,8 @@
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue'
 import { loadIndex } from './core/loadIndex'
 import { query } from './core/query'
-import type { IndexKeyword, SearchIndex } from './core/types'
+import type { EffectType, IndexKeyword, SearchIndex } from './core/types'
+import FilterBar from './components/FilterBar.vue'
 import KeywordPanel from './components/KeywordPanel.vue'
 import KeywordTip from './components/KeywordTip.vue'
 import ResultCard from './components/ResultCard.vue'
@@ -11,6 +12,8 @@ import { hideTip, isTouch, showTip, tip } from './ui/tip'
 const index = shallowRef<SearchIndex>()
 const error = ref('')
 const selected = ref<string[]>([])
+// 預設只勾「施加」:最常問的「誰能上 X」一打開就是答案
+const effectTypes = ref<EffectType[]>(['apply'])
 
 onMounted(async () => {
   try {
@@ -21,7 +24,7 @@ onMounted(async () => {
 })
 
 const keywordMap = computed(() => new Map<string, IndexKeyword>((index.value?.keywords ?? []).map((k) => [k.id, k])))
-const results = computed(() => (index.value ? query(index.value, { keywords: selected.value, server: 'cn' }) : []))
+const results = computed(() => (index.value ? query(index.value, { keywords: selected.value, server: 'cn', effectTypes: effectTypes.value }) : []))
 
 function toggle(id: string) {
   selected.value = selected.value.includes(id) ? selected.value.filter((k) => k !== id) : [...selected.value, id]
@@ -90,6 +93,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
         <KeywordPanel :index="index" :selected="selected" @toggle="toggle" @clear="clear" />
       </aside>
       <section class="results">
+        <FilterBar v-model:effect-types="effectTypes" />
         <div v-if="selected.length > 0" class="chips">
           <span v-for="id in selected" :key="id" class="chip">
             <span :data-k="id" class="chip-name">{{ keywordMap.get(id)?.name ?? id }}</span>
@@ -97,7 +101,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
           </span>
         </div>
         <p v-if="selected.length === 0" class="hint">點選關鍵字開始搜尋</p>
-        <ResultCard v-for="op in results" :key="op.id" :op="op" :selected="selected" />
+        <ResultCard v-for="op in results" :key="op.id" :op="op" :selected="selected" :keywords="keywordMap" />
       </section>
     </main>
     <p v-else class="hint">載入中…</p>

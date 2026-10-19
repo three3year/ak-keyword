@@ -1,5 +1,7 @@
 // 索引建置:原始遊戲資料 → 索引。純函式,不做任何 I/O。
+import { createHash } from 'node:crypto'
 import type {
+  EffectType,
   IndexEntry,
   IndexKeyword,
   IndexOperator,
@@ -11,6 +13,7 @@ import type {
   SearchIndex,
 } from '../src/core/types'
 import { PROFESSION_LABELS, PROFESSIONS } from '../src/core/types'
+import { ruleEffectTypes } from './effectType'
 import { withPotentialBonus } from './potential'
 import type {
   RawCharacter,
@@ -24,7 +27,7 @@ import type {
   RawTalentCandidate,
   RawUnlockCondition,
 } from './raw'
-import { parseRichText, toValues } from './richText'
+import { parseRichText, plainText, toValues } from './richText'
 
 /** 維護者清單:關鍵字分組。沒列到的關鍵字歸到「未分組」。 */
 export interface KeywordGroup {
@@ -32,14 +35,29 @@ export interface KeywordGroup {
   keywords: string[]
 }
 
+/** 效果類型覆寫檔:以「敘述文字雜湊:關鍵字」為鍵,建置時優先於規則判定。 */
+export type Overrides = Record<string, { type: EffectType; reviewed: boolean; note?: string }>
+
+/** 待複核的配對:雜湊還不在覆寫檔裡的「敘述 × 關鍵字」。 */
+export interface PendingReview {
+  key: string
+  keyword: string
+  ruleType: EffectType
+  text: string
+  /** 這段敘述出現的位置,例如「char_002_amiya 技能1 專精3」。 */
+  where: string[]
+}
+
 export interface BuildInput {
   cn: RawServer
   groups?: KeywordGroup[]
+  overrides?: Overrides
 }
 
 export interface BuildOutput {
   index: SearchIndex
   warnings: string[]
+  pending: PendingReview[]
 }
 
 const UNGROUPED = '未分組'
@@ -57,6 +75,7 @@ class Builder {
   readonly warn = (message: string) => {
     this.warnings.push(message)
   }
+  readonly pending = new Map<string, PendingReview>()
 
   constructor(readonly input: BuildInput) {}
 
@@ -94,7 +113,8 @@ class Builder {
       const added = m.talents.get(-1)
       if (!added) continue
       const runs = this.talentRuns(added, (c) => c.upgradeDescription!, `模組 ${m.equip.uniEquipId} 新增天賦`)
-      entries.push({ kind: 'talent', name: added[0].name ?? undefined, stages: [{ kind: 'module', module: m.equip.uniEquipId, cn: this.finish(runs) }] })
+      const cn = this.finish(runs, `${id} 模組天賦 ${m.equip.uniEquipId}`)
+      entries.push({ kind: 'talent', name: added[0].name ?? undefined, stages: [{ kind: 'module', module: m.equip.uniEquipId, cn }] })
     }
     entries.push(...this.skillEntries(id, char))
 
@@ -138,14 +158,15 @@ class Builder {
         this.warn(`${ownerId}:技能表沒有 ${s.skillId}`)
         return
       }
-      entries.push(this.skillEntry(skill, i + 1))
+      entries.push(this.skillEntry(ownerId, skill, i + 1))
     })
     return entries
   }
 
-  skillEntry(skill: RawSkill, no: number): IndexEntry {
+  skillEntry(ownerId: string, skill: RawSkill, no: number): IndexEntry {
     const stages: IndexStage[] = skillStages(skill).map(({ kind, level, levelNo }) => {
-      const stage: IndexStage = { kind, cn: this.text(skillLevelText(level), skillValues(level), `技能 ${skill.skillId} ${kind}`) }
+      const runs = this.parse(skillLevelText(level), skillValues(level), `技能 ${skill.skillId} ${kind}`)
+      const stage: IndexStage = { kind, cn: this.finish(runs, `${ownerId} 技能${no} ${kind}`) }
       if (kind === 'max') stage.level = levelNo
       return stage
     })
@@ -158,14 +179,14 @@ class Builder {
     const raw = top?.overrideDescripton ?? char.description
     if (!raw) return undefined
     const baseRuns = this.parse(raw, toValues(top?.blackboard), `幹員 ${id} 特性`)
-    const stages: IndexStage[] = [{ kind: 'base', cn: this.finish(baseRuns) }]
+    const stages: IndexStage[] = [{ kind: 'base', cn: this.finish(baseRuns, `${id} 特性`) }]
     for (const m of modules) {
       if (!m.trait) continue
       const where = `模組 ${m.equip.uniEquipId} 特性`
       const values = toValues(m.trait.blackboard)
       const runs = m.trait.overrideDescripton ? this.parse(m.trait.overrideDescripton, values, where) : [...baseRuns]
       if (m.trait.additionalDescription) runs.push({ t: '\n' }, ...this.parse(m.trait.additionalDescription, values, where))
-      stages.push({ kind: 'module', module: m.equip.uniEquipId, cn: this.finish(runs) })
+      stages.push({ kind: 'module', module: m.equip.uniEquipId, cn: this.finish(runs, `${id} 特性 模組3 ${m.equip.uniEquipId}`) })
     }
     return { kind: 'trait', stages }
   }
@@ -174,12 +195,15 @@ class Builder {
     const no = index + 1
     const visible = candidates.filter((c) => !c.isHideTalent && c.description)
     const stages: IndexStage[] = []
-    if (visible.length > 0) stages.push({ kind: 'base', cn: this.finish(this.talentRuns(visible, (c) => c.description!, `幹員 ${id} 天賦${no}`)) })
+    if (visible.length > 0) {
+      const runs = this.talentRuns(visible, (c) => c.description!, `幹員 ${id} 天賦${no}`)
+      stages.push({ kind: 'base', cn: this.finish(runs, `${id} 天賦${no}`) })
+    }
     for (const m of modules) {
       const rewrite = m.talents.get(index)
       if (!rewrite) continue
       const runs = this.talentRuns(rewrite, (c) => c.upgradeDescription!, `模組 ${m.equip.uniEquipId} 天賦${no}`)
-      stages.push({ kind: 'module', module: m.equip.uniEquipId, cn: this.finish(runs) })
+      stages.push({ kind: 'module', module: m.equip.uniEquipId, cn: this.finish(runs, `${id} 天賦${no} 模組3 ${m.equip.uniEquipId}`) })
     }
     if (stages.length === 0) return undefined
     const name = visible[0]?.name ?? modules.map((m) => m.talents.get(index)?.[0].name).find(Boolean)
@@ -223,13 +247,25 @@ class Builder {
     return parseRichText(raw, { values, where, warn: this.warn })
   }
 
-  text(raw: string, values: Map<string, number | string>, where: string): IndexText {
-    return this.finish(this.parse(raw, values, where))
-  }
-
-  /** 解析完成的 runs → 索引文字(含關鍵字與效果類型)。 */
-  finish(runs: Run[]): IndexText {
-    return { runs, hits: hitsOf(runs) }
+  /**
+   * 解析完成的 runs → 索引文字。每個關鍵字的效果類型:覆寫檔優先,否則用規則判定;
+   * 覆寫檔沒有的配對列入待複核清單。where 標出這段敘述在哪裡,供複核時參考。
+   */
+  finish(runs: Run[], where: string): IndexText {
+    const text = plainText(runs)
+    const hash = textHash(text)
+    const hits: IndexText['hits'] = {}
+    for (const [keyword, ruleType] of Object.entries(ruleEffectTypes(runs))) {
+      const key = `${hash}:${keyword}`
+      const override = this.input.overrides?.[key]
+      hits[keyword] = override?.type ?? ruleType
+      if (override) continue
+      const pending = this.pending.get(key)
+      if (pending) {
+        if (!pending.where.includes(where)) pending.where.push(where)
+      } else this.pending.set(key, { key, keyword, ruleType, text, where: [where] })
+    }
+    return { runs, hits }
   }
 
   keywords(operators: IndexOperator[]): IndexKeyword[] {
@@ -311,14 +347,13 @@ function skillValues(level: RawSkillLevel) {
   return toValues(level.blackboard, { duration: level.duration ?? 0 })
 }
 
-function hitsOf(runs: Run[]): IndexText['hits'] {
-  const hits: IndexText['hits'] = {}
-  for (const r of runs) if (r.k) hits[r.k] = 'other'
-  return hits
+/** 敘述文字的雜湊:覆寫檔的鍵。文字一變,雜湊就變,配對就重新列入待複核。 */
+function textHash(text: string): string {
+  return createHash('sha1').update(text).digest('hex').slice(0, 16)
 }
 
 export function buildIndex(input: BuildInput): BuildOutput {
   const builder = new Builder(input)
   const index = builder.build()
-  return { index, warnings: builder.warnings }
+  return { index, warnings: builder.warnings, pending: [...builder.pending.values()] }
 }

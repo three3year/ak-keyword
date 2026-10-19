@@ -432,3 +432,75 @@ input:focus-visible {
   text-underline-offset: 3px;
   cursor: help;
 }
+
+/* ---- 篩選列 ---- */
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+}
+
+.filter {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  min-width: 0;
+}
+
+.filter legend {
+  float: left;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-2);
+  margin-right: 4px;
+  padding: 0;
+}
+
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.fx {
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 0 6px;
+  border: 1px solid currentColor;
+}
+
+.fx-apply {
+  color: var(--apply);
+}
+
+.fx-exploit {
+  color: var(--exploit);
+}
+
+.fx-resist {
+  color: var(--resist);
+}
+
+.fx-other {
+  color: var(--other);
+}
+
+.check.fx-apply,
+.check.fx-exploit,
+.check.fx-resist,
+.check.fx-other {
+  color: var(--text);
+}
