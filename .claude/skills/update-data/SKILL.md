@@ -21,15 +21,15 @@ disable-model-invocation: true
 
 執行 `npm run build-index`。
 
-完成:結束碼 0,`public/data/index.json` 已更新。
+完成:結束碼 0,記下輸出裡的待複核配對數與新警告則數。
 
 ## 3. 效果類型複核
 
 讀 `review/pending-review.json`。0 筆就跳到第 4 步。
 
-每一筆依 `CONTEXT.md` 的「效果類型」定義判定 `types`(`apply`/`exploit`/`counter`,可多種),寧缺勿濫:談不上任何一種就是空清單。在 session 裡判定。
+每一筆依 `CONTEXT.md` 的「效果類型」定義判定 `types`(`apply`/`exploit`/`counter`,可多種),寧缺勿濫:談不上任何一種就是空清單。
 
-**停下**:每一筆都列給維護者,一筆一列:幹員名(從 `public/data/index.json` 的 `operators` 依 `where` 裡的幹員 id 查)、敘述來源(`where`)、關鍵字名、規則判定(`ruleTypes`)、敘述原文(`text`)、你的判定與一句理由。維護者確認或改掉幾筆後,才把確認後的判定寫成 `review/decisions/<今天日期>.json`:
+**停下**:每一筆都列給維護者,一筆一列:幹員名(依 `where` 開頭的 id 查 `public/data/index.json` 的 `operators`;召喚物的 id 在 `operators` 的 `summons` 裡,列成「幹員名/召喚物名」)、敘述來源(`where`)、關鍵字名、規則判定(`ruleTypes`)、敘述原文(`text`)、你的判定與一句理由。維護者確認或改掉幾筆後,才把確認後的判定寫成 `review/decisions/<今天日期>.json`:
 
 ```json
 [{ "key": "<pending 的 key>", "types": ["apply"] }]
@@ -46,10 +46,10 @@ npm run build-index:offline
 
 ## 4. 新術語分組
 
-從 `public/data/index.json` 的 `groups` 找名稱為「未分組」的分組;沒有就跳到第 5 步。對其中每個關鍵字 id,讀 `keywords` 裡它的官方定義,決定位置:
+從 `public/data/index.json` 的 `groups` 找名稱為「未分組」的分組;沒有就跳到第 5 步。對其中每個關鍵字 id,讀 `keywords` 裡它的定義,決定位置。補充關鍵字(`sup.` 開頭)一律放進分組;術語依 `CONTEXT.md` 的「關鍵字」定義判斷:
 
-- 是戰鬥效果:放進 `data/keyword-groups.json` 最貼近的分組與行(控場、減益、增益、元素傷害、機制、傷害),排在性質最接近的關鍵字旁邊。
-- 談不上效果類型(隊伍名、綁定這類)的術語:加進 `data/excluded-terms.json`。補充關鍵字(`sup.` 開頭)一律放進分組。
+- 是關鍵字:放進 `data/keyword-groups.json` 最貼近的分組與行,排在性質最接近的關鍵字旁邊。
+- 不是關鍵字:加進 `data/excluded-terms.json`。
 
 寫進檔案,執行 `npm run build-index:offline`。
 
@@ -81,7 +81,7 @@ npm run build
 npm run test:e2e
 ```
 
-e2e 因為沒有瀏覽器而失敗(訊息提到 `npx playwright install`)時,執行 `npx playwright install chromium` 後重跑 e2e。
+例外:e2e 因為沒有瀏覽器而失敗(訊息提到 `npx playwright install`)時,執行 `npx playwright install chromium` 後重跑 e2e。
 
 完成:三項都通過。
 
