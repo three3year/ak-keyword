@@ -17,8 +17,7 @@
   --pot: #7b3fbf;
   --apply: #c0392b;
   --exploit: #b25d00;
-  --resist: #1565c0;
-  --other: #607080;
+  --counter: #1565c0;
   /* 結果卡左緣的星數光暈,色系同星號 */
   --glow-6: rgb(240 138 36 / 0.2);
   --glow-5: rgb(224 178 58 / 0.22);
@@ -59,8 +58,7 @@
     --pot: #c39bff;
     --apply: #ff8a7a;
     --exploit: #ffb45a;
-    --resist: #74b4ff;
-    --other: #9aa8b8;
+    --counter: #74b4ff;
     --glow-6: rgb(240 138 36 / 0.26);
     --glow-5: rgb(224 178 58 / 0.24);
     --glow-4: rgb(167 127 216 / 0.26);
@@ -640,18 +638,13 @@ input:focus-visible {
   color: var(--exploit);
 }
 
-.fx-resist {
-  color: var(--resist);
-}
-
-.fx-other {
-  color: var(--other);
+.fx-counter {
+  color: var(--counter);
 }
 
 .check.fx-apply,
 .check.fx-exploit,
-.check.fx-resist,
-.check.fx-other {
+.check.fx-counter {
   color: var(--text);
 }
 

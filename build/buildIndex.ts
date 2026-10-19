@@ -21,7 +21,7 @@ import type {
   Server,
 } from '../src/core/types'
 import { PROFESSION_LABELS, PROFESSIONS } from '../src/core/types'
-import { ruleEffectTypes } from './effectType'
+import { ruleEffectTypes, sortTypes } from './effectType'
 import { withPotentialBonus } from './potential'
 import type {
   RawCharacter,
@@ -60,14 +60,23 @@ export interface SupplementKeyword {
   group: string
 }
 
-/** 效果類型覆寫檔:以「敘述文字雜湊:關鍵字」為鍵,建置時優先於規則判定。 */
-export type Overrides = Record<string, { type: EffectType; reviewed: boolean; note?: string }>
+/** 效果類型覆寫檔:以「敘述文字雜湊:關鍵字」為鍵,建置時優先於規則判定。types 為空表示複核後判定沒有效果類型。 */
+export type Overrides = Record<string, { types: EffectType[]; reviewed: boolean; note?: string }>
+
+/** 覆寫檔的文字格式:依鍵排序、一筆一行,讓版控 diff 穩定好讀。 */
+export function formatOverrides(overrides: Overrides): string {
+  const lines = Object.entries(overrides)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([key, value]) => `${JSON.stringify(key)}: ${JSON.stringify(value)}`)
+  return `{\n${lines.join(',\n')}\n}\n`
+}
 
 /** 待複核的配對:雜湊還不在覆寫檔裡的「敘述 × 關鍵字」。 */
 export interface PendingReview {
   key: string
   keyword: string
-  ruleType: EffectType
+  /** 規則判定的效果類型;判定不出時為空清單。 */
+  ruleTypes: EffectType[]
   text: string
   /** 這段敘述出現的位置,例如「char_002_amiya 技能1 m3」。 */
   where: string[]
@@ -391,7 +400,7 @@ class Builder {
       const marked = markSupplements(twRuns, this.matchers.tw)
       if (signature(marked) === signature(stage.cn.runs)) {
         // 與國服一致:沿用國服的效果類型,國服模式可改顯示繁中
-        stage.tw = { runs: marked, hits: { ...stage.cn.hits } }
+        stage.tw = { runs: marked, hits: structuredClone(stage.cn.hits) }
         stage.twSame = true
       } else {
         stage.tw = this.finish(twRuns, 'tw', `${where}(台服)`)
@@ -402,22 +411,22 @@ class Builder {
 
   /**
    * 解析完成的 runs → 索引文字:標出補充關鍵字,判定每個關鍵字的效果類型
-   * (覆寫檔優先,否則用規則判定;覆寫檔沒有的配對列入待複核清單)。
+   * (覆寫檔優先,否則用規則判定,判定不出時為空清單;覆寫檔沒有的配對列入待複核清單)。
    */
   finish(parsed: Run[], server: Server, where: string): IndexText {
     const runs = markSupplements(parsed, this.matchers[server])
     const text = plainText(runs)
     const hash = textHash(text)
     const hits: IndexText['hits'] = {}
-    for (const [keyword, ruleType] of Object.entries(ruleEffectTypes(runs))) {
+    for (const [keyword, ruleTypes] of Object.entries(ruleEffectTypes(runs))) {
       const key = `${hash}:${keyword}`
       const override = this.input.overrides?.[key]
-      hits[keyword] = override?.type ?? ruleType
+      hits[keyword] = override ? sortTypes(override.types) : ruleTypes
       if (override) continue
       const pending = this.pending.get(key)
       if (pending) {
         if (!pending.where.includes(where)) pending.where.push(where)
-      } else this.pending.set(key, { key, keyword, ruleType, text, where: [where] })
+      } else this.pending.set(key, { key, keyword, ruleTypes, text, where: [where] })
     }
     return { runs, hits }
   }

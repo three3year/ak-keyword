@@ -87,8 +87,8 @@ function baseSource(entry: IndexEntry): string {
 function resultStage(v: Visible, visible: Visible[], op: IndexOperator, opts: QueryOptions): ResultStage {
   const effects: ResultStage['effects'] = {}
   for (const k of opts.keywords) {
-    const type = v.match.hits[k]
-    if (type && (!opts.effectTypes || opts.effectTypes.includes(type))) effects[k] = type
+    const types = (v.match.hits[k] ?? []).filter((t) => !opts.effectTypes || opts.effectTypes.includes(t))
+    if (types.length > 0) effects[k] = types
   }
   const result: ResultStage = { label: stageLabel(v.stage, visible, op), runs: v.runs, hit: Object.keys(effects).length > 0, effects }
   if (v.stage.kind === 'module') result.module = moduleOf(v.stage, op).name

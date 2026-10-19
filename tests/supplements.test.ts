@@ -47,7 +47,7 @@ describe('補充關鍵字', () => {
     })
     const results = query(index, { keywords: ['ba.cold', 'sup.knockback'], server: 'cn', effectTypes: ['apply'] })
     expect(results.map((r) => r.name)).toEqual(['兩者'])
-    expect(results[0].entries[0].stages[0].effects).toEqual({ 'ba.cold': 'apply', 'sup.knockback': 'apply' })
+    expect(results[0].entries[0].stages[0].effects).toEqual({ 'ba.cold': ['apply'], 'sup.knockback': ['apply'] })
   })
 
   test('面板依清單分組,定義標為非官方', () => {

@@ -33,11 +33,13 @@ npm run build-index:offline    # 沿用 .cache/ 已下載的資料
 
 ## 效果類型複核
 
-效果類型(施加/利用/抵抗/其他)先以句型規則判定,再在 Claude Code session 裡交給 LLM 複核
+效果類型(施加/利用/反制,一段敘述可同時多種)先以句型規則判定,再在 Claude Code session 裡交給 LLM 複核
 (不呼叫外部 API,理由見 [docs/adr/0001](docs/adr/0001-effect-type-rules-plus-session-llm-review.md))。
+規則判定不出的配對沒有效果類型,複核前不會出現在搜尋結果(見 [docs/adr/0002](docs/adr/0002-three-effect-types-no-fallback.md))。
 
 1. `npm run build-index`,看 `review/pending-review.json` 有多少待複核配對。
-2. 在 session 裡讓 LLM 逐筆判定,寫成 `[{ "key": "<雜湊>:<關鍵字>", "type": "apply" }]` 的判定檔。
+2. 在 session 裡讓 LLM 逐筆判定,寫成 `[{ "key": "<雜湊>:<關鍵字>", "types": ["apply", "exploit"] }]` 的判定檔
+   (`types` 只接受 `apply`、`exploit`、`counter`;空清單表示沒有效果類型,例如補充關鍵字誤中)。
 3. `npx tsx build/applyReview.ts <判定檔.json> …` 寫進 `data/effect-overrides.json`(納入版控)。
 4. 再跑一次 `npm run build-index:offline`,待複核清單應為空。
 

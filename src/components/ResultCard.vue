@@ -98,11 +98,13 @@ function onAvatarError(e: Event) {
       </div>
       <div class="entry-head">
         <span v-if="entryName" class="entry-name">{{ entryName }}</span>
-        <span v-if="entry.summon" class="badge summon">{{ entry.summon }}</span>
+        <span v-if="entry.summon" class="badge summon" :title="`召喚物名稱:這段敘述屬於召喚物「${entry.summon}」`">{{ entry.summon }}</span>
         <span v-if="stage.cnData" class="badge" title="台服尚未實裝這個模組,文字與數值取自國服">國服資料</span>
-        <span v-for="(fx, k) in stage.effects" :key="k" class="fx" :class="`fx-${fx}`">
-          {{ selected.length > 1 ? `${keywords.get(k)?.name ?? k}:` : '' }}{{ EFFECT_TYPE_LABELS[fx] }}
-        </span>
+        <template v-for="(types, k) in stage.effects" :key="k">
+          <span v-for="fx in types" :key="fx" class="fx" :class="`fx-${fx}`">
+            {{ selected.length > 1 ? `${keywords.get(k)?.name ?? k}:` : '' }}{{ EFFECT_TYPE_LABELS[fx] }}
+          </span>
+        </template>
       </div>
       <RichText class="stage-text" :runs="stage.runs" :selected="selected" />
     </section>

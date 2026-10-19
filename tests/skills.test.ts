@@ -81,7 +81,7 @@ describe('敘述解析', () => {
     const cn = server({
       terms: COMMON_TERMS,
       operators: { char_001_x: operator({ name: '甲', skills: ['sk_x_1'] }) },
-      skills: [basicSkill('sk_x_1', '技', { description: `<$ba.stun>晕眩</>${description}`, values, duration })],
+      skills: [basicSkill('sk_x_1', '技', { description: `使敌人<$ba.stun>晕眩</>${description}`, values, duration })],
     })
     const { index, warnings } = buildIndex({ cn })
     const [r] = query(index, { keywords: ['ba.stun'], server: 'cn' })
@@ -94,13 +94,13 @@ describe('敘述解析', () => {
       { atk: 0.55, rate: 1.25, cnt: 3, def: -0.3, 'attack@prob': 0.2, 'trigger.time': 1.5, atk_scale: 0.125, t: 2.6 },
       12,
     )
-    expect(plain(runs)).toBe('晕眩：55%，1.3，3，30%，20%，1.5，12.5%，3，12秒')
+    expect(plain(runs)).toBe('使敌人晕眩：55%，1.3，3，30%，20%，1.5，12.5%，3，12秒')
     expect(warnings).toEqual([])
   })
 
   test('巢狀標記:樣式標記裡的術語仍被高亮', () => {
     const { runs } = parse('，<@ba.rem>技能结束后<$ba.cold>寒冷</>{t}秒</>', { t: 3 })
-    expect(plain(runs)).toBe('晕眩，技能结束后寒冷3秒')
+    expect(plain(runs)).toBe('使敌人晕眩，技能结束后寒冷3秒')
     expect(highlights(runs)).toEqual([
       ['晕眩', 'ba.stun'],
       ['寒冷', 'ba.cold'],
@@ -109,7 +109,7 @@ describe('敘述解析', () => {
 
   test('術語標記包住【】時,括號不算在高亮內', () => {
     const { runs } = parse('并使其陷入<$ba.magicfragile>【法术脆弱】</>')
-    expect(plain(runs)).toBe('晕眩并使其陷入【法术脆弱】')
+    expect(plain(runs)).toBe('使敌人晕眩并使其陷入【法术脆弱】')
     expect(highlights(runs)).toEqual([
       ['晕眩', 'ba.stun'],
       ['法术脆弱', 'ba.magicfragile'],
@@ -118,13 +118,13 @@ describe('敘述解析', () => {
 
   test('不是標記的角括號保留為純文字,不產生警告', () => {
     const { runs, warnings } = parse('，<替身>部署后获得<@ba.kw>护盾</>')
-    expect(plain(runs)).toBe('晕眩，<替身>部署后获得护盾')
+    expect(plain(runs)).toBe('使敌人晕眩，<替身>部署后获得护盾')
     expect(warnings).toEqual([])
   })
 
   test('敘述裡字面的 \\n 轉成換行', () => {
     const { runs } = parse('，持续3秒\\n<@ba.rem>不可叠加</>')
-    expect(plain(runs)).toBe('晕眩，持续3秒\n不可叠加')
+    expect(plain(runs)).toBe('使敌人晕眩，持续3秒\n不可叠加')
   })
 
   test('無法辨識的標記與找不到數值的佔位符會產生警告,列出技能 id 與原文', () => {
@@ -133,6 +133,6 @@ describe('敘述解析', () => {
     expect(warnings[0]).toContain('sk_x_1')
     expect(warnings[0]).toContain('{missing:0%}')
     expect(warnings[1]).toContain('無法辨識的標記 <#bad>')
-    expect(warnings[1]).toContain('<$ba.stun>晕眩</>{missing:0%}<#bad>x')
+    expect(warnings[1]).toContain('使敌人<$ba.stun>晕眩</>{missing:0%}<#bad>x')
   })
 })

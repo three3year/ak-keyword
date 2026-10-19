@@ -2,16 +2,15 @@
 
 export type Server = 'cn' | 'tw'
 
-/** 敘述與關鍵字的關係:施加、利用、抵抗、其他。 */
-export type EffectType = 'apply' | 'exploit' | 'resist' | 'other'
+/** 敘述與關鍵字的關係:施加、利用、反制。一段敘述對同一關鍵字可同時有多種。 */
+export type EffectType = 'apply' | 'exploit' | 'counter'
 
-export const EFFECT_TYPES: EffectType[] = ['apply', 'exploit', 'resist', 'other']
+export const EFFECT_TYPES: EffectType[] = ['apply', 'exploit', 'counter']
 
 export const EFFECT_TYPE_LABELS: Record<EffectType, string> = {
   apply: '施加',
   exploit: '利用',
-  resist: '抵抗',
-  other: '其他',
+  counter: '反制',
 }
 
 /** 敘述中的一段文字。k:關鍵字 id(高亮);s:樣式;p:潛能加成由第幾潛能獲得(「潛能 5 獲得」)。 */
@@ -41,8 +40,8 @@ export const PROFESSION_LABELS: Record<Profession, string> = {
 
 export interface IndexText {
   runs: Run[]
-  /** 這段文字含有的關鍵字與其效果類型。 */
-  hits: Record<string, EffectType>
+  /** 這段文字含有的關鍵字與其效果類型(依 EFFECT_TYPES 順序);判定不出時為空清單,關鍵字照樣高亮。 */
+  hits: Record<string, EffectType[]>
 }
 
 export type StageKind = 'lv7' | 'm3' | 'max' | 'base' | 'module'
@@ -143,8 +142,8 @@ export interface ResultStage {
   runs: Run[]
   /** 這個階段含有已選關鍵字(效果類型符合勾選)。 */
   hit: boolean
-  /** 已選關鍵字在這個階段的效果類型。 */
-  effects: Record<string, EffectType>
+  /** 已選關鍵字在這個階段符合勾選的效果類型;沒有符合的關鍵字不列。 */
+  effects: Record<string, EffectType[]>
   /** 模組3 階段的模組不在台服模組清單,只有國服資料。 */
   cnData?: boolean
   /** 模組3 階段的模組全名(標籤只寫模組代碼)。 */

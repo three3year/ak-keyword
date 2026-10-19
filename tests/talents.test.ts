@@ -86,14 +86,14 @@ describe('天賦', () => {
         talents: [
           {
             name: '坚守',
-            description: '当阻挡住两个及以上的敌人时<$ba.cold>寒冷</>，防御力+16%',
-            potentials: [{ rank: 4, description: '阻挡两个及以上的敌人时<$ba.cold>寒冷</>，防御力+19%<@ba.talpu>（+3%）</>' }],
+            description: '当阻挡住两个及以上的敌人时使其<$ba.cold>寒冷</>，防御力+16%',
+            potentials: [{ rank: 4, description: '阻挡两个及以上的敌人时使其<$ba.cold>寒冷</>，防御力+19%<@ba.talpu>（+3%）</>' }],
           },
         ],
       },
       'ba.cold',
     )
-    expect(plain(results[0].entries[0].stages[0].runs)).toBe('当阻挡住两个及以上的敌人时寒冷，防御力+16%（+3%）')
+    expect(plain(results[0].entries[0].stages[0].runs)).toBe('当阻挡住两个及以上的敌人时使其寒冷，防御力+16%（+3%）')
     expect(warnings).toEqual([])
   })
 
@@ -104,20 +104,20 @@ describe('天賦', () => {
         talents: [
           {
             name: '乱',
-            description: '<$ba.cold>寒冷</>，攻击力+16%',
-            potentials: [{ rank: 4, description: '<$ba.cold>寒冷</>3秒，攻击力+19%<@ba.talpu>（+3%）</>' }],
+            description: '使敌人<$ba.cold>寒冷</>，攻击力+16%',
+            potentials: [{ rank: 4, description: '使敌人<$ba.cold>寒冷</>3秒，攻击力+19%<@ba.talpu>（+3%）</>' }],
           },
         ],
       },
       'ba.cold',
     )
-    expect(plain(results[0].entries[0].stages[0].runs)).toBe('寒冷，攻击力+16%')
+    expect(plain(results[0].entries[0].stages[0].runs)).toBe('使敌人寒冷，攻击力+16%')
     expect(warnings).toHaveLength(1)
     expect(warnings[0]).toContain('char_100_t')
   })
 
   test('隱藏的天賦不收錄', () => {
-    const { results } = search({ name: '隱藏', talents: [{ name: '暗', description: '<$ba.cold>寒冷</>', hidden: true }] }, 'ba.cold')
+    const { results } = search({ name: '隱藏', talents: [{ name: '暗', description: '使敌人<$ba.cold>寒冷</>', hidden: true }] }, 'ba.cold')
     expect(results).toEqual([])
   })
 })
@@ -142,12 +142,12 @@ describe('特性', () => {
       operators: {
         char_100_t: operator({
           name: '全都有',
-          trait: '<$ba.cold>寒冷</>',
-          talents: [{ name: '冰', description: '<$ba.cold>寒冷</>' }],
+          trait: '使敌人<$ba.cold>寒冷</>',
+          talents: [{ name: '冰', description: '使敌人<$ba.cold>寒冷</>' }],
           skills: ['sk_1'],
         }),
       },
-      skills: [{ skillId: 'sk_1', levels: Array(7).fill({ name: '技', description: '<$ba.cold>寒冷</>', blackboard: [] }) }],
+      skills: [{ skillId: 'sk_1', levels: Array(7).fill({ name: '技', description: '使敌人<$ba.cold>寒冷</>', blackboard: [] }) }],
     })
     const [r] = query(buildIndex({ cn }).index, { keywords: ['ba.cold'], server: 'cn' })
     expect(r.entries.map((e) => [e.source, e.kind])).toEqual([
