@@ -106,7 +106,7 @@ function resultOperator(op: IndexOperator, opts: QueryOptions): ResultOperator |
     const stages = visible.map((v) => resultStage(v, visible, op, opts))
     if (!stages.some((s) => s.hit)) continue
     // 模組新增的天賦沒有無模組階段:補一個不存在的,讓介面看得出要裝模組才有
-    if (visible[0].stage.kind === 'module') stages.unshift({ label: '無模組', runs: [], hit: false, effects: {}, absent: true })
+    if (entry.kind === 'talent' && !entry.stages.some((s) => s.kind === 'base')) stages.unshift({ label: '無模組', runs: [], hit: false, effects: {}, absent: true })
     for (const s of stages) for (const k of Object.keys(s.effects)) found.add(k)
     const result: ResultEntry = { source: entrySource(entry), kind: entry.kind, stages }
     if (entry.name) result.name = entry.name

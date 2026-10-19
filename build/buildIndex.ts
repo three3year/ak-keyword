@@ -332,12 +332,12 @@ class Builder {
       )
       if (!stage) continue
       stages.push(stage)
-      if (added[0].name) names.push(added[0].name)
+      names.push(added[0].name ?? '')
     }
     if (stages.length === 0) return undefined
     const distinct = [...new Set(names)]
     if (distinct.length > 1) this.warn(`幹員 ${id}:各模組新增的天賦名稱不同(${distinct.join('、')}),只顯示第一個`)
-    return { kind: 'talent', no, name: distinct[0], stages }
+    return { kind: 'talent', no, name: names[0] || undefined, stages }
   }
 
   /** 取最高解鎖條件(精英二)的潛能1 版本,並以高潛能版本補上「(+B)」。 */

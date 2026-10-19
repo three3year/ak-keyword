@@ -26,6 +26,8 @@ function defaultStage(e: ResultEntry): number {
   return Math.max(0, e.stages.findIndex((s) => s.hit))
 }
 
+// 只有一段命中敘述時不顯示分頁
+const hasTabs = computed(() => props.op.entries.length > 1)
 const entry = computed(() => props.op.entries[tab.value] ?? props.op.entries[0])
 const stageIndex = computed(() => stageOf.value[tab.value] ?? defaultStage(entry.value))
 const stage = computed(() => entry.value.stages[stageIndex.value] ?? entry.value.stages[0])
@@ -57,7 +59,7 @@ function onAvatarError(e: Event) {
         </div>
       </div>
     </header>
-    <div v-if="op.entries.length > 1" class="tabs" role="tablist" :aria-label="`${op.name}的命中敘述`">
+    <div v-if="hasTabs" class="tabs" role="tablist" :aria-label="`${op.name}的命中敘述`">
       <button
         v-for="(e, i) in op.entries"
         :id="`${id}-tab-${i}`"
@@ -76,8 +78,8 @@ function onAvatarError(e: Event) {
     <section
       :id="`${id}-panel`"
       class="entry"
-      :role="op.entries.length > 1 ? 'tabpanel' : undefined"
-      :aria-labelledby="op.entries.length > 1 ? `${id}-tab-${tab}` : undefined"
+      :role="hasTabs ? 'tabpanel' : undefined"
+      :aria-labelledby="hasTabs ? `${id}-tab-${tab}` : undefined"
       data-testid="entry"
     >
       <div v-if="entry.stages.length > 1" class="stage-switch" role="group" aria-label="階段">
@@ -95,7 +97,7 @@ function onAvatarError(e: Event) {
         </button>
       </div>
       <div class="entry-head">
-        <span v-if="op.entries.length === 1" class="source">{{ entry.source }}</span>
+        <span v-if="!hasTabs" class="source">{{ entry.source }}</span>
         <span v-if="entry.name" class="entry-name">{{ entry.name }}</span>
         <span v-if="entry.summon" class="badge summon">{{ entry.summon }}</span>
         <span v-if="stage.module" class="badge module">{{ stage.module }}</span>
