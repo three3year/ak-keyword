@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, useId, watch } from 'vue'
-import { PROFESSION_LABELS, type IndexKeyword, type ResultEntry, type ResultOperator } from '../core/types'
+import { PROFESSION_LABELS, TW_UNRELEASED_TITLE, type IndexKeyword, type ResultEntry, type ResultOperator } from '../core/types'
 import EntryView from './EntryView.vue'
 
 const props = defineProps<{
@@ -36,6 +36,9 @@ const stage = computed({
 })
 const id = useId()
 
+/** 小卡:只有職業條件、沒有命中敘述的結果卡,只顯示卡頭。 */
+const compact = computed(() => props.op.entries.length === 0)
+
 function onAvatarError(e: Event) {
   const img = e.target as HTMLImageElement
   if (!img.src.endsWith('avatar-placeholder.svg')) img.src = 'avatar-placeholder.svg'
@@ -43,7 +46,13 @@ function onAvatarError(e: Event) {
 </script>
 
 <template>
-  <article class="card" :class="op.rarity >= 3 ? `glow-${op.rarity}` : 'glow-low'" data-testid="result-card">
+  <!-- 台服未實裝:小卡整張壓灰、整張卡帶懸停文字;大卡只壓灰卡頭、懸停文字由徽章提供 -->
+  <article
+    class="card"
+    :class="[op.rarity >= 3 ? `glow-${op.rarity}` : 'glow-low', { compact, 'tw-unreleased': op.twUnreleased }]"
+    :title="compact && op.twUnreleased ? TW_UNRELEASED_TITLE : undefined"
+    data-testid="result-card"
+  >
     <header class="card-head">
       <button
         type="button"
@@ -71,12 +80,11 @@ function onAvatarError(e: Event) {
         </div>
         <div class="op-sub">
           {{ PROFESSION_LABELS[op.profession] }} · {{ branchName }}
-          <span v-if="op.twUnreleased" class="badge" title="台服尚未實裝這位幹員,文字與數值取自陸服">台服未實裝</span>
+          <span v-if="op.twUnreleased && !compact" class="badge tw-unreleased" :title="TW_UNRELEASED_TITLE">台服未實裝</span>
         </div>
       </div>
     </header>
-    <!-- 只有職業條件時沒有命中敘述,只顯示卡頭 -->
-    <template v-if="op.entries.length > 0">
+    <template v-if="!compact">
       <div class="tabs" role="tablist" :aria-label="`${op.name}的命中敘述`">
         <button
           v-for="(e, i) in op.entries"

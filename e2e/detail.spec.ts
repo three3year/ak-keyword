@@ -179,22 +179,29 @@ test('幹員資料下載失敗時顯示錯誤與重試鈕,重試成功後顯示�
   expect(requests).toBe(2)
 })
 
-test('陸服模式下台服未實裝的幹員在結果卡與幹員詳情的卡頭標「台服未實裝」;台服模式沒有這個徽章', async ({ page }) => {
+test('陸服模式下台服未實裝幹員的小卡壓灰:整張卡有懸停文字、卡頭沒有徽章;詳情卡頭有徽章;台服模式沒有壓灰', async ({ page }) => {
   await page.goto('./')
   // 只選一個職業條件:結果卡是多欄小卡;不寫死幹員名,資料更新後才不用換人
   await page.getByRole('button', { name: '術師', exact: true }).click()
   const cards = page.getByTestId('result-card')
   await expect(cards.first()).toBeVisible()
-  const headBadge = page.locator('.card-head .op-sub .badge', { hasText: '台服未實裝' })
-  const flagged = cards.filter({ has: headBadge })
+  const title = '台服尚未實裝這位幹員,文字與數值取自陸服'
+  const flagged = page.locator('[data-testid=result-card].tw-unreleased')
   await expect(flagged.first()).toBeVisible()
-  await expect(flagged.first().locator('.op-sub')).toContainText(/^術師 · .+ 台服未實裝$/)
-  await expect(flagged.first().locator('.op-sub .badge')).toHaveAttribute('title', '台服尚未實裝這位幹員,文字與數值取自陸服')
+  await expect(flagged.first()).toHaveClass(/\bcompact\b/)
+  await expect(flagged.first()).toHaveAttribute('title', title)
+  await expect(flagged.first().locator('.card-head .badge')).toHaveCount(0)
+  await expect(flagged.first().locator('.op-sub')).toHaveText(/^術師 · \S+\s*$/)
+  // 沒有壓灰的小卡沒有懸停文字
+  const plain = page.locator('[data-testid=result-card]:not(.tw-unreleased)')
+  await expect(plain.first()).toBeVisible()
+  await expect(plain.first()).not.toHaveAttribute('title')
 
   await flagged.first().getByRole('button', { name: /^檢視.+的詳情$/ }).click()
   const dialog = page.getByRole('dialog')
-  await expect(dialog.locator('.detail-head .op-sub .badge')).toHaveText('台服未實裝')
-  await expect(dialog.locator('.detail-head .op-sub .badge')).toHaveAttribute('title', '台服尚未實裝這位幹員,文字與數值取自陸服')
+  const detailBadge = dialog.locator('.detail-head .op-sub .badge.tw-unreleased')
+  await expect(detailBadge).toHaveText('台服未實裝')
+  await expect(detailBadge).toHaveAttribute('title', title)
   await page.keyboard.press('Escape')
   await expect(dialog).toHaveCount(0)
 
@@ -203,7 +210,22 @@ test('陸服模式下台服未實裝的幹員在結果卡與幹員詳情的卡�
   await page.getByRole('radio', { name: '台服' }).click()
   await expect(count).not.toHaveText(cnCount ?? '')
   await expect(cards.first()).toBeVisible()
+  await expect(flagged).toHaveCount(0)
   await expect(page.getByText('台服未實裝', { exact: true })).toHaveCount(0)
+})
+
+test('陸服模式下台服未實裝幹員的大卡只壓灰卡頭:卡頭有徽章、整張卡沒有懸停文字、命中敘述不壓灰', async ({ page }) => {
+  // 「停頓」目前命中五位台服未實裝的幹員
+  await search(page, '停頓')
+  const flagged = page.locator('[data-testid=result-card].tw-unreleased')
+  await expect(flagged.first()).toBeVisible()
+  const badge = flagged.first().locator('.card-head .op-sub .badge.tw-unreleased')
+  await expect(badge).toHaveText('台服未實裝')
+  await expect(badge).toHaveAttribute('title', '台服尚未實裝這位幹員,文字與數值取自陸服')
+  await expect(flagged.first()).not.toHaveAttribute('title')
+  // 大卡不是小卡;命中敘述與高亮照常顯示(壓灰範圍只在卡頭,靠截圖人眼確認)
+  await expect(flagged.first()).not.toHaveClass(/\bcompact\b/)
+  await expect(flagged.first().getByTestId('entry').locator('mark.hl').first()).toBeVisible()
 })
 
 test('只有職業條件、沒有命中敘述的結果卡也能打開詳情,詳情裡沒有高亮', async ({ page }) => {

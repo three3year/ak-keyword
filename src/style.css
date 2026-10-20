@@ -42,6 +42,9 @@
   /* 職業條件:職業 chip 與篩選列選取的職業鈕 */
   --profession: #475569;
   --profession-soft: #e7ebf0;
+  /* 「台服未實裝」徽章:實心底色、深色字,在淡色與壓灰的卡頭上都跳得出來 */
+  --tw-badge-bg: #aebdd2;
+  --tw-badge-text: #152033;
   color-scheme: light;
 }
 
@@ -83,6 +86,8 @@
     --panel: #23282f;
     --profession: #b4c0d0;
     --profession-soft: #2a313b;
+    --tw-badge-bg: #7a8ca5;
+    --tw-badge-text: #0d121a;
     color-scheme: dark;
   }
 }
@@ -845,10 +850,34 @@ input:focus-visible {
   color: var(--text-2);
 }
 
-/* 卡頭的「台服未實裝」徽章接在職業 · 分支後面;小卡放不下時整個徽章換行,不在徽章文字中間斷開 */
+/* 卡頭的「台服未實裝」徽章接在職業 · 分支後面,整個徽章一起換行,不在徽章文字中間斷開 */
 .op-sub .badge {
   margin-left: 4px;
   white-space: nowrap;
+}
+
+.badge.tw-unreleased {
+  background: var(--tw-badge-bg);
+  border-color: transparent;
+  color: var(--tw-badge-text);
+}
+
+/* ---- 台服未實裝的結果卡壓灰(輕:約七成飽和、約四分之三不透明) ----
+   大卡只壓灰卡頭的文字區(幹員名、星星、職業 · 分支、徽章),頭像在文字區外所以維持原色;
+   小卡整張都壓:光暈往灰色光暈混、再變淡,卡面與框線往頁面底色混 */
+.card.tw-unreleased .op-meta {
+  filter: saturate(0.7);
+  opacity: 0.75;
+}
+
+.card.compact.tw-unreleased {
+  background: linear-gradient(
+      90deg,
+      color-mix(in srgb, color-mix(in srgb, var(--glow, transparent) 70%, var(--glow-low)) 75%, transparent),
+      transparent 520px
+    )
+    color-mix(in srgb, var(--surface) 75%, var(--bg));
+  border-color: color-mix(in srgb, var(--border) 75%, var(--bg));
 }
 
 .stars {

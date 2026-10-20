@@ -6,6 +6,7 @@ import {
   type IndexKeyword,
   type OperatorFile,
   PROFESSION_LABELS,
+  TW_UNRELEASED_TITLE,
   type ResultOperator,
   type SearchCondition,
   type Server,
@@ -111,7 +112,7 @@ function onAvatarError(e: Event) {
           </div>
           <div class="op-sub">
             {{ PROFESSION_LABELS[op.profession] }} · {{ branchName }}
-            <span v-if="op.twUnreleased" class="badge" title="台服尚未實裝這位幹員,文字與數值取自陸服">台服未實裝</span>
+            <span v-if="op.twUnreleased" class="badge tw-unreleased" :title="TW_UNRELEASED_TITLE">台服未實裝</span>
           </div>
         </div>
         <button type="button" class="detail-close" aria-label="關閉" @click="emit('close')">×</button>

@@ -35,6 +35,9 @@ export interface Run {
 export const PROFESSIONS = ['PIONEER', 'WARRIOR', 'TANK', 'SNIPER', 'CASTER', 'MEDIC', 'SUPPORT', 'SPECIAL'] as const
 export type Profession = (typeof PROFESSIONS)[number]
 
+/** 卡頭「台服未實裝」徽章與壓灰小卡的懸停文字。 */
+export const TW_UNRELEASED_TITLE = '台服尚未實裝這位幹員,文字與數值取自陸服'
+
 export const PROFESSION_LABELS: Record<Profession, string> = {
   PIONEER: '先鋒',
   WARRIOR: '近衛',

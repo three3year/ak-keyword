@@ -44,7 +44,7 @@ const facts = computed(() => (props.detail && stage.value.stats ? skillFacts(sta
         <span v-if="detail" class="entry-source">{{ entry.source }}</span>
         <span v-if="entryName" class="entry-name">{{ entryName }}</span>
         <span v-if="entry.summon" class="badge summon" :title="`召喚物名稱:這段敘述屬於召喚物「${entry.summon}」`">{{ entry.summon }}</span>
-        <span v-if="stage.twUnreleased" class="badge" title="台服尚未實裝這個模組,文字與數值取自陸服">台服未實裝</span>
+        <span v-if="stage.twUnreleased" class="badge tw-unreleased" title="台服尚未實裝這個模組,文字與數值取自陸服">台服未實裝</span>
         <template v-for="(types, k) in stage.effects" :key="k">
           <span v-for="fx in types" :key="fx" class="fx" :class="`fx-${fx}`">
             {{ selected.length > 1 ? `${keywords.get(k)?.name ?? k}:` : '' }}{{ EFFECT_TYPE_LABELS[fx] }}
