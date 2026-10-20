@@ -4,6 +4,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>明日方舟關鍵字搜尋</title>
+    <script>
+      // 在畫面出現前套用記住的外觀,重新整理不閃色;讀取規則同 src/ui/storage.ts 的 loadAppearance
+      try {
+        const appearance = window.localStorage.getItem('aks.appearance')
+        if (appearance === 'light' || appearance === 'dark') document.documentElement.dataset.appearance = appearance
+      } catch {}
+    </script>
   </head>
   <body>
     <div id="app"></div>

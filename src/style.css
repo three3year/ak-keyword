@@ -1,95 +1,61 @@
 :root {
-  --bg: #f4f5f7;
-  --surface: #ffffff;
-  --surface-2: #eef0f3;
-  --border: #d9dde3;
-  --border-strong: #aab2be;
-  --text: #1d2129;
-  --text-2: #5b6472;
-  --accent: #1f6fd1;
-  --accent-soft: #e3eefc;
-  --hl-bg: #ffe28a;
-  --hl-bg-hover: #ffcf45;
-  --hl-text: #3a2a00;
+  --bg: light-dark(#f4f5f7, #14171c);
+  --surface: light-dark(#ffffff, #1d2128);
+  --surface-2: light-dark(#eef0f3, #262b33);
+  --border: light-dark(#d9dde3, #353b45);
+  --border-strong: light-dark(#aab2be, #59616e);
+  --text: light-dark(#1d2129, #e6e8eb);
+  --text-2: light-dark(#5b6472, #9aa3b0);
+  --accent: light-dark(#1f6fd1, #5aa2ff);
+  --accent-soft: light-dark(#e3eefc, #1d3150);
+  --hl-bg: light-dark(#ffe28a, #8a6d12);
+  --hl-bg-hover: light-dark(#ffcf45, #a7841a);
+  --hl-text: light-dark(#3a2a00, #fff6d6);
   /* 命中敘述裡可懸停看定義的關鍵字:虛線底線與懸停底色 */
-  --tip-line: #1f6fd1;
-  --tip-hover: #d3e3fa;
-  --up: #1a7f37;
-  --down: #c62828;
-  --kw: #1f6fd1;
-  --rem: #8a6d00;
-  --pot: #7b3fbf;
-  --apply: #c0392b;
-  --exploit: #b25d00;
-  --counter: #1565c0;
+  --tip-line: light-dark(#1f6fd1, #79b8ff);
+  --tip-hover: light-dark(#d3e3fa, #24406a);
+  --up: light-dark(#1a7f37, #5ccf7a);
+  --down: light-dark(#c62828, #ff7b72);
+  --kw: light-dark(#1f6fd1, #79b8ff);
+  --rem: light-dark(#8a6d00, #e3c35a);
+  --pot: light-dark(#7b3fbf, #c39bff);
+  --apply: light-dark(#c0392b, #ff8a7a);
+  --exploit: light-dark(#b25d00, #ffb45a);
+  --counter: light-dark(#1565c0, #74b4ff);
   /* 結果卡左緣的星數光暈,色系同星號 */
-  --glow-6: rgb(240 138 36 / 0.34);
-  --glow-5: rgb(224 178 58 / 0.22);
-  --glow-4: rgb(167 127 216 / 0.2);
-  --glow-3: rgb(74 159 224 / 0.18);
-  --glow-low: rgb(150 160 175 / 0.18);
+  --glow-6: light-dark(rgb(240 138 36 / 0.34), rgb(240 138 36 / 0.4));
+  --glow-5: light-dark(rgb(224 178 58 / 0.22), rgb(224 178 58 / 0.24));
+  --glow-4: light-dark(rgb(167 127 216 / 0.2), rgb(167 127 216 / 0.26));
+  --glow-3: light-dark(rgb(74 159 224 / 0.18), rgb(74 159 224 / 0.24));
+  --glow-low: light-dark(rgb(150 160 175 / 0.18), rgb(150 160 175 / 0.16));
   /* 頁籤依敘述來源上色,避開星數光暈的色系 */
-  --src-skill: #e8f5ec;
-  --src-talent: #fcecf2;
-  --src-trait: #e3f4f4;
+  --src-skill: light-dark(#e8f5ec, #1c2d23);
+  --src-talent: light-dark(#fcecf2, #322029);
+  --src-trait: light-dark(#e3f4f4, #1a2d30);
   /* 選中頁籤下方粗線,同來源色系的深色 */
-  --src-skill-line: #2e9a5a;
-  --src-talent-line: #d1497c;
-  --src-trait-line: #1f9696;
+  --src-skill-line: light-dark(#2e9a5a, #5ccf8a);
+  --src-talent-line: light-dark(#d1497c, #f07aa6);
+  --src-trait-line: light-dark(#1f9696, #5cc8c8);
   /* 敘述底框:白色系,蓋過光暈好讀文字 */
-  --panel: #ffffff;
+  --panel: light-dark(#ffffff, #23282f);
   --radius: 10px;
   /* 職業條件:職業 chip 與篩選列選取的職業鈕 */
-  --profession: #475569;
-  --profession-soft: #e7ebf0;
+  --profession: light-dark(#475569, #b4c0d0);
+  --profession-soft: light-dark(#e7ebf0, #2a313b);
   /* 「台服未實裝」徽章:實心底色、深色字,在淡色與壓灰的卡頭上都跳得出來 */
-  --tw-badge-bg: #aebdd2;
-  --tw-badge-text: #152033;
+  --tw-badge-bg: light-dark(#aebdd2, #7a8ca5);
+  --tw-badge-text: light-dark(#152033, #0d121a);
+  /* 外觀:令牌取 light-dark() 的哪一色、瀏覽器自畫的捲軸與輸入框用哪一色,都由 color-scheme 決定。
+     跟隨系統時不標記,交給系統偏好;固定亮色或暗色時根元素標記 data-appearance */
+  color-scheme: light dark;
+}
+
+:root[data-appearance='light'] {
   color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #14171c;
-    --surface: #1d2128;
-    --surface-2: #262b33;
-    --border: #353b45;
-    --border-strong: #59616e;
-    --text: #e6e8eb;
-    --text-2: #9aa3b0;
-    --accent: #5aa2ff;
-    --accent-soft: #1d3150;
-    --hl-bg: #8a6d12;
-    --hl-bg-hover: #a7841a;
-    --hl-text: #fff6d6;
-    --tip-line: #79b8ff;
-    --tip-hover: #24406a;
-    --up: #5ccf7a;
-    --down: #ff7b72;
-    --kw: #79b8ff;
-    --rem: #e3c35a;
-    --pot: #c39bff;
-    --apply: #ff8a7a;
-    --exploit: #ffb45a;
-    --counter: #74b4ff;
-    --glow-6: rgb(240 138 36 / 0.4);
-    --glow-5: rgb(224 178 58 / 0.24);
-    --glow-4: rgb(167 127 216 / 0.26);
-    --glow-3: rgb(74 159 224 / 0.24);
-    --glow-low: rgb(150 160 175 / 0.16);
-    --src-skill: #1c2d23;
-    --src-talent: #322029;
-    --src-trait: #1a2d30;
-    --src-skill-line: #5ccf8a;
-    --src-talent-line: #f07aa6;
-    --src-trait-line: #5cc8c8;
-    --panel: #23282f;
-    --profession: #b4c0d0;
-    --profession-soft: #2a313b;
-    --tw-badge-bg: #7a8ca5;
-    --tw-badge-text: #0d121a;
-    color-scheme: dark;
-  }
+:root[data-appearance='dark'] {
+  color-scheme: dark;
 }
 
 * {
@@ -117,9 +83,12 @@ input {
   max-width: 1280px;
   margin: 0 auto;
   padding: 0 16px 32px;
+  /* 窄螢幕上關鍵字懸浮鈕的高度與離底距離,內容底部多留這麼多 */
+  --drawer-btn-height: 44px;
+  --drawer-btn-gap: 16px;
 }
 
-/* 寬螢幕上標題列與下方版面同欄寬,伺服器切換對齊結果欄左緣 */
+/* 寬螢幕上標題列與下方版面同欄寬,伺服器切換對齊結果欄左緣,外觀接在它右邊 */
 .top {
   display: grid;
   grid-template-columns: 320px minmax(0, 1fr);
@@ -128,8 +97,11 @@ input {
   padding: 14px 0 10px;
 }
 
-.top .segmented {
+.toggles {
   justify-self: start;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .top h1 {
@@ -457,10 +429,16 @@ input:focus-visible {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .app {
+    padding-bottom: calc(32px + var(--drawer-btn-height) + var(--drawer-btn-gap) + env(safe-area-inset-bottom));
+  }
+
+  /* 固定兩行:標題一行,伺服器切換與外觀一行 */
   .top {
     display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
     position: sticky;
     top: 0;
     z-index: 20;
@@ -471,8 +449,22 @@ input:focus-visible {
     font-size: 1.05rem;
   }
 
+  /* 關鍵字鈕:右下角的膠囊懸浮鈕,在標題列之上、抽屜遮罩之下 */
   .drawer-btn {
-    display: inline-block;
+    display: block;
+    position: fixed;
+    z-index: 25;
+    right: 16px;
+    bottom: calc(var(--drawer-btn-gap) + env(safe-area-inset-bottom));
+    height: var(--drawer-btn-height);
+    padding: 0 18px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--accent);
+    color: #fff;
+    white-space: nowrap;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgb(0 0 0 / 0.3);
   }
 
   .panel {

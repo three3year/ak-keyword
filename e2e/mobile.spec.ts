@@ -74,3 +74,58 @@ test('手機寬度:幹員詳情占滿螢幕、沒有水平捲動,返回鍵關閉
   await expect(page.getByTestId('result-count')).toHaveText(count ?? '')
   await expect(page.getByTestId('profession-chip')).toHaveText([/先鋒/])
 })
+
+test('手機寬度:標題列兩行,伺服器切換與外觀在標題下方同一行;關鍵字鈕浮在右下角,抽屜打開時隱藏', async ({ page }) => {
+  await page.goto('./')
+  const title = (await page.getByRole('heading', { level: 1 }).boundingBox())!
+  const server = (await page.getByRole('radiogroup', { name: '伺服器' }).boundingBox())!
+  const appearance = (await page.getByRole('radiogroup', { name: '外觀' }).boundingBox())!
+  expect(server.y).toBeGreaterThanOrEqual(title.y + title.height)
+  expect(appearance.y).toBeGreaterThanOrEqual(title.y + title.height)
+  expect(Math.abs(server.y + server.height / 2 - (appearance.y + appearance.height / 2))).toBeLessThan(2)
+  expect(appearance.x).toBeGreaterThan(server.x + server.width - 1)
+  // 最窄的手機寬度也不折行
+  const deviceViewport = page.viewportSize()!
+  await page.setViewportSize({ width: 320, height: 640 })
+  const narrowServer = (await page.getByRole('radiogroup', { name: '伺服器' }).boundingBox())!
+  const narrowAppearance = (await page.getByRole('radiogroup', { name: '外觀' }).boundingBox())!
+  expect(Math.abs(narrowServer.y - narrowAppearance.y)).toBeLessThan(2)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true)
+  await page.setViewportSize(deviceViewport)
+
+  // 關鍵字鈕不在標題列,固定在畫面右下角
+  const drawerBtn = page.getByRole('button', { name: /^關鍵字/ })
+  await expect(page.locator('header').getByRole('button', { name: /^關鍵字/ })).toHaveCount(0)
+  const viewport = page.viewportSize()!
+  const drawerBtnBox = async () => (await drawerBtn.boundingBox())!
+  const before = await drawerBtnBox()
+  expect(before.x + before.width).toBeGreaterThan(viewport.width - 40)
+  expect(before.y + before.height).toBeGreaterThan(viewport.height - 60)
+  expect(before.y + before.height).toBeLessThanOrEqual(viewport.height)
+
+  // 選了搜尋條件後顯示數量;捲動時位置不變
+  await drawerBtn.tap()
+  const panel = page.getByRole('complementary', { name: '關鍵字面板' })
+  await expect(panel).toBeVisible()
+  // 抽屜打開時看不到懸浮鈕
+  await expect(drawerBtn).toBeHidden()
+  await panel.getByRole('button', { name: '暈眩', exact: true }).first().tap()
+  await panel.getByRole('button', { name: '完成' }).tap()
+  await expect(panel).toBeHidden()
+  await expect(drawerBtn).toBeVisible()
+  await expect(drawerBtn).toHaveText('關鍵字(1)')
+  const unscrolled = await drawerBtnBox()
+  expect(unscrolled.x + unscrolled.width).toBeCloseTo(before.x + before.width)
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
+  expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0)
+  expect(await drawerBtnBox()).toEqual(unscrolled)
+
+  // 捲到底時最後一張結果卡完整露出,頁尾也不被擋住
+  const drawerBtnTop = before.y
+  const lastCard = (await page.getByTestId('result-card').last().boundingBox())!
+  expect(lastCard.y + lastCard.height).toBeLessThanOrEqual(drawerBtnTop)
+  const footer = (await page.locator('footer').boundingBox())!
+  expect(footer.y + footer.height).toBeLessThanOrEqual(drawerBtnTop)
+
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true)
+})

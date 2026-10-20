@@ -21,7 +21,7 @@ import KeywordPanel from './components/KeywordPanel.vue'
 import KeywordTip from './components/KeywordTip.vue'
 import OperatorDetail from './components/OperatorDetail.vue'
 import ResultCard from './components/ResultCard.vue'
-import { loadServer, saveServer } from './ui/storage'
+import { loadAppearance, loadServer, saveAppearance, saveServer, type Appearance } from './ui/storage'
 import { hideTip, isTouch, showTip, tip } from './ui/tip'
 
 const index = shallowRef<SearchIndex>()
@@ -35,6 +35,23 @@ watch(server, saveServer)
 const SERVERS: { value: Server; label: string }[] = [
   { value: 'cn', label: '陸服' },
   { value: 'tw', label: '台服' },
+]
+/** 外觀:固定亮色或暗色時標記在根元素上,跟隨系統時不標記,交給系統偏好。 */
+const appearance = ref<Appearance>(loadAppearance())
+watch(appearance, saveAppearance)
+watch(
+  appearance,
+  (a) => {
+    if (a === 'system') delete document.documentElement.dataset.appearance
+    else document.documentElement.dataset.appearance = a
+  },
+  { immediate: true },
+)
+/** 鈕面寫縮寫,懸停文字與無障礙名稱用全名。 */
+const APPEARANCES: { value: Appearance; label: string; fullName: string }[] = [
+  { value: 'system', label: '系統', fullName: '跟隨系統' },
+  { value: 'light', label: '亮', fullName: '亮色' },
+  { value: 'dark', label: '暗', fullName: '暗色' },
 ]
 const rarities = ref<number[]>([])
 /** 職業條件:彼此 OR,與搜尋條件 AND。 */
@@ -218,22 +235,40 @@ onBeforeUnmount(() => {
   <div class="app" @mouseover="onOver" @mouseout="onOut" @click="onClick">
     <header class="top">
       <h1>明日方舟關鍵字搜尋</h1>
-      <div v-if="index" class="segmented" role="radiogroup" aria-label="伺服器">
-        <button
-          v-for="sv in SERVERS"
-          :key="sv.value"
-          role="radio"
-          :aria-checked="server === sv.value"
-          :class="{ on: server === sv.value }"
-          @click="server = sv.value"
-        >
-          {{ sv.label }}
-        </button>
+      <div class="toggles">
+        <div v-if="index" class="segmented" role="radiogroup" aria-label="伺服器">
+          <button
+            v-for="sv in SERVERS"
+            :key="sv.value"
+            role="radio"
+            :aria-checked="server === sv.value"
+            :class="{ on: server === sv.value }"
+            @click="server = sv.value"
+          >
+            {{ sv.label }}
+          </button>
+        </div>
+        <!-- 外觀不需要資料:載入中與錯誤頁也能切 -->
+        <div class="segmented" role="radiogroup" aria-label="外觀">
+          <button
+            v-for="a in APPEARANCES"
+            :key="a.value"
+            role="radio"
+            :aria-checked="appearance === a.value"
+            :aria-label="a.fullName"
+            :title="a.fullName"
+            :class="{ on: appearance === a.value }"
+            @click="appearance = a.value"
+          >
+            {{ a.label }}
+          </button>
+        </div>
       </div>
-      <button v-if="index" class="btn drawer-btn" :aria-expanded="drawerOpen" @click.stop="drawerOpen = !drawerOpen">
-        關鍵字<template v-if="selected.length">({{ selected.length }})</template>
-      </button>
     </header>
+    <!-- 窄螢幕上浮在右下角;抽屜打開時隱藏 -->
+    <button v-if="index" v-show="!drawerOpen" class="drawer-btn" @click.stop="drawerOpen = true">
+      關鍵字<template v-if="selected.length">({{ selected.length }})</template>
+    </button>
     <p v-if="error" class="error">{{ error }}</p>
     <main v-else-if="index" class="layout">
       <div v-if="drawerOpen" class="backdrop" @click="drawerOpen = false"></div>
