@@ -134,7 +134,8 @@ export interface SearchIndex {
   /** 面板排列:維護者清單的分組與行,最後是「未分組」;只含索引裡的關鍵字,不含空行與空分組。 */
   groups: IndexGroup[]
   keywords: IndexKeyword[]
-  subProfessions: Record<string, { name: string; profession: Profession }>
+  /** order 是遊戲內的分支順序(陸服資料);沒有時排在最後。 */
+  subProfessions: Record<string, { name: string; profession: Profession; order?: number }>
   operators: IndexOperator[]
 }
 

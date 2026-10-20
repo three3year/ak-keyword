@@ -232,7 +232,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
         <template v-else>
           <div class="result-meta">
             <span data-testid="result-count">共 {{ results.length }} 位幹員</span>
-            <span class="sort-note" title="遊戲資料沒有實裝時間,實裝順序以潛能信物編號近似">排序:星級 → 職業 → 實裝新到舊(近似)</span>
+            <span class="sort-note" title="遊戲資料沒有實裝時間,實裝順序以潛能信物編號近似">排序:星級 → 職業 → 分支 → 實裝新到舊(近似)</span>
           </div>
           <div v-if="results.length === 0" class="empty" data-testid="empty">
             <strong>沒有符合的幹員</strong>
@@ -240,14 +240,17 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
               <li v-for="c in emptyConditions" :key="c">{{ c }}</li>
             </ul>
           </div>
-          <ResultCard
-            v-for="op in results"
-            :key="op.id"
-            :op="op"
-            :selected="selected"
-            :keywords="keywordMap"
-            :branch-name="index.subProfessions[op.subProfession]?.name ?? op.subProfession"
-          />
+          <!-- 只有職業條件時結果卡只有卡頭:排成多欄的小卡 -->
+          <div class="result-list" :class="{ compact: conditions.length === 0 }" data-testid="result-list">
+            <ResultCard
+              v-for="op in results"
+              :key="op.id"
+              :op="op"
+              :selected="selected"
+              :keywords="keywordMap"
+              :branch-name="index.subProfessions[op.subProfession]?.name ?? op.subProfession"
+            />
+          </div>
         </template>
       </section>
     </main>

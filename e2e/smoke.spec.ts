@@ -123,7 +123,7 @@ test('搜尋條件 chip:加入時只亮施加,再亮一顆後結果變多或不�
   await expect(page.getByText('點選關鍵字或職業開始搜尋')).toBeVisible()
 })
 
-test('只選職業也開始搜尋:列出該職業幹員,結果卡只有卡頭;只勾星級不搜尋', async ({ page }) => {
+test('只選職業也開始搜尋:列出該職業幹員,結果卡是只有卡頭、一行多張的小卡;只勾星級不搜尋', async ({ page }) => {
   await page.goto('./')
   const hint = page.getByText('點選關鍵字或職業開始搜尋')
   await expect(hint).toBeVisible()
@@ -139,6 +139,18 @@ test('只選職業也開始搜尋:列出該職業幹員,結果卡只有卡頭;�
   await expect(page.getByTestId('result-card').getByRole('tab')).toHaveCount(0)
   await expect(page.getByTestId('entry')).toHaveCount(0)
   expect(Number(/\d+/.exec((await page.getByTestId('result-count').textContent()) ?? '')?.[0])).toBeGreaterThan(0)
+  // 只有卡頭的小卡不佔整行:前兩張在同一行
+  const sameRow = async () => {
+    const [a, b] = [await cards.nth(0).boundingBox(), await cards.nth(1).boundingBox()]
+    return a!.y === b!.y
+  }
+  expect(await sameRow()).toBe(true)
+
+  // 加上關鍵字後結果卡回到一張佔一行
+  await page.getByRole('checkbox', { name: '6★' }).uncheck()
+  await page.getByRole('button', { name: '暈眩', exact: true }).first().click()
+  await expect(cards.first().getByRole('tab').first()).toBeVisible()
+  expect(await sameRow()).toBe(false)
 })
 
 test('職業 chip:在搜尋條件 chip 上方、依遊戲內順序,× 與篩選列的職業鈕連動', async ({ page }) => {

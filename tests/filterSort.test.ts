@@ -45,6 +45,25 @@ describe('排序', () => {
     ])
   })
 
+  test('同星級同職業時依分支(遊戲內分支順序)排列,同分支再依實裝新到舊', () => {
+    const raw = fixture([
+      { id: 'char_721_a', name: '舊擴散', rarity: 6, profession: 'CASTER', sub: 'splashcaster' },
+      { id: 'char_722_b', name: '舊中堅', rarity: 6, profession: 'CASTER', sub: 'corecaster' },
+      { id: 'char_723_c', name: '新擴散', rarity: 6, profession: 'CASTER', sub: 'splashcaster' },
+      { id: 'char_724_d', name: '新中堅', rarity: 6, profession: 'CASTER', sub: 'corecaster' },
+    ])
+    // 遊戲資料以 subProfessionCatagory 標分支順序:中堅術師在擴散術師前
+    raw.cn.uniequipTable!.subProfDict!.corecaster.subProfessionCatagory = 32
+    raw.cn.uniequipTable!.subProfDict!.splashcaster.subProfessionCatagory = 33
+    const { index } = buildIndex(raw)
+    expect(query(index, { conditions: applying('ba.cold'), server: 'cn' }).map((r) => r.name)).toEqual([
+      '新中堅',
+      '舊中堅',
+      '新擴散',
+      '舊擴散',
+    ])
+  })
+
   test('多個搜尋條件(OR)的結果照樣依星級、職業、實裝排列,不依符合項數', () => {
     const stun = { description: '使敌人<$ba.stun>晕眩</>' }
     const both = { description: '使敌人<$ba.stun>晕眩</>并<$ba.cold>寒冷</>' }

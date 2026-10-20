@@ -173,7 +173,7 @@ class Builder {
       throw new Error(`陸服名重複的幹員要在 PRTS 頁名對照裡指定頁名:${missing.map(([name, ids]) => `${name}(${ids.join('、')})`).join(';')}`)
   }
 
-  /** 分支名稱優先用台服。 */
+  /** 分支名稱優先用台服;順序取陸服資料。 */
   subProfessions(operators: IndexOperator[]): SearchIndex['subProfessions'] {
     const out: SearchIndex['subProfessions'] = {}
     const twNames = this.input.tw?.uniequipTable?.subProfDict ?? {}
@@ -182,6 +182,8 @@ class Builder {
       const id = op.subProfession
       if (out[id]) continue
       out[id] = { name: twNames[id]?.subProfessionName ?? cnNames[id]?.subProfessionName ?? id, profession: op.profession }
+      const order = cnNames[id]?.subProfessionCatagory
+      if (order !== undefined) out[id].order = order
     }
     return out
   }

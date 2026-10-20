@@ -140,9 +140,15 @@ function passesFilters(op: IndexOperator, opts: QueryOptions): boolean {
   return true
 }
 
-/** 星級高到低,再依職業(遊戲內順序),最後實裝新到舊。 */
-function compareOperators(a: IndexOperator, b: IndexOperator): number {
-  return b.rarity - a.rarity || PROFESSIONS.indexOf(a.profession) - PROFESSIONS.indexOf(b.profession) || b.release - a.release
+/** 星級高到低,再依職業、分支(都是遊戲內順序),最後實裝新到舊。 */
+function compareOperators(index: SearchIndex): (a: IndexOperator, b: IndexOperator) => number {
+  const branch = (op: IndexOperator) => index.subProfessions[op.subProfession]?.order ?? Infinity
+  return (a, b) =>
+    b.rarity - a.rarity ||
+    PROFESSIONS.indexOf(a.profession) - PROFESSIONS.indexOf(b.profession) ||
+    // 兩邊都沒有分支順序時是 NaN,視同相等
+    branch(a) - branch(b) ||
+    b.release - a.release
 }
 
 /** 幾個召喚物(例如同一召喚物的不同型態)有完全相同的命中敘述時,合併成一筆並列出所有召喚物名。 */
@@ -174,7 +180,7 @@ export function startsSearch(opts: Pick<QueryOptions, 'conditions' | 'profession
 export function query(index: SearchIndex, opts: QueryOptions): ResultOperator[] {
   if (!startsSearch(opts)) return []
   const results: ResultOperator[] = []
-  for (const op of [...index.operators].sort(compareOperators)) {
+  for (const op of [...index.operators].sort(compareOperators(index))) {
     // 台服模式略過台服未實裝的幹員;只有職業條件時不會因為沒有命中敘述而被濾掉,要在這裡擋
     if (opts.server === 'tw' && !op.inTw) continue
     if (!passesFilters(op, opts)) continue

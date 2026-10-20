@@ -86,7 +86,8 @@ export interface RawEquip {
 
 export interface RawUniequipTable {
   equipDict: Record<string, RawEquip>
-  subProfDict?: Record<string, { subProfessionId: string; subProfessionName: string }>
+  /** subProfessionCatagory 是遊戲內的分支順序。 */
+  subProfDict?: Record<string, { subProfessionId: string; subProfessionName: string; subProfessionCatagory?: number }>
 }
 
 export interface RawEquipTalentCandidate extends RawTalentCandidate {
