@@ -45,6 +45,8 @@
   /* 「台服未實裝」徽章:實心底色、深色字,在淡色與壓灰的卡頭上都跳得出來 */
   --tw-badge-bg: light-dark(#aebdd2, #7a8ca5);
   --tw-badge-text: light-dark(#152033, #0d121a);
+  /* 頭像上低調的「i」標記底色:暗色時用淺一點的灰,才看得出圓點但不搶眼 */
+  --info-badge: light-dark(rgb(40 44 52 / 0.45), rgb(150 160 175 / 0.45));
   /* 外觀:令牌取 light-dark() 的哪一色、瀏覽器自畫的捲軸與輸入框用哪一色,都由 color-scheme 決定。
      跟隨系統時不標記,交給系統偏好;固定亮色或暗色時根元素標記 data-appearance */
   color-scheme: light dark;
@@ -922,7 +924,7 @@ input:focus-visible {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: rgb(40 44 52 / 0.45);
+  background: var(--info-badge);
   color: #fff;
   font: italic 700 6px/10px Georgia, 'Times New Roman', serif;
   text-align: center;
