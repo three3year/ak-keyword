@@ -271,8 +271,11 @@ class Builder {
   skillEntries(ownerId: string): IndexEntry[] {
     const char = this.char('cn', ownerId)!
     const entries: IndexEntry[] = []
+    const seen = new Set<string>()
     char.skills.forEach((s, i) => {
-      if (!s.skillId) return
+      // 召喚物的技能表會依精英階段重複同一個技能,只收第一次
+      if (!s.skillId || seen.has(s.skillId)) return
+      seen.add(s.skillId)
       const skillId = s.skillId
       const skill = this.input.cn.skillTable[skillId]
       if (!skill) {

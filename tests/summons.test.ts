@@ -49,6 +49,19 @@ describe('召喚物', () => {
     ])
   })
 
+  test('召喚物技能表依精英階段重複同一個技能時只收一次', () => {
+    const cn = server({
+      terms: COMMON_TERMS,
+      operators: {
+        char_305_r: operator({ name: '重複召喚', tokens: ['token_305_r'] }),
+        token_305_r: operator({ name: '丙物', profession: 'TOKEN', skills: ['sktok_r', 'sktok_r', 'sktok_r'] }),
+      },
+      skills: [basicSkill('sktok_r', '冷', cold)],
+    })
+    const [r] = query(buildIndex({ cn }).index, { conditions: applying('ba.cold'), server: 'cn' })
+    expect(r.entries.map((e) => [e.source, e.summon])).toEqual([['召喚物技能1', '丙物']])
+  })
+
   test('多個召喚物的同一段命中敘述合併成一筆,列出所有召喚物名', () => {
     const cn = server({
       terms: COMMON_TERMS,
