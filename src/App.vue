@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import { loadIndex } from './core/loadIndex'
-import { availableTypes, defaultType, filterOptions, footerItems, query } from './core/query'
+import { availableTypes, defaultType, filterOptions, footerItems, query, startsSearch } from './core/query'
 import {
   EFFECT_TYPE_LABELS,
   EFFECT_TYPES,
   PROFESSION_LABELS,
+  PROFESSIONS,
   type EffectType,
   type IndexKeyword,
   type Profession,
@@ -34,7 +35,11 @@ const SERVERS: { value: Server; label: string }[] = [
   { value: 'tw', label: '台服' },
 ]
 const rarities = ref<number[]>([])
+/** 職業條件:彼此 OR,與搜尋條件 AND。 */
 const professions = ref<Profession[]>([])
+/** 職業條件依遊戲內職業順序,不依點選先後。 */
+const sortedProfessions = computed(() => PROFESSIONS.filter((p) => professions.value.includes(p)))
+const searching = computed(() => startsSearch({ conditions: conditions.value, professions: professions.value }))
 // 窄螢幕上關鍵字面板收合成抽屜
 const drawerOpen = ref(false)
 
@@ -71,12 +76,11 @@ function hasData(id: string, type: EffectType): boolean {
 
 /** 沒有結果時列出目前生效的條件,讓使用者知道要放寬哪一項。 */
 const emptyConditions = computed(() => {
-  const list = [
-    `搜尋條件:${conditions.value.map((c) => `${EFFECT_TYPE_LABELS[c.type]}-${keywordName(c.keyword)}`).join('、')}`,
-    `伺服器:${server.value === 'tw' ? '台服' : '陸服'}`,
-  ]
+  const list: string[] = []
+  if (professions.value.length) list.push(`職業:${sortedProfessions.value.map((p) => PROFESSION_LABELS[p]).join('、')}`)
+  if (conditions.value.length) list.push(`搜尋條件:${conditions.value.map((c) => `${EFFECT_TYPE_LABELS[c.type]}-${keywordName(c.keyword)}`).join('、')}`)
+  list.push(`伺服器:${server.value === 'tw' ? '台服' : '陸服'}`)
   if (rarities.value.length) list.push(`星級:${[...rarities.value].sort((a, b) => b - a).map((r) => `${r}★`).join('、')}`)
-  if (professions.value.length) list.push(`職業:${professions.value.map((p) => PROFESSION_LABELS[p]).join('、')}`)
   return list
 })
 
@@ -95,6 +99,10 @@ function toggle(id: string) {
 
 function remove(id: string) {
   selection.value = selection.value.filter((s) => s.keyword !== id)
+}
+
+function removeProfession(p: Profession) {
+  professions.value = professions.value.filter((x) => x !== p)
 }
 
 /** chip 上的類型鈕:切換該類型;關掉最後一顆等於移除 chip。 */
@@ -191,6 +199,13 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
       </aside>
       <section class="results">
         <FilterBar v-model:rarities="rarities" v-model:professions="professions" :options="options" />
+        <!-- 職業 chip 一行在上、搜尋條件 chip 在下 -->
+        <div v-if="sortedProfessions.length > 0" class="chips">
+          <span v-for="p in sortedProfessions" :key="p" class="chip profession-chip" data-testid="profession-chip">
+            <span class="profession-name">{{ PROFESSION_LABELS[p] }}</span>
+            <button class="chip-x" :aria-label="`移除 ${PROFESSION_LABELS[p]}`" @click.stop="removeProfession(p)">×</button>
+          </span>
+        </div>
         <div v-if="selection.length > 0" class="chips">
           <span v-for="s in selection" :key="s.keyword" class="chip" data-testid="chip">
             <span :data-k="s.keyword" class="chip-name">{{ keywordName(s.keyword) }}</span>
@@ -213,7 +228,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
             <button class="chip-x" :aria-label="`移除 ${keywordName(s.keyword)}`" @click.stop="remove(s.keyword)">×</button>
           </span>
         </div>
-        <p v-if="selected.length === 0" class="hint">點選關鍵字開始搜尋</p>
+        <p v-if="!searching" class="hint">點選關鍵字或職業開始搜尋</p>
         <template v-else>
           <div class="result-meta">
             <span data-testid="result-count">共 {{ results.length }} 位幹員</span>

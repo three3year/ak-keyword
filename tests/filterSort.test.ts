@@ -75,12 +75,54 @@ describe('篩選', () => {
     expect(query(index, { conditions: applying('ba.cold'), server: 'cn', rarities: [5, 4] }).map((r) => r.name)).toEqual(['五星近衛', '四星術師'])
   })
 
-  test('職業篩選', () => {
+  test('職業條件與搜尋條件同時符合才列入', () => {
     const { index } = buildIndex(fixture(roster))
     expect(query(index, { conditions: applying('ba.cold'), server: 'cn', professions: ['WARRIOR'] }).map((r) => r.name)).toEqual([
       '六星近衛',
       '五星近衛',
     ])
+  })
+
+  test('只有職業條件:列出該職業全部幹員(含沒有任何關鍵字的),命中敘述為空', () => {
+    const raw = fixture(roster)
+    raw.cn.characterTable.char_706_f = operator({ name: '無關鍵字近衛', rarity: 3, profession: 'WARRIOR', sub: 'instructor' })
+    const { index } = buildIndex(raw)
+    const results = query(index, { conditions: [], server: 'cn', professions: ['WARRIOR'] })
+    expect(results.map((r) => r.name)).toEqual(['六星近衛', '五星近衛', '無關鍵字近衛'])
+    expect(results.every((r) => r.entries.length === 0)).toBe(true)
+  })
+
+  test('兩個職業條件:兩個職業的幹員都列入,照星級、職業、實裝排序', () => {
+    const raw = fixture(roster)
+    raw.cn.characterTable.char_706_f = operator({ name: '先鋒', profession: 'PIONEER', sub: 'pioneer' })
+    const { index } = buildIndex(raw)
+    expect(query(index, { conditions: [], server: 'cn', professions: ['CASTER', 'WARRIOR'] }).map((r) => r.name)).toEqual([
+      '六星近衛',
+      '新六星術師',
+      '老六星術師',
+      '五星近衛',
+      '四星術師',
+    ])
+  })
+
+  test('職業條件 + 星級篩選:只列符合星級的', () => {
+    const { index } = buildIndex(fixture(roster))
+    expect(query(index, { conditions: [], server: 'cn', professions: ['CASTER'], rarities: [6] }).map((r) => r.name)).toEqual([
+      '新六星術師',
+      '老六星術師',
+    ])
+  })
+
+  test('只有星級篩選不開始搜尋', () => {
+    const { index } = buildIndex(fixture(roster))
+    expect(query(index, { conditions: [], server: 'cn', rarities: [6] })).toEqual([])
+  })
+
+  test('台服模式的職業條件略過台服未實裝的幹員', () => {
+    const raw = fixture(roster)
+    raw.tw.characterTable.char_702_b = operator({ name: '五星近衛', rarity: 5, profession: 'WARRIOR', sub: 'instructor' })
+    const { index } = buildIndex(raw)
+    expect(query(index, { conditions: [], server: 'tw', professions: ['WARRIOR'] }).map((r) => r.name)).toEqual(['五星近衛'])
   })
 
   test('篩選選項:星級高到低,職業依遊戲順序,不含分支', () => {

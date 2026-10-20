@@ -26,7 +26,7 @@ function toggleProfession(p: Profession) {
       <button
         v-for="p in options.professions"
         :key="p.id"
-        class="pill"
+        class="profession-pill"
         :class="{ on: professions.includes(p.id) }"
         :aria-pressed="professions.includes(p.id)"
         @click="toggleProfession(p.id)"

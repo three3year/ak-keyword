@@ -150,7 +150,9 @@ export interface QueryOptions {
   /** 搜尋條件一律 OR:幹員滿足任一條件就列入,包括同一關鍵字的多種效果類型。 */
   conditions: SearchCondition[]
   server: Server
+  /** 星級篩選:只縮小結果,單獨不開始搜尋。 */
   rarities?: number[]
+  /** 職業條件:彼此 OR,與搜尋條件 AND;沒有搜尋條件時列出這些職業的全部幹員。 */
   professions?: Profession[]
 }
 

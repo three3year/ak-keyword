@@ -120,10 +120,57 @@ test('搜尋條件 chip:加入時只亮施加,再亮一顆後結果變多或不�
   await expect(chip).toHaveCount(1)
   await types.getByRole('button', { name: '利用' }).click()
   await expect(chip).toHaveCount(0)
-  await expect(page.getByText('點選關鍵字開始搜尋')).toBeVisible()
+  await expect(page.getByText('點選關鍵字或職業開始搜尋')).toBeVisible()
 })
 
-test('沒有結果時列出搜尋條件', async ({ page }) => {
+test('只選職業也開始搜尋:列出該職業幹員,結果卡只有卡頭;只勾星級不搜尋', async ({ page }) => {
+  await page.goto('./')
+  const hint = page.getByText('點選關鍵字或職業開始搜尋')
+  await expect(hint).toBeVisible()
+  await page.getByRole('checkbox', { name: '6★' }).check()
+  await expect(hint).toBeVisible()
+
+  await page.getByRole('button', { name: '狙擊', exact: true }).click()
+  await expect(hint).toHaveCount(0)
+  await expect(page.getByTestId('profession-chip')).toHaveText([/狙擊/])
+  const cards = page.getByTestId('result-card')
+  await expect(cards.first()).toBeVisible()
+  await expect(cards.first()).toContainText('狙擊')
+  await expect(page.getByTestId('result-card').getByRole('tab')).toHaveCount(0)
+  await expect(page.getByTestId('entry')).toHaveCount(0)
+  expect(Number(/\d+/.exec((await page.getByTestId('result-count').textContent()) ?? '')?.[0])).toBeGreaterThan(0)
+})
+
+test('職業 chip:在搜尋條件 chip 上方、依遊戲內順序,× 與篩選列的職業鈕連動', async ({ page }) => {
+  await page.goto('./')
+  const professionChips = page.getByTestId('profession-chip')
+  await expect(professionChips).toHaveCount(0)
+
+  // 先點後面的職業,chip 仍依遊戲內順序
+  const filter = page.getByRole('group', { name: '職業' })
+  await filter.getByRole('button', { name: '狙擊', exact: true }).click()
+  await filter.getByRole('button', { name: '先鋒', exact: true }).click()
+  await expect(professionChips).toHaveText([/先鋒/, /狙擊/])
+  // 職業 chip 沒有類型鈕
+  await expect(professionChips.getByRole('button')).toHaveCount(2)
+
+  await page.getByRole('button', { name: '暈眩', exact: true }).first().click()
+  const keywordChip = page.getByTestId('chip')
+  const professionBox = await professionChips.first().boundingBox()
+  const keywordBox = await keywordChip.boundingBox()
+  expect(professionBox!.y + professionBox!.height).toBeLessThanOrEqual(keywordBox!.y)
+
+  // × 移除職業條件,篩選列的職業鈕跟著取消;再點職業鈕 chip 再出現
+  const sniper = filter.getByRole('button', { name: '狙擊', exact: true })
+  await expect(sniper).toHaveAttribute('aria-pressed', 'true')
+  await page.getByRole('button', { name: '移除 狙擊' }).click()
+  await expect(professionChips).toHaveText([/先鋒/])
+  await expect(sniper).toHaveAttribute('aria-pressed', 'false')
+  await sniper.click()
+  await expect(professionChips).toHaveText([/先鋒/, /狙擊/])
+})
+
+test('沒有結果時依職業、搜尋條件、伺服器、星級列出生效的條件', async ({ page }) => {
   await page.goto('./')
   await page.getByRole('button', { name: '暈眩', exact: true }).first().click()
   await page.getByRole('button', { name: '停頓', exact: true }).first().click()
@@ -132,10 +179,15 @@ test('沒有結果時列出搜尋條件', async ({ page }) => {
   await page.getByRole('checkbox', { name: '1★' }).check()
   await page.getByRole('button', { name: '醫療', exact: true }).click()
   const empty = page.getByTestId('empty')
-  await expect(empty).toContainText('搜尋條件:施加-暈眩、施加-停頓、利用-停頓')
-  await expect(empty).toContainText('星級:1★')
-  await expect(empty).toContainText('職業:醫療')
+  await expect(empty.getByRole('listitem')).toHaveText(['職業:醫療', '搜尋條件:施加-暈眩、施加-停頓、利用-停頓', '伺服器:陸服', '星級:1★'])
   await expect(empty).not.toContainText('分支')
+
+  // 只有職業條件:沒有「搜尋條件」這一項
+  await page.getByRole('button', { name: '移除 暈眩' }).click()
+  await page.getByRole('button', { name: '移除 停頓' }).click()
+  await page.getByRole('checkbox', { name: '1★' }).uncheck()
+  await page.getByRole('checkbox', { name: '2★' }).check()
+  await expect(empty.getByRole('listitem')).toHaveText(['職業:醫療', '伺服器:陸服', '星級:2★'])
 })
 
 test('類型鈕反灰:關鍵字在目前伺服器沒有該類型的敘述時停用', async ({ page }) => {
@@ -230,7 +282,7 @@ test('關鍵字面板:補充關鍵字叫推、拉;頂端沒有過濾欄位與清
 
   await push.click()
   await expect(page.getByTestId('chip')).toHaveCount(0)
-  await expect(page.getByText('點選關鍵字開始搜尋')).toBeVisible()
+  await expect(page.getByText('點選關鍵字或職業開始搜尋')).toBeVisible()
 })
 
 test('效果類型判定:鉤索師特性的模組3 階段只算利用-拉;佩佩利用與反制異常狀態;酒神利用束縛', async ({ page }) => {

@@ -65,54 +65,57 @@ function onAvatarError(e: Event) {
         <div class="op-sub">{{ PROFESSION_LABELS[op.profession] }} · {{ branchName }}</div>
       </div>
     </header>
-    <div class="tabs" role="tablist" :aria-label="`${op.name}的命中敘述`">
-      <button
-        v-for="(e, i) in op.entries"
-        :id="`${id}-tab-${i}`"
-        :key="i"
-        type="button"
-        role="tab"
-        class="tab"
-        :class="[`src-${e.kind}`, { on: i === tab }]"
-        :aria-selected="i === tab"
-        :aria-controls="`${id}-panel`"
-        @click="tab = i"
-      >
-        {{ e.source }}
-      </button>
-    </div>
-    <section
-      :id="`${id}-panel`"
-      class="entry"
-      role="tabpanel"
-      :aria-labelledby="`${id}-tab-${tab}`"
-      data-testid="entry"
-    >
-      <div v-if="entry.stages.length > 1" class="stage-switch" role="group" aria-label="階段">
+    <!-- 只有職業條件時沒有命中敘述,只顯示卡頭 -->
+    <template v-if="op.entries.length > 0">
+      <div class="tabs" role="tablist" :aria-label="`${op.name}的命中敘述`">
         <button
-          v-for="(s, j) in entry.stages"
-          :key="j"
+          v-for="(e, i) in op.entries"
+          :id="`${id}-tab-${i}`"
+          :key="i"
           type="button"
-          class="stage-btn"
-          :class="{ on: j === stageIndex }"
-          :aria-pressed="j === stageIndex"
-          :disabled="!s.hit"
-          @click="stageOf[tab] = j"
+          role="tab"
+          class="tab"
+          :class="[`src-${e.kind}`, { on: i === tab }]"
+          :aria-selected="i === tab"
+          :aria-controls="`${id}-panel`"
+          @click="tab = i"
         >
-          {{ s.label }}
+          {{ e.source }}
         </button>
       </div>
-      <div class="entry-head">
-        <span v-if="entryName" class="entry-name">{{ entryName }}</span>
-        <span v-if="entry.summon" class="badge summon" :title="`召喚物名稱:這段敘述屬於召喚物「${entry.summon}」`">{{ entry.summon }}</span>
-        <span v-if="stage.cnData" class="badge" title="台服尚未實裝這個模組,文字與數值取自陸服">陸服資料</span>
-        <template v-for="(types, k) in stage.effects" :key="k">
-          <span v-for="fx in types" :key="fx" class="fx" :class="`fx-${fx}`">
-            {{ selected.length > 1 ? `${keywords.get(k)?.name ?? k}:` : '' }}{{ EFFECT_TYPE_LABELS[fx] }}
-          </span>
-        </template>
-      </div>
-      <RichText class="stage-text" :runs="stage.runs" :selected="selected" />
-    </section>
+      <section
+        :id="`${id}-panel`"
+        class="entry"
+        role="tabpanel"
+        :aria-labelledby="`${id}-tab-${tab}`"
+        data-testid="entry"
+      >
+        <div v-if="entry.stages.length > 1" class="stage-switch" role="group" aria-label="階段">
+          <button
+            v-for="(s, j) in entry.stages"
+            :key="j"
+            type="button"
+            class="stage-btn"
+            :class="{ on: j === stageIndex }"
+            :aria-pressed="j === stageIndex"
+            :disabled="!s.hit"
+            @click="stageOf[tab] = j"
+          >
+            {{ s.label }}
+          </button>
+        </div>
+        <div class="entry-head">
+          <span v-if="entryName" class="entry-name">{{ entryName }}</span>
+          <span v-if="entry.summon" class="badge summon" :title="`召喚物名稱:這段敘述屬於召喚物「${entry.summon}」`">{{ entry.summon }}</span>
+          <span v-if="stage.cnData" class="badge" title="台服尚未實裝這個模組,文字與數值取自陸服">陸服資料</span>
+          <template v-for="(types, k) in stage.effects" :key="k">
+            <span v-for="fx in types" :key="fx" class="fx" :class="`fx-${fx}`">
+              {{ selected.length > 1 ? `${keywords.get(k)?.name ?? k}:` : '' }}{{ EFFECT_TYPE_LABELS[fx] }}
+            </span>
+          </template>
+        </div>
+        <RichText class="stage-text" :runs="stage.runs" :selected="selected" />
+      </section>
+    </template>
   </article>
 </template>

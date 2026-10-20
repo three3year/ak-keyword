@@ -119,8 +119,8 @@ function resultOperator(op: IndexOperator, opts: QueryOptions): ResultOperator |
     if (entry.summon) result.summon = summon?.name ?? entry.summon
     entries.push(result)
   }
-  // 搜尋條件一律 OR:有任一命中敘述就列入
-  if (entries.length === 0) return undefined
+  // 搜尋條件一律 OR:有任一命中敘述就列入;沒有搜尋條件(只有職業條件)時全部列入,命中敘述為空
+  if (entries.length === 0 && opts.conditions.length > 0) return undefined
   const result: ResultOperator = {
     id: op.id,
     name: op.name,
@@ -166,10 +166,17 @@ function mergeSummonEntries(entries: ResultEntry[]): ResultEntry[] {
   return out
 }
 
+/** 有搜尋條件或職業條件其中一種就開始搜尋;只有星級篩選不算。 */
+export function startsSearch(opts: Pick<QueryOptions, 'conditions' | 'professions'>): boolean {
+  return opts.conditions.length > 0 || !!opts.professions?.length
+}
+
 export function query(index: SearchIndex, opts: QueryOptions): ResultOperator[] {
-  if (opts.conditions.length === 0) return []
+  if (!startsSearch(opts)) return []
   const results: ResultOperator[] = []
   for (const op of [...index.operators].sort(compareOperators)) {
+    // 台服模式略過台服未實裝的幹員;只有職業條件時不會因為沒有命中敘述而被濾掉,要在這裡擋
+    if (opts.server === 'tw' && !op.inTw) continue
     if (!passesFilters(op, opts)) continue
     const r = resultOperator(op, opts)
     if (r) results.push(r)
@@ -233,7 +240,7 @@ export interface PanelGroup {
 
 /**
  * 關鍵字面板:依索引的分組與行,列出該伺服器有幹員具有任一效果類型的關鍵字;拿掉後變空的行與分組不列。
- * 星級、職業篩選不影響面板。
+ * 星級篩選、職業條件不影響面板。
  */
 export function keywordGroups(index: SearchIndex, server: Server): PanelGroup[] {
   const withData = keywordsWithData(index, server)

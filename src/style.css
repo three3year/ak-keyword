@@ -39,6 +39,9 @@
   /* 敘述底框:白色系,蓋過光暈好讀文字 */
   --panel: #ffffff;
   --radius: 10px;
+  /* 職業條件:職業 chip 與篩選列選取的職業鈕 */
+  --profession: #475569;
+  --profession-soft: #e7ebf0;
   color-scheme: light;
 }
 
@@ -78,6 +81,8 @@
     --src-talent-line: #f07aa6;
     --src-trait-line: #5cc8c8;
     --panel: #23282f;
+    --profession: #b4c0d0;
+    --profession-soft: #2a313b;
     color-scheme: dark;
   }
 }
@@ -528,6 +533,17 @@ input:focus-visible {
   font-weight: 600;
 }
 
+/* 職業 chip:和搜尋條件 chip 同形,換成職業色;沒有類型鈕與定義 */
+.profession-chip {
+  border-color: var(--profession);
+  background: var(--profession-soft);
+  color: var(--profession);
+}
+
+.profession-name {
+  font-weight: 600;
+}
+
 /* 類型鈕:亮著的填效果類型的顏色,每亮一顆就是一個搜尋條件 */
 .chip-types {
   display: inline-flex;
@@ -723,7 +739,7 @@ input:focus-visible {
   color: #fff;
 }
 
-.pill {
+.profession-pill {
   border: 1px solid var(--border);
   background: var(--surface-2);
   border-radius: 999px;
@@ -732,10 +748,11 @@ input:focus-visible {
   font-size: 0.88rem;
 }
 
-.pill.on {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
+/* 選取時和職業 chip 同色 */
+.profession-pill.on {
+  background: var(--profession);
+  border-color: var(--profession);
+  color: var(--surface);
 }
 
 .result-meta {

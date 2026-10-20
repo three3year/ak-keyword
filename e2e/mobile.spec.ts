@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 
-test('手機寬度:抽屜選關鍵字、點擊顯示定義、點高亮詞只顯示定義不改搜尋,且沒有水平捲動', async ({ page }) => {
+test('手機寬度:抽屜選關鍵字、點擊顯示定義、點高亮詞只顯示定義不改搜尋,職業 chip 不算進抽屜計數,且沒有水平捲動', async ({ page }) => {
   await page.goto('./')
   const noHorizontalScroll = () =>
     page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)
@@ -26,6 +26,15 @@ test('手機寬度:抽屜選關鍵字、點擊顯示定義、點高亮詞只顯�
   // chip 上的類型鈕一併受檢
   await expect(page.getByTestId('chip').getByRole('button', { name: '反制' })).toBeVisible()
   expect(await noHorizontalScroll()).toBe(true)
+
+  // 職業 chip 多一行也沒有水平捲動;抽屜按鈕只算關鍵字
+  await page.getByRole('group', { name: '職業' }).getByRole('button', { name: '先鋒', exact: true }).tap()
+  await page.getByRole('group', { name: '職業' }).getByRole('button', { name: '近衛', exact: true }).tap()
+  await expect(page.getByTestId('profession-chip')).toHaveCount(2)
+  await expect(page.getByRole('button', { name: /^關鍵字/ })).toHaveText('關鍵字(1)')
+  expect(await noHorizontalScroll()).toBe(true)
+  await page.getByRole('button', { name: '移除 先鋒' }).tap()
+  await page.getByRole('button', { name: '移除 近衛' }).tap()
 
   // 點擊高亮詞:只顯示定義,提示框沒有加入/移出按鈕,搜尋不變
   const count = page.getByTestId('result-count')
