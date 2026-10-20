@@ -46,7 +46,7 @@ function onAvatarError(e: Event) {
 </script>
 
 <template>
-  <!-- 台服未實裝:小卡整張壓灰、整張卡帶懸停文字;大卡只壓灰卡頭、懸停文字由徽章提供 -->
+  <!-- 台服未實裝:小卡整張壓灰、整張卡帶懸停文字;大卡不壓灰,只在卡頭放徽章 -->
   <article
     class="card"
     :class="[op.rarity >= 3 ? `glow-${op.rarity}` : 'glow-low', { compact, 'tw-unreleased': op.twUnreleased }]"

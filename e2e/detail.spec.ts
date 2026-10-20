@@ -214,7 +214,7 @@ test('陸服模式下台服未實裝幹員的小卡壓灰:整張卡有懸停文�
   await expect(page.getByText('台服未實裝', { exact: true })).toHaveCount(0)
 })
 
-test('陸服模式下台服未實裝幹員的大卡只壓灰卡頭:卡頭有徽章、整張卡沒有懸停文字、命中敘述不壓灰', async ({ page }) => {
+test('陸服模式下台服未實裝幹員的大卡不壓灰:卡頭有徽章、整張卡沒有懸停文字、命中敘述照常', async ({ page }) => {
   // 「停頓」目前命中五位台服未實裝的幹員
   await search(page, '停頓')
   const flagged = page.locator('[data-testid=result-card].tw-unreleased')
@@ -223,7 +223,7 @@ test('陸服模式下台服未實裝幹員的大卡只壓灰卡頭:卡頭有徽�
   await expect(badge).toHaveText('台服未實裝')
   await expect(badge).toHaveAttribute('title', '台服尚未實裝這位幹員,文字與數值取自陸服')
   await expect(flagged.first()).not.toHaveAttribute('title')
-  // 大卡不是小卡;命中敘述與高亮照常顯示(壓灰範圍只在卡頭,靠截圖人眼確認)
+  // 大卡不是小卡,沒有壓灰;命中敘述與高亮照常顯示
   await expect(flagged.first()).not.toHaveClass(/\bcompact\b/)
   await expect(flagged.first().getByTestId('entry').locator('mark.hl').first()).toBeVisible()
 })
