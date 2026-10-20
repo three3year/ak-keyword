@@ -101,7 +101,7 @@ npm run test:e2e
 把這次的改動放在一個 commit:
 
 ```bash
-git add public/data public/avatars data
+git add public/data public/avatars public/skill-icons data
 ```
 
 commit 訊息第一行:
@@ -111,4 +111,4 @@ commit 訊息第一行:
 
 內文放第 7 步的摘要。只 commit;push 由維護者自己做。
 
-完成:`git status` 在 `public/data`、`public/avatars`、`data` 底下沒有未 commit 的改動。
+完成:`git status` 在 `public/data`、`public/avatars`、`public/skill-icons`、`data` 底下沒有未 commit 的改動。

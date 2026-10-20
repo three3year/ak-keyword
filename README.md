@@ -25,7 +25,7 @@ npm run test:e2e     # Playwright 煙霧測試(桌機與手機寬度;先 npm run
 
 ```bash
 npm run check-upstream         # 比對兩服上游與索引的資料版本,最後一行是「已是最新」或「有新版」
-npm run build-index            # 重新下載陸服與台服資料、頭像,產出 public/data/index.json
+npm run build-index            # 重新下載陸服與台服資料、頭像與技能圖示,產出 public/data/(索引與幹員檔)
 npm run build-index:offline    # 沿用 .cache/ 已下載的資料
 npm run accept-warnings        # 把已知警告清單改成最近一次建置的全部警告
 ```
@@ -34,7 +34,7 @@ npm run accept-warnings        # 把已知警告清單改成最近一次建置�
 
 建置會輸出:
 
-- `review/build-warnings.txt`:全部警告:無法辨識的標記、找不到數值的佔位符、潛能加成對不齊、找不到的頭像等。
+- `review/build-warnings.txt`:全部警告:無法辨識的標記、找不到數值的佔位符、潛能加成對不齊、找不到的頭像與技能圖示等。
 - `review/new-warnings.json`:已知警告清單(`data/known-warnings.json`)裡沒有的新警告。
 - `review/resolved-warnings.json`:已知警告清單裡有、這次沒出現的警告(上游已修好)。
 - `review/pending-review.json`:效果類型還沒複核的「敘述 × 關鍵字」配對(覆寫檔裡沒有的)。
@@ -43,7 +43,7 @@ npm run accept-warnings        # 把已知警告清單改成最近一次建置�
 
 資料來源:陸服 [Kengxxiao/ArknightsGameData](https://github.com/Kengxxiao/ArknightsGameData)、
 台服 [arkntools/arknights-data-tw-for-maa](https://github.com/arkntools/arknights-data-tw-for-maa)、
-頭像 [yuanyan3060/ArknightsGameResource](https://github.com/yuanyan3060/ArknightsGameResource)。
+頭像與技能圖示 [yuanyan3060/ArknightsGameResource](https://github.com/yuanyan3060/ArknightsGameResource)。
 
 ## 效果類型複核
 

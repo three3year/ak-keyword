@@ -1,11 +1,11 @@
-// 維護者在本機執行:抓陸服與台服原始資料 → 建置索引 → 寫進 public/data/index.json。
+// 維護者在本機執行:抓陸服與台服原始資料 → 建置索引 → 寫進 public/data/index.json 與 public/data/operators/。
 //   npm run build-index            重新下載原始資料
 //   npm run build-index:offline    沿用 .cache/raw 裡已下載的資料
-import { mkdir, readFile, stat, writeFile } from 'node:fs/promises'
+import { mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import { prepareAvatars } from './avatars'
-import { buildIndex, type KeywordGroup, type Overrides, type SupplementKeyword } from './buildIndex'
+import { prepareAvatars, prepareSkillIcons } from './images'
+import { attachOperatorFiles, buildIndex, type KeywordGroup, type Overrides, skillIconId, skillIconPath, type SupplementKeyword } from './buildIndex'
 import type { RawServer } from './raw'
 import { diffWarnings, KNOWN_WARNINGS, NEW_WARNINGS, RESOLVED_WARNINGS } from './warnings'
 import { DATA_SOURCES, rawBase } from '../src/core/sources'
@@ -13,6 +13,7 @@ import { DATA_SOURCES, rawBase } from '../src/core/sources'
 const ROOT = join(import.meta.dirname, '..')
 const CACHE = join(ROOT, '.cache', 'raw')
 const OUT_INDEX = join(ROOT, 'public', 'data', 'index.json')
+const OUT_OPERATORS = join(ROOT, 'public', 'data', 'operators')
 const REVIEW_DIR = join(ROOT, 'review')
 
 const SOURCES = {
@@ -85,7 +86,7 @@ async function main() {
   const excludedTerms = await readJson<string[]>(join(ROOT, 'data', 'excluded-terms.json'))
   const prtsPages = await readJson<Record<string, string>>(join(ROOT, 'data', 'prts-pages.json'))
   const knownWarnings = await readJson<string[]>(KNOWN_WARNINGS)
-  const { index, warnings, pending } = buildIndex({ cn, tw, groups, supplements, overrides, excludedTerms, prtsPages })
+  const { index, operatorFiles, warnings, pending } = buildIndex({ cn, tw, groups, supplements, overrides, excludedTerms, prtsPages })
 
   // 頭像:職業形態(阿米婭)沒有專屬頭像時改用預設形態
   const formDefault = new Map<string, string>()
@@ -99,10 +100,28 @@ async function main() {
     if (avatar) op.avatar = avatar
   }
 
+  // 技能圖示:只下載幹員與召喚物用到的;缺圖的技能拿掉圖示路徑,介面顯示預留圖
+  const iconIds = new Map<string, string>()
+  for (const s of Object.values(cn.skillTable)) iconIds.set(skillIconPath(skillIconId(s)), skillIconId(s))
+  const skillEntries = [...index.operators, ...operatorFiles].flatMap((o) => o.entries).filter((e) => e.icon)
+  const wanted = [...new Set(skillEntries.map((e) => e.icon!))]
+  const icons = await prepareSkillIcons(
+    wanted.map((path) => ({ path, iconId: iconIds.get(path)! })),
+    { root: ROOT, offline, warn: (m) => warnings.push(m) },
+  )
+  for (const e of skillEntries) if (!icons.has(e.icon!)) delete e.icon
+
+  // 幹員檔:整個資料夾換成這次建置的檔案
+  const files = attachOperatorFiles(index, operatorFiles)
+  await mkdir(OUT_OPERATORS, { recursive: true })
+  for (const name of await readdir(OUT_OPERATORS)) if (!files.has(`data/operators/${name}`)) await rm(join(OUT_OPERATORS, name))
+  for (const [path, json] of files) await writeFile(join(ROOT, 'public', path), json)
+
   await mkdir(dirname(OUT_INDEX), { recursive: true })
   const json = JSON.stringify(index)
   await writeFile(OUT_INDEX, json)
   console.log(`索引:${index.operators.length} 位幹員、${index.keywords.length} 個關鍵字,${(json.length / 1024).toFixed(0)} KB`)
+  console.log(`幹員檔:${files.size} 個;技能圖示:${icons.size} 個`)
 
   await mkdir(REVIEW_DIR, { recursive: true })
   await writeFile(join(REVIEW_DIR, 'build-warnings.txt'), warnings.join('\n') + '\n')

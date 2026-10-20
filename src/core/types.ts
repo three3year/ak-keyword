@@ -19,12 +19,16 @@ export const EFFECT_TYPE_LABELS: Record<EffectType, string> = {
   counter: '反制',
 }
 
-/** 敘述中的一段文字。k:關鍵字 id(高亮);s:樣式;p:潛能加成由第幾潛能獲得(「潛能 5 獲得」)。 */
+/**
+ * 敘述中的一段文字。k:關鍵字 id;s:樣式;p:潛能加成由第幾潛能獲得(「潛能 5 獲得」);
+ * h:幹員詳情裡命中目前搜尋條件的關鍵字(高亮),只出現在查詢輸出。
+ */
 export interface Run {
   t: string
   k?: string
   s?: string
   p?: string
+  h?: true
 }
 
 /** 遊戲職業,依遊戲內順序。 */
@@ -40,6 +44,37 @@ export const PROFESSION_LABELS: Record<Profession, string> = {
   MEDIC: '醫療',
   SUPPORT: '輔助',
   SPECIAL: '特種',
+}
+
+/** 回復類型:自動回復、攻擊回復、受擊回復。 */
+export type SpType = 'time' | 'attack' | 'hit'
+
+export const SP_TYPE_LABELS: Record<SpType, string> = {
+  time: '自動回復',
+  attack: '攻擊回復',
+  hit: '受擊回復',
+}
+
+/** 觸發方式:手動觸發、自動觸發、被動。 */
+export type Trigger = 'manual' | 'auto' | 'passive'
+
+export const TRIGGER_LABELS: Record<Trigger, string> = {
+  manual: '手動觸發',
+  auto: '自動觸發',
+  passive: '被動',
+}
+
+/** 一個技能階段的技力與發動資訊。 */
+export interface SkillStats {
+  trigger: Trigger
+  /** 回復類型與技力;被動技能與沒有回復類型的技能沒有。 */
+  sp?: { type: SpType; init: number; cost: number }
+  /** 持續秒數;只有大於 0 時才有。 */
+  duration?: number
+  /** 彈藥技能:打完彈藥才結束。 */
+  ammo?: true
+  /** 可充能次數;只有大於 1 時才有。 */
+  charges?: number
 }
 
 // ---------- 索引 ----------
@@ -64,6 +99,8 @@ export interface IndexStage {
   tw?: IndexText
   /** 台服文字與陸服的術語、數值、補充關鍵字一致,陸服模式可顯示台服文字。 */
   twSame?: boolean
+  /** 技能階段的技力:各伺服器各用自己的數值;台服與陸服相同或台服沒有時省略 tw。 */
+  stats?: { cn: SkillStats; tw?: SkillStats }
 }
 
 export type EntryKind = 'skill' | 'talent' | 'trait'
@@ -75,6 +112,8 @@ export interface IndexEntry {
   name?: string
   /** 召喚物 id;敘述屬於召喚物時才有。 */
   summon?: string
+  /** 技能圖示的相對路徑;缺圖時沒有。 */
+  icon?: string
   stages: IndexStage[]
 }
 
@@ -104,6 +143,18 @@ export interface IndexOperator {
   avatar?: string
   /** PRTS 的幹員頁名:陸服名;陸服名與其他幹員重複時依維護者對照。 */
   prtsPage: string
+  modules: IndexModule[]
+  summons: IndexSummon[]
+  /** 只有命中敘述(含任何關鍵字的敘述)。 */
+  entries: IndexEntry[]
+  /** 這位幹員的幹員檔的相對路徑;檔名帶內容雜湊,資料更新後不會讀到舊版。 */
+  detail?: string
+}
+
+/** 幹員檔:一位幹員全部的特性、天賦、技能(含召喚物的),不論有沒有關鍵字;打開幹員詳情時才下載。 */
+export interface OperatorFile {
+  id: string
+  inTw: boolean
   modules: IndexModule[]
   summons: IndexSummon[]
   entries: IndexEntry[]
@@ -171,6 +222,8 @@ export interface ResultStage {
   module?: string
   /** 不存在的階段:模組新增的天賦沒有無模組階段,仍列出一個沒有文字、未命中的「無模組」供對照。 */
   absent?: boolean
+  /** 技能階段的技力(目前伺服器的數值)。 */
+  stats?: SkillStats
 }
 
 export interface ResultEntry {
@@ -180,6 +233,8 @@ export interface ResultEntry {
   kind: EntryKind
   name?: string
   summon?: string
+  /** 技能圖示的相對路徑。 */
+  icon?: string
   /** 各階段依序排列;介面預設顯示第一個命中的階段。 */
   stages: ResultStage[]
 }
@@ -194,4 +249,26 @@ export interface ResultOperator {
   /** PRTS 幹員頁的完整網址。 */
   prtsUrl: string
   entries: ResultEntry[]
+}
+
+// ---------- 幹員詳情 ----------
+
+export interface DetailEntry extends ResultEntry {
+  /** 一開始顯示的階段:第一個存在的階段,不看命中。 */
+  defaultStage: number
+}
+
+export interface DetailTab {
+  kind: EntryKind
+  /** 特性、天賦、技能。 */
+  label: string
+  /** 幹員本身的敘述在前,召喚物的在後。 */
+  entries: DetailEntry[]
+}
+
+export interface OperatorDetail {
+  /** 依序是特性、天賦、技能;沒有內容的分頁省略。 */
+  tabs: DetailTab[]
+  /** 有技能頁時是技能,否則是天賦。 */
+  defaultTab: EntryKind
 }

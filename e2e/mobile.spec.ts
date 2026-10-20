@@ -52,3 +52,22 @@ test('手機寬度:抽屜選關鍵字、點擊顯示定義、點高亮詞只顯�
   await page.getByTestId('result-count').tap()
   await expect(tip).toBeHidden()
 })
+
+test('手機寬度:幹員詳情占滿螢幕、沒有水平捲動,返回鍵關閉後仍在結果列表', async ({ page }) => {
+  await page.goto('./')
+  await page.getByRole('group', { name: '職業' }).getByRole('button', { name: '先鋒', exact: true }).tap()
+  const count = await page.getByTestId('result-count').textContent()
+  await page.getByRole('button', { name: '檢視忍冬的詳情' }).tap()
+  const dialog = page.getByRole('dialog', { name: '忍冬' })
+  await expect(dialog.getByTestId('detail-entry').first()).toBeVisible()
+  const box = (await dialog.boundingBox())!
+  const viewport = page.viewportSize()!
+  expect([box.x, box.y, box.width, box.height]).toEqual([0, 0, viewport.width, viewport.height])
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true)
+  expect(await dialog.evaluate((d) => d.scrollWidth <= d.clientWidth)).toBe(true)
+
+  await page.goBack()
+  await expect(dialog).toHaveCount(0)
+  await expect(page.getByTestId('result-count')).toHaveText(count ?? '')
+  await expect(page.getByTestId('profession-chip')).toHaveText([/先鋒/])
+})

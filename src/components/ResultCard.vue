@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, useId, watch } from 'vue'
-import { EFFECT_TYPE_LABELS, PROFESSION_LABELS, type IndexKeyword, type ResultEntry, type ResultOperator } from '../core/types'
-import RichText from './RichText.vue'
+import { PROFESSION_LABELS, type IndexKeyword, type ResultEntry, type ResultOperator } from '../core/types'
+import EntryView from './EntryView.vue'
 
 const props = defineProps<{
   op: ResultOperator
@@ -9,6 +9,9 @@ const props = defineProps<{
   keywords: Map<string, IndexKeyword>
   branchName: string
 }>()
+
+/** 點頭像打開幹員詳情;帶著頭像按鈕,關閉後焦點回到它。 */
+const emit = defineEmits<{ open: [trigger: HTMLElement] }>()
 
 // 卡片狀態(目前分頁、各分頁目前階段)只存在這張卡內;查詢結果重算(op 換成新物件)時回到預設
 const tab = ref(0)
@@ -27,13 +30,9 @@ function defaultStage(e: ResultEntry): number {
 }
 
 const entry = computed(() => props.op.entries[tab.value] ?? props.op.entries[0])
-const stageIndex = computed(() => stageOf.value[tab.value] ?? defaultStage(entry.value))
-const stage = computed(() => entry.value.stages[stageIndex.value] ?? entry.value.stages[0])
-// 模組3 階段在敘述名後接模組名,例如「及鋒而試-筆跡」;特性沒有名稱,改接在分支名後,例如「術戰者-筆跡」
-const entryName = computed(() => {
-  const module = stage.value.module
-  if (!module) return entry.value.name ?? ''
-  return [entry.value.kind === 'trait' ? props.branchName : entry.value.name, module].filter(Boolean).join('-')
+const stage = computed({
+  get: () => stageOf.value[tab.value] ?? defaultStage(entry.value),
+  set: (j: number) => (stageOf.value[tab.value] = j),
 })
 const id = useId()
 
@@ -46,15 +45,23 @@ function onAvatarError(e: Event) {
 <template>
   <article class="card" :class="op.rarity >= 3 ? `glow-${op.rarity}` : 'glow-low'" data-testid="result-card">
     <header class="card-head">
-      <img
-        class="avatar"
-        :src="op.avatar ?? 'avatar-placeholder.svg'"
-        :alt="op.name"
-        width="48"
-        height="48"
-        loading="lazy"
-        @error="onAvatarError"
-      />
+      <button
+        type="button"
+        class="avatar-btn"
+        :aria-label="`檢視${op.name}的詳情`"
+        @click="emit('open', $event.currentTarget as HTMLElement)"
+      >
+        <img
+          class="avatar"
+          :src="op.avatar ?? 'avatar-placeholder.svg'"
+          alt=""
+          width="48"
+          height="48"
+          loading="lazy"
+          @error="onAvatarError"
+        />
+        <span class="info-badge" aria-hidden="true">i</span>
+      </button>
       <div class="op-meta">
         <div class="op-title">
           <h3 class="op-name">
@@ -90,31 +97,7 @@ function onAvatarError(e: Event) {
         :aria-labelledby="`${id}-tab-${tab}`"
         data-testid="entry"
       >
-        <div v-if="entry.stages.length > 1" class="stage-switch" role="group" aria-label="階段">
-          <button
-            v-for="(s, j) in entry.stages"
-            :key="j"
-            type="button"
-            class="stage-btn"
-            :class="{ on: j === stageIndex }"
-            :aria-pressed="j === stageIndex"
-            :disabled="!s.hit"
-            @click="stageOf[tab] = j"
-          >
-            {{ s.label }}
-          </button>
-        </div>
-        <div class="entry-head">
-          <span v-if="entryName" class="entry-name">{{ entryName }}</span>
-          <span v-if="entry.summon" class="badge summon" :title="`召喚物名稱:這段敘述屬於召喚物「${entry.summon}」`">{{ entry.summon }}</span>
-          <span v-if="stage.cnData" class="badge" title="台服尚未實裝這個模組,文字與數值取自陸服">陸服資料</span>
-          <template v-for="(types, k) in stage.effects" :key="k">
-            <span v-for="fx in types" :key="fx" class="fx" :class="`fx-${fx}`">
-              {{ selected.length > 1 ? `${keywords.get(k)?.name ?? k}:` : '' }}{{ EFFECT_TYPE_LABELS[fx] }}
-            </span>
-          </template>
-        </div>
-        <RichText class="stage-text" :runs="stage.runs" :selected="selected" />
+        <EntryView v-model:stage="stage" :entry="entry" :selected="selected" :keywords="keywords" :branch-name="branchName" />
       </section>
     </template>
   </article>

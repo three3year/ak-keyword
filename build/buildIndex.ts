@@ -16,10 +16,14 @@ import type {
   IndexStage,
   IndexSummon,
   IndexText,
+  OperatorFile,
   Profession,
   Run,
   SearchIndex,
   Server,
+  SkillStats,
+  SpType,
+  Trigger,
 } from '../src/core/types'
 import { PROFESSION_LABELS, PROFESSIONS, sortTypes } from '../src/core/types'
 import { ruleEffectTypes } from './effectType'
@@ -93,6 +97,8 @@ export interface BuildInput {
 
 export interface BuildOutput {
   index: SearchIndex
+  /** 每位幹員一個幹員檔,順序同索引的幹員。 */
+  operatorFiles: OperatorFile[]
   warnings: string[]
   pending: PendingReview[]
 }
@@ -116,6 +122,7 @@ class Builder {
     this.warnings.push(message)
   }
   readonly pending = new Map<string, PendingReview>()
+  readonly operatorFiles: OperatorFile[] = []
   readonly matchers: Record<Server, SupplementMatcher[]>
   readonly excluded: Set<string>
 
@@ -239,6 +246,7 @@ class Builder {
       const twEquip = twEquips[m.equip.uniEquipId]
       return { id: m.equip.uniEquipId, name: twEquip?.uniEquipName ?? m.equip.uniEquipName, code: m.equip.typeIcon.toUpperCase(), inTw: !!twEquip }
     })
+    this.operatorFiles.push({ id, inTw: !!twChar, modules: indexModules, summons, entries })
 
     return {
       id,
@@ -271,17 +279,26 @@ class Builder {
       const no = i + 1
       const stages: IndexStage[] = []
       for (const { kind, index } of skillStages(skill)) {
+        const level = (server: Server) => this.raw(server)?.skillTable[skillId]?.levels[index]
         const stage = this.stage({ kind }, `${ownerId} 技能${no} ${kind}`, (server) => {
-          const level = this.raw(server)?.skillTable[skillId]?.levels[index]
-          if (!level) return undefined
-          return this.parse(level.description ?? '', skillValues(level), `${serverPrefix(server)}技能 ${skillId} ${kind}`)
+          const lv = level(server)
+          if (!lv) return undefined
+          return this.parse(lv.description ?? '', skillValues(lv), `${serverPrefix(server)}技能 ${skillId} ${kind}`)
         })
         if (!stage) continue
         if (kind === 'max') stage.level = index + 1
+        const stats = (lv: RawSkillLevel) => skillStats(lv, (type) => this.warn(`技能 ${skillId}:不認得的觸發方式 ${type},當成手動觸發`))
+        stage.stats = { cn: stats(level('cn')!) }
+        const tw = level('tw')
+        if (stage.tw && tw) {
+          const twStats = stats(tw)
+          if (JSON.stringify(twStats) !== JSON.stringify(stage.stats.cn)) stage.stats.tw = twStats
+        }
         stages.push(stage)
       }
       const name = this.input.tw?.skillTable[skillId]?.levels[0]?.name ?? skill.levels[0]?.name
-      entries.push({ kind: 'skill', no, name, stages })
+      // 台服沒有 iconId,一律用陸服的(兩服的 skillId 相同)
+      entries.push({ kind: 'skill', no, name, icon: skillIconPath(skillIconId(skill)), stages })
     })
     return entries
   }
@@ -558,6 +575,38 @@ function skillStages(skill: RawSkill): { kind: IndexStage['kind']; index: number
   return [{ kind: 'max', index: n - 1 }]
 }
 
+const SP_TYPES: Record<string, SpType> = {
+  INCREASE_WITH_TIME: 'time',
+  INCREASE_WHEN_ATTACK: 'attack',
+  INCREASE_WHEN_TAKEN_DAMAGE: 'hit',
+}
+
+const TRIGGERS: Record<string, Trigger> = { MANUAL: 'manual', AUTO: 'auto', PASSIVE: 'passive' }
+
+/** 技能階段的技力:被動技能與沒有回復類型(spType 8)的技能不帶技力;持續時間與充能次數只留有意義的值。 */
+function skillStats(level: RawSkillLevel, unknownTrigger: (type: string) => void): SkillStats {
+  const trigger = TRIGGERS[level.skillType ?? '']
+  if (!trigger) unknownTrigger(String(level.skillType))
+  const stats: SkillStats = { trigger: trigger ?? 'manual' }
+  const sp = level.spData
+  const type = sp && SP_TYPES[String(sp.spType)]
+  if (type && stats.trigger !== 'passive') stats.sp = { type, init: sp.initSp, cost: sp.spCost }
+  if ((level.duration ?? 0) > 0) stats.duration = level.duration
+  if (level.durationType === 'AMMO') stats.ammo = true
+  if ((sp?.maxChargeTime ?? 1) > 1) stats.charges = sp!.maxChargeTime
+  return stats
+}
+
+/** 技能圖示的檔名 id:iconId,沒有時用 skillId。 */
+export function skillIconId(skill: RawSkill): string {
+  return skill.iconId || skill.skillId
+}
+
+/** 技能圖示在網站上的相對路徑;不能放進網址的字元換成底線。 */
+export function skillIconPath(iconId: string): string {
+  return `skill-icons/${iconId.replace(/[^\w-]/g, '_')}.webp`
+}
+
 function skillValues(level: RawSkillLevel) {
   return toValues(level.blackboard, { duration: level.duration ?? 0 })
 }
@@ -580,5 +629,20 @@ function textHash(text: string): string {
 export function buildIndex(input: BuildInput): BuildOutput {
   const builder = new Builder(input)
   const index = builder.build()
-  return { index, warnings: builder.warnings, pending: [...builder.pending.values()] }
+  return { index, operatorFiles: builder.operatorFiles, warnings: builder.warnings, pending: [...builder.pending.values()] }
+}
+
+/**
+ * 決定幹員檔的位置並寫進索引:檔名帶內容雜湊,網站更新資料後不會讀到和索引不同版本的幹員檔。
+ * 回傳 網站上的相對路徑 → 檔案內容。要在幹員檔內容定案(例如拿掉缺圖的技能圖示)之後呼叫。
+ */
+export function attachOperatorFiles(index: SearchIndex, files: OperatorFile[]): Map<string, string> {
+  const out = new Map<string, string>()
+  const byId = new Map(files.map((f) => [f.id, f]))
+  for (const op of index.operators) {
+    const json = JSON.stringify(byId.get(op.id))
+    op.detail = `data/operators/${op.id}.${textHash(json).slice(0, 8)}.json`
+    out.set(op.detail, json)
+  }
+  return out
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import { loadIndex } from './core/loadIndex'
 import { availableTypes, defaultType, filterOptions, footerItems, query, startsSearch } from './core/query'
 import {
@@ -10,6 +10,7 @@ import {
   type EffectType,
   type IndexKeyword,
   type Profession,
+  type ResultOperator,
   type SearchCondition,
   type SearchIndex,
   type Server,
@@ -18,6 +19,7 @@ import {
 import FilterBar from './components/FilterBar.vue'
 import KeywordPanel from './components/KeywordPanel.vue'
 import KeywordTip from './components/KeywordTip.vue'
+import OperatorDetail from './components/OperatorDetail.vue'
 import ResultCard from './components/ResultCard.vue'
 import { loadServer, saveServer } from './ui/storage'
 import { hideTip, isTouch, showTip, tip } from './ui/tip'
@@ -116,6 +118,41 @@ function toggleType(id: string, type: EffectType) {
     .filter((s) => s.types.length > 0)
 }
 
+// ---- 幹員詳情 ----
+
+/** 打開中的幹員詳情;每次打開都是新的一份(分頁與階段回到預設)。 */
+const detail = shallowRef<{ op: ResultOperator; path?: string; key: number }>()
+let detailTrigger: HTMLElement | undefined
+let opened = 0
+
+/** 打開時加一筆瀏覽紀錄(網址不變),讓返回鍵關閉詳情而不是離開網站。 */
+function openDetail(op: ResultOperator, trigger: HTMLElement) {
+  hideTip()
+  detailTrigger = trigger
+  detail.value = { op, path: index.value?.operators.find((o) => o.id === op.id)?.detail, key: ++opened }
+  history.pushState({ operatorDetail: true }, '')
+}
+
+/** 關閉鈕、Esc、點背景:收回打開時加的瀏覽紀錄,由 popstate 關閉。 */
+function closeDetail() {
+  if (!detail.value) return
+  if (history.state?.operatorDetail) history.back()
+  else hideDetail()
+}
+
+function hideDetail() {
+  detail.value = undefined
+  hideTip()
+  nextTick(() => detailTrigger?.focus())
+}
+
+function onPopState() {
+  if (detail.value) hideDetail()
+}
+
+// 詳情打開時背後的頁面不捲動
+watch(detail, (d) => document.documentElement.classList.toggle('modal-open', !!d))
+
 // ---- 提示框:以事件委派處理所有帶 data-k(關鍵字)與 data-p(潛能加成)的元素 ----
 
 function target(e: Event): HTMLElement | null {
@@ -148,8 +185,9 @@ function onClick(e: MouseEvent) {
   } else if (el.dataset.k && el.classList.contains('kw') && isTouch()) {
     // 觸控裝置沒有懸停:點面板的關鍵字按鈕時,除了切換選取也顯示定義
     showTip(el, { keyword: el.dataset.k }, { pinned: true })
-  } else if (el.dataset.k && el.closest('.rich') && isTouch()) {
-    // 命中敘述裡的詞只供查定義、不切換選取:觸控裝置沒有懸停,點了顯示定義;桌機點擊不做事
+  } else if (el.dataset.k && el.closest('.rich') && (isTouch() || el.closest('.detail'))) {
+    // 敘述裡的詞只供查定義、不切換選取:觸控裝置沒有懸停,點了顯示定義;
+    // 幹員詳情裡桌機點擊也釘住定義;結果卡上桌機點擊不做事
     showTip(el, { keyword: el.dataset.k }, { pinned: true })
   } else if (el.dataset.k && tip.pinned) {
     // 桌機點不釘選的詞:關掉釘住的提示框,改顯示這個詞的懸停提示
@@ -157,14 +195,23 @@ function onClick(e: MouseEvent) {
   }
 }
 
+/** Esc:詳情裡釘住的定義先關掉,再按一次才關閉詳情。 */
 function onKey(e: KeyboardEvent) {
   if (e.key !== 'Escape') return
+  const pinnedInDetail = !!detail.value && tip.pinned
   hideTip()
   drawerOpen.value = false
+  if (!pinnedInDetail) closeDetail()
 }
 
-onMounted(() => window.addEventListener('keydown', onKey))
-onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
+onMounted(() => {
+  window.addEventListener('keydown', onKey)
+  window.addEventListener('popstate', onPopState)
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onKey)
+  window.removeEventListener('popstate', onPopState)
+})
 </script>
 
 <template>
@@ -249,6 +296,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
               :selected="selected"
               :keywords="keywordMap"
               :branch-name="index.subProfessions[op.subProfession]?.name ?? op.subProfession"
+              @open="(trigger) => openDetail(op, trigger)"
             />
           </div>
         </template>
@@ -262,6 +310,18 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
         <template v-if="item.version">{{ ` ${item.version} · ${item.downloadedAt}` }}</template>
       </template>
     </footer>
+    <OperatorDetail
+      v-if="index && detail"
+      :key="detail.key"
+      :op="detail.op"
+      :path="detail.path"
+      :branch-name="index.subProfessions[detail.op.subProfession]?.name ?? detail.op.subProfession"
+      :server="server"
+      :conditions="conditions"
+      :selected="selected"
+      :keywords="keywordMap"
+      @close="closeDetail"
+    />
     <KeywordTip :keywords="keywordMap" />
   </div>
 </template>

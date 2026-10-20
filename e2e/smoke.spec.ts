@@ -2,14 +2,14 @@ import { expect, test } from '@playwright/test'
 
 test('點一個關鍵字後看到結果卡,切換伺服器後結果更新', async ({ page }) => {
   await page.goto('./')
-  // 頁尾顯示陸服與台服的資料版本(版號與台灣時間的下載時間);「陸服」「台服」「頭像」在新分頁開啟各自的資料來源
+  // 頁尾顯示陸服與台服的資料版本(版號與台灣時間的下載時間);「陸服」「台服」「頭像與圖示」在新分頁開啟各自的資料來源
   const footer = page.locator('footer')
   const dataVersion = String.raw`\d+\.\d+\.\d+ · \d{4}-\d{2}-\d{2} \d{2}:\d{2}\(UTC\+8\)`
   await expect(footer).toContainText(new RegExp(`陸服 ${dataVersion} · 台服 ${dataVersion}`))
   for (const [label, repo] of [
     ['陸服', 'Kengxxiao/ArknightsGameData'],
     ['台服', 'arkntools/arknights-data-tw-for-maa'],
-    ['頭像', 'yuanyan3060/ArknightsGameResource'],
+    ['頭像與圖示', 'yuanyan3060/ArknightsGameResource'],
   ]) {
     const link = footer.getByRole('link', { name: label, exact: true })
     await expect(link).toHaveAttribute('href', `https://github.com/${repo}`)
@@ -260,7 +260,7 @@ test('點 A 的定義後再點 B:關掉 A、改顯示 B', async ({ page }) => {
   await expect(tip.locator('.tip-title')).not.toContainText('暈眩')
 })
 
-test('幹員名稱是連到 PRTS 的新分頁連結,頭像不是連結', async ({ page }) => {
+test('幹員名稱是連到 PRTS 的新分頁連結,頭像是按鈕不是連結', async ({ page }) => {
   await page.goto('./')
   await page.getByRole('button', { name: '暈眩', exact: true }).first().click()
   const card = page.getByTestId('result-card').filter({ has: page.getByRole('heading', { name: '忍冬', exact: true }) })

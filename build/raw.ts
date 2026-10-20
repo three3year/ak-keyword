@@ -56,12 +56,21 @@ export interface RawCharacter {
 export interface RawSkillLevel {
   name: string
   description: string | null
+  /** 負值與 0 表示沒有固定持續時間。 */
   duration?: number
   blackboard?: RawBlackboard
+  /** MANUAL、AUTO、PASSIVE。 */
+  skillType?: string
+  /** AMMO 是彈藥技能。 */
+  durationType?: string
+  /** spType:INCREASE_WITH_TIME、INCREASE_WHEN_ATTACK、INCREASE_WHEN_TAKEN_DAMAGE;8 是沒有回復類型(被動與部分召喚物技能)。 */
+  spData?: { spType: string | number; initSp: number; spCost: number; maxChargeTime: number }
 }
 
 export interface RawSkill {
   skillId: string
+  /** 技能圖示的檔名 id;沒有時用 skillId。只有陸服有。 */
+  iconId?: string | null
   levels: RawSkillLevel[]
 }
 

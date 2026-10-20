@@ -1,4 +1,4 @@
-// 資料來源:遊戲資料與頭像所在的公開 GitHub 資料庫。建置腳本的下載位置與頁尾連結都從這裡衍生。
+// 資料來源:遊戲資料與圖片(頭像、技能圖示)所在的公開 GitHub 資料庫。建置腳本的下載位置與頁尾連結都從這裡衍生。
 // 另有結果卡連到的外部資料站(PRTS)。
 
 export interface DataSource {
@@ -13,7 +13,8 @@ export interface DataSource {
 export const DATA_SOURCES = {
   cn: { name: 'Kengxxiao/ArknightsGameData', branch: 'master', dir: 'zh_CN/gamedata/excel' },
   tw: { name: 'arkntools/arknights-data-tw-for-maa', branch: 'main', dir: '' },
-  avatar: { name: 'yuanyan3060/ArknightsGameResource', branch: 'main', dir: 'avatar' },
+  /** 頭像在 avatar/,技能圖示在 skill/。 */
+  images: { name: 'yuanyan3060/ArknightsGameResource', branch: 'main', dir: '' },
 } as const satisfies Record<string, DataSource>
 
 /** 資料庫首頁。 */

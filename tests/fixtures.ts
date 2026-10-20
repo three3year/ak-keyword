@@ -19,6 +19,11 @@ export interface LevelSpec {
   description: string
   values?: Values
   duration?: number
+  /** 技力:未指定時為自動回復、初始技力 0、所需技力 30、充能 1 次。spType 照原始資料,8 是沒有回復類型。 */
+  sp?: { spType?: string | number; initSp?: number; spCost?: number; maxChargeTime?: number }
+  /** 觸發方式(skillType),未指定時為手動觸發。 */
+  skillType?: string
+  ammo?: boolean
 }
 
 type BlackboardStyle = 'array' | 'object'
@@ -37,6 +42,9 @@ function level(name: string, spec: LevelSpec, style: BlackboardStyle): RawSkillL
     description: spec.description,
     duration: spec.duration ?? 0,
     blackboard: blackboard(spec.values, style),
+    skillType: spec.skillType ?? 'MANUAL',
+    durationType: spec.ammo ? 'AMMO' : 'NONE',
+    spData: { spType: 'INCREASE_WITH_TIME', initSp: 0, spCost: 30, maxChargeTime: 1, ...spec.sp },
   }
 }
 
