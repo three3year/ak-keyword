@@ -863,8 +863,9 @@ input:focus-visible {
 }
 
 /* ---- 台服未實裝的小卡壓灰 ----
-   只有小卡壓灰(大卡只靠徽章)。文字區(幹員名、星星、職業 · 分支)約四成飽和、一半不透明,
-   頭像在文字區外所以維持原色;光暈往灰色光暈混、再減半,卡面改用次要底色、框線往頁面底色混 */
+   只有小卡壓灰(大卡只靠徽章)。文字區(幹員名、星星、職業 · 分支)約四成飽和、一半不透明;
+   頭像(含「i」標記)只降到一半不透明、不降飽和,還認得出是誰;
+   光暈往灰色光暈混、再減半,卡面改用次要底色、框線往頁面底色混 */
 .card.compact.tw-unreleased {
   background: linear-gradient(
       90deg,
@@ -877,6 +878,10 @@ input:focus-visible {
 
 .card.compact.tw-unreleased .op-meta {
   filter: saturate(0.4);
+  opacity: 0.55;
+}
+
+.card.compact.tw-unreleased .avatar-btn {
   opacity: 0.55;
 }
 
