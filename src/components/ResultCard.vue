@@ -97,7 +97,7 @@ function onAvatarError(e: Event) {
         :aria-labelledby="`${id}-tab-${tab}`"
         data-testid="entry"
       >
-        <EntryView v-model:stage="stage" :entry="entry" :selected="selected" :keywords="keywords" :branch-name="branchName" />
+        <EntryView v-model:stage="stage" :entry="entry" :selected="selected" :keywords="keywords" />
       </section>
     </template>
   </article>

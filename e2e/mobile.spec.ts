@@ -63,6 +63,9 @@ test('手機寬度:幹員詳情占滿螢幕、沒有水平捲動,返回鍵關閉
   const box = (await dialog.boundingBox())!
   const viewport = page.viewportSize()!
   expect([box.x, box.y, box.width, box.height]).toEqual([0, 0, viewport.width, viewport.height])
+  // 技能頁籤有技力文字,放不下時只在欄位之間換行
+  await dialog.getByRole('tab', { name: '技能1' }).tap()
+  await expect(dialog.getByTestId('skill-facts').first()).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true)
   expect(await dialog.evaluate((d) => d.scrollWidth <= d.clientWidth)).toBe(true)
 

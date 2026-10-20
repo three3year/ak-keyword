@@ -32,6 +32,17 @@ describe('模組3 階段', () => {
     expect(entry.stages.map((s) => s.module)).toEqual([undefined, '冰霜核心'])
   })
 
+  test('特性的名稱是分支名稱(規則同結果卡卡頭)', () => {
+    const cn = server({
+      terms: COMMON_TERMS,
+      operators: { char_200_m: operator({ name: '模組者', trait: '攻击使敌人<$ba.cold>寒冷</>' }) },
+      modules: [{ id: 'uniequip_002_m', charId: 'char_200_m', name: '筆跡', code: 'CCR-X', trait: { add: '额外攻击力' } }],
+    })
+    cn.uniequipTable!.subProfDict = { corecaster: { subProfessionId: 'corecaster', subProfessionName: '中坚术师' } }
+    const [r] = query(buildIndex({ cn }).index, { conditions: applying('ba.cold'), server: 'cn' })
+    expect(r.entries.map((e) => [e.source, e.name])).toEqual([['特性', '中坚术师']])
+  })
+
   test('多模組各自比對:兩個模組只有其一命中時,只有那一個階段命中', () => {
     const { results } = search(
       { name: '雙模組', talents: [{ name: '天赋', description: '攻击力+10%' }] },

@@ -1,9 +1,9 @@
 // 查詢:索引 + 查詢條件 → 排好序的幹員清單與命中敘述。純函式。
 import type {
   DataVersion,
+  DetailEntry,
   DetailTab,
   EffectType,
-  EntryKind,
   IndexEntry,
   IndexKeyword,
   IndexOperator,
@@ -121,21 +121,28 @@ function withAbsentBase(entry: IndexEntry, stages: ResultStage[]): ResultStage[]
   return [{ label: '無模組', runs: [], hit: false, effects: {}, absent: true }, ...stages]
 }
 
-function resultEntry(entry: IndexEntry, summon: IndexSummon | undefined, stages: ResultStage[]): ResultEntry {
+/** 分支名稱:優先用索引的分支名,沒有時用分支 id。結果卡卡頭與特性名稱共用。 */
+export function branchName(index: SearchIndex, op: Pick<IndexOperator, 'subProfession'>): string {
+  return index.subProfessions[op.subProfession]?.name ?? op.subProfession
+}
+
+/** 特性沒有自己的名稱,以分支名稱為名。 */
+function resultEntry(entry: IndexEntry, summon: IndexSummon | undefined, stages: ResultStage[], branch: string): ResultEntry {
   const result: ResultEntry = { source: entrySource(entry), kind: entry.kind, stages }
-  if (entry.name) result.name = entry.name
+  const name = entry.kind === 'trait' ? branch : entry.name
+  if (name) result.name = name
   if (entry.summon) result.summon = summon?.name ?? entry.summon
   if (entry.icon) result.icon = entry.icon
   return result
 }
 
-function resultOperator(op: IndexOperator, opts: QueryOptions): ResultOperator | undefined {
+function resultOperator(op: IndexOperator, branch: string, opts: QueryOptions): ResultOperator | undefined {
   const entries: ResultEntry[] = []
   for (const { entry, summon } of visibleEntries(op, opts.server)) {
     const visible = visibleStages(entry, op, opts.server)
     const stages = visible.map((v) => resultStage(v, visible, op, opts))
     if (!stages.some((s) => s.hit)) continue
-    entries.push(resultEntry(entry, summon, withAbsentBase(entry, stages)))
+    entries.push(resultEntry(entry, summon, withAbsentBase(entry, stages), branch))
   }
   // 搜尋條件一律 OR:有任一命中敘述就列入;沒有搜尋條件(只有職業條件)時全部列入,命中敘述為空
   if (entries.length === 0 && opts.conditions.length > 0) return undefined
@@ -190,8 +197,6 @@ function mergeSummonEntries(entries: ResultEntry[]): ResultEntry[] {
   return out
 }
 
-const TAB_LABELS: Record<EntryKind, string> = { trait: '特性', talent: '天賦', skill: '技能' }
-
 /** 幹員詳情的階段:命中的關鍵字標上高亮。 */
 function detailStage(stage: ResultStage): ResultStage {
   if (!stage.hit) return stage
@@ -199,28 +204,29 @@ function detailStage(stage: ResultStage): ResultStage {
 }
 
 /**
- * 幹員詳情:幹員檔裡在這個伺服器看得到的全部敘述,依特性、天賦、技能分頁(沒有內容的分頁省略),
- * 每頁幹員本身的敘述在前、召喚物的在後。階段的標籤、命中、效果類型與「陸服資料」規則同結果卡,
- * 但所有存在的階段都列出,預設停在第一個存在的階段。
+ * 幹員詳情:幹員檔裡在這個伺服器看得到的全部敘述。幹員本身每段敘述一個分頁(特性、天賦、技能,依幹員檔的順序),
+ * 帶出召喚物的分頁接著列出那些召喚物的天賦與技能;對應不到分頁的召喚物接在最後一個分頁。
+ * 階段的標籤、命中、效果類型與「陸服資料」規則同結果卡,但所有存在的階段都列出,預設停在第一個存在的階段。
  */
-export function operatorDetail(file: OperatorFile, opts: Pick<QueryOptions, 'conditions' | 'server'>): OperatorDetail {
-  const entries: ResultEntry[] = []
+export function operatorDetail(file: OperatorFile, opts: Pick<QueryOptions, 'conditions' | 'server'> & { branchName: string }): OperatorDetail {
+  // own:這個分頁的幹員本身那段敘述,召喚物依它的技能或天賦編號對應分頁
+  const tabs: { own: IndexEntry; label: string; entries: ResultEntry[] }[] = []
+  const summoned: { from: IndexSummon['from']; entry: ResultEntry }[] = []
   for (const { entry, summon } of visibleEntries(file, opts.server)) {
     const visible = visibleStages(entry, file, opts.server)
     if (visible.length === 0) continue
     const stages = visible.map((v) => detailStage(resultStage(v, visible, file, opts)))
-    entries.push(resultEntry(entry, summon, withAbsentBase(entry, stages)))
+    const result = resultEntry(entry, summon, withAbsentBase(entry, stages), opts.branchName)
+    if (entry.summon) summoned.push({ from: summon?.from ?? [], entry: result })
+    else tabs.push({ own: entry, label: result.source, entries: [result] })
   }
-  const merged = mergeSummonEntries(entries)
-  const tabs: DetailTab[] = (['trait', 'talent', 'skill'] as const)
-    .map((kind) => {
-      const own = merged.filter((e) => e.kind === kind)
-      // 召喚物的敘述接在最後
-      const ordered = [...own.filter((e) => !e.summon), ...own.filter((e) => e.summon)]
-      return { kind, label: TAB_LABELS[kind], entries: ordered.map((e) => ({ ...e, defaultStage: Math.max(0, e.stages.findIndex((s) => !s.absent)) })) }
-    })
-    .filter((t) => t.entries.length > 0)
-  return { tabs, defaultTab: tabs.some((t) => t.kind === 'skill') ? 'skill' : 'talent' }
+  // 幹員檔裡每個召喚物的天賦在技能之前,依序接上就是「召喚物天賦、召喚物技能」
+  for (const { from, entry } of summoned) {
+    const targets = tabs.filter((t) => from.some((f) => f.kind === t.own.kind && f.no === t.own.no))
+    for (const t of targets.length > 0 ? targets : tabs.slice(-1)) t.entries.push(entry)
+  }
+  const withDefault = (e: ResultEntry): DetailEntry => ({ ...e, defaultStage: Math.max(0, e.stages.findIndex((s) => !s.absent)) })
+  return { tabs: tabs.map((t): DetailTab => ({ kind: t.own.kind, label: t.label, entries: mergeSummonEntries(t.entries).map(withDefault) })), defaultTab: 0 }
 }
 
 /** 有搜尋條件或職業條件其中一種就開始搜尋;只有星級篩選不算。 */
@@ -235,7 +241,7 @@ export function query(index: SearchIndex, opts: QueryOptions): ResultOperator[] 
     // 台服模式略過台服未實裝的幹員;只有職業條件時不會因為沒有命中敘述而被濾掉,要在這裡擋
     if (opts.server === 'tw' && !op.inTw) continue
     if (!passesFilters(op, opts)) continue
-    const r = resultOperator(op, opts)
+    const r = resultOperator(op, branchName(index, op), opts)
     if (r) results.push(r)
   }
   return results

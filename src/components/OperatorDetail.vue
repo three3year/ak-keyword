@@ -3,7 +3,6 @@ import { computed, onMounted, ref, shallowRef, useId } from 'vue'
 import { loadOperator } from '../core/loadIndex'
 import { operatorDetail } from '../core/query'
 import {
-  type EntryKind,
   type IndexKeyword,
   type OperatorFile,
   PROFESSION_LABELS,
@@ -40,15 +39,15 @@ async function load() {
   }
 }
 
-const detail = computed(() => (file.value ? operatorDetail(file.value, { server: props.server, conditions: props.conditions }) : undefined))
+const detail = computed(() => (file.value ? operatorDetail(file.value, { server: props.server, conditions: props.conditions, branchName: props.branchName }) : undefined))
 // 目前分頁與各段的目前階段只存在這次打開的詳情裡
-const chosenTab = ref<EntryKind>()
-const tab = computed(() => chosenTab.value ?? detail.value?.defaultTab)
-const current = computed(() => detail.value?.tabs.find((t) => t.kind === tab.value) ?? detail.value?.tabs[0])
+const chosenTab = ref<number>()
+const tab = computed(() => chosenTab.value ?? detail.value?.defaultTab ?? 0)
+const current = computed(() => detail.value?.tabs[tab.value] ?? detail.value?.tabs[0])
 const stageOf = ref<Record<string, number>>({})
 
 /** 目前分頁第 i 段敘述在 stageOf 的鍵。 */
-const stageKey = (i: number) => `${current.value!.kind}-${i}`
+const stageKey = (i: number) => `${tab.value}-${i}`
 
 function stageAt(i: number): number {
   return stageOf.value[stageKey(i)] ?? current.value!.entries[i].defaultStage
@@ -123,28 +122,27 @@ function onAvatarError(e: Event) {
         <template v-else>
           <div class="tabs" role="tablist" :aria-label="`${op.name}的敘述`">
             <button
-              v-for="t in detail.tabs"
-              :id="`${id}-tab-${t.kind}`"
-              :key="t.kind"
+              v-for="(t, i) in detail.tabs"
+              :id="`${id}-tab-${i}`"
+              :key="t.label"
               type="button"
               role="tab"
               class="tab"
-              :class="[`src-${t.kind}`, { on: t.kind === current.kind }]"
-              :aria-selected="t.kind === current.kind"
+              :class="[`src-${t.kind}`, { on: t === current }]"
+              :aria-selected="t === current"
               :aria-controls="`${id}-panel`"
-              @click="chosenTab = t.kind"
+              @click="chosenTab = i"
             >
               {{ t.label }}
             </button>
           </div>
-          <section :id="`${id}-panel`" class="entry detail-panel" role="tabpanel" :aria-labelledby="`${id}-tab-${current.kind}`">
-            <article v-for="(e, i) in current.entries" :key="`${current.kind}-${i}`" class="detail-entry" data-testid="detail-entry">
+          <section :id="`${id}-panel`" class="entry detail-panel" role="tabpanel" :aria-labelledby="`${id}-tab-${tab}`">
+            <article v-for="(e, i) in current.entries" :key="`${tab}-${i}`" class="detail-entry" data-testid="detail-entry">
               <EntryView
                 :stage="stageAt(i)"
                 :entry="e"
                 :selected="selected"
                 :keywords="keywords"
-                :branch-name="branchName"
                 detail
                 @update:stage="setStage(i, $event)"
               />

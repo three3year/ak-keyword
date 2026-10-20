@@ -882,18 +882,24 @@ input:focus-visible {
   filter: brightness(1.12);
 }
 
+/* 低調的「i」:疊在頭像左上角的半透明灰點,不論淺色或深色模式都落在頭像上;懸停頭像時變強調色 */
 .info-badge {
   position: absolute;
-  top: -5px;
-  right: -5px;
-  width: 17px;
-  height: 17px;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
-  border: 2px solid var(--surface);
-  background: var(--accent);
+  background: rgb(40 44 52 / 0.55);
   color: #fff;
-  font: italic 700 10px/13px Georgia, 'Times New Roman', serif;
+  font: italic 700 9px/14px Georgia, 'Times New Roman', serif;
   text-align: center;
+  transition: background-color 0.15s;
+}
+
+.avatar-btn:hover .info-badge,
+.avatar-btn:focus-visible .info-badge {
+  background: var(--accent);
 }
 
 /* ---- 技能圖示與技力疊字 ---- */
@@ -995,8 +1001,9 @@ input:focus-visible {
   color: #ffd54a;
 }
 
+/* 技力文字在技能圖示與右側那一區之下,整行寬 */
 .skill-facts {
-  margin-top: 2px;
+  margin-bottom: 6px;
   font-size: 0.82rem;
   color: var(--text-2);
 }

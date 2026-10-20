@@ -1,14 +1,15 @@
 import { describe, expect, test } from 'vitest'
 import { attachOperatorFiles, buildIndex } from '../build/buildIndex'
 import type { RawServer } from '../build/raw'
-import { operatorDetail } from '../src/core/query'
+import { branchName, operatorDetail } from '../src/core/query'
 import type { DetailEntry, OperatorDetail, SearchCondition, Server } from '../src/core/types'
 import { applying, basicSkill, COMMON_TERMS, highlights, masteredSkill, operator, plain, server } from './fixtures'
 
 function detail(raw: { cn: RawServer; tw?: RawServer }, id: string, opts: { server?: Server; conditions?: SearchCondition[] } = {}): OperatorDetail {
-  const { operatorFiles } = buildIndex(raw)
+  const { index, operatorFiles } = buildIndex(raw)
   const file = operatorFiles.find((f) => f.id === id)!
-  return operatorDetail(file, { server: opts.server ?? 'cn', conditions: opts.conditions ?? [] })
+  const op = index.operators.find((o) => o.id === id)!
+  return operatorDetail(file, { server: opts.server ?? 'cn', conditions: opts.conditions ?? [], branchName: branchName(index, op) })
 }
 
 const entriesOf = (d: OperatorDetail, label: string): DetailEntry[] => d.tabs.find((t) => t.label === label)?.entries ?? []
@@ -36,44 +37,41 @@ function caster() {
 }
 
 describe('幹員詳情', () => {
-  test('分頁依序是特性、天賦、技能,預設技能;沒有關鍵字的敘述也列出', () => {
+  test('每段敘述一個分頁,依序是特性、各天賦、各技能,標籤是敘述來源;預設特性;沒有關鍵字的敘述也列出', () => {
     const d = detail({ cn: caster() }, 'char_001_x')
     expect(d.tabs.map((t) => [t.kind, t.label])).toEqual([
       ['trait', '特性'],
-      ['talent', '天賦'],
-      ['skill', '技能'],
+      ['talent', '天賦1'],
+      ['talent', '天賦2'],
+      ['skill', '技能1'],
+      ['skill', '技能2'],
     ])
-    expect(d.defaultTab).toBe('skill')
+    expect(d.defaultTab).toBe(0)
     expect(entriesOf(d, '特性').map((e) => [e.source, plain(e.stages[0].runs)])).toEqual([['特性', '攻击造成法术伤害']])
-    expect(entriesOf(d, '天賦').map((e) => [e.source, e.name])).toEqual([
-      ['天賦1', '冰心'],
-      ['天賦2', '博学'],
-    ])
-    expect(entriesOf(d, '技能').map((e) => [e.source, e.name, e.stages.map((s) => s.label)])).toEqual([
-      ['技能1', '强力击', ['等級7', '專精3']],
-      ['技能2', '冰封', ['等級7', '專精3']],
-    ])
+    expect(entriesOf(d, '天賦2').map((e) => [e.source, e.name])).toEqual([['天賦2', '博学']])
+    expect(entriesOf(d, '技能1').map((e) => [e.source, e.name, e.stages.map((s) => s.label)])).toEqual([['技能1', '强力击', ['等級7', '專精3']]])
   })
 
-  test('沒有技能的幹員沒有技能頁,預設天賦', () => {
+  test('沒有技能的幹員沒有技能分頁', () => {
     const cn = server({
       terms: COMMON_TERMS,
       operators: { char_002_low: operator({ name: '低星', rarity: 1, trait: '不占部署位', talents: [{ name: '支援', description: '攻击力+10%' }] }) },
     })
     const d = detail({ cn }, 'char_002_low')
-    expect(d.tabs.map((t) => t.label)).toEqual(['特性', '天賦'])
-    expect(d.defaultTab).toBe('talent')
+    expect(d.tabs.map((t) => t.label)).toEqual(['特性', '天賦1'])
+    expect(d.defaultTab).toBe(0)
   })
 
-  test('召喚物的天賦與技能排在同一頁最後,帶召喚物名', () => {
+  test('技能召喚的召喚物只接在召喚它的技能分頁,幹員本身那段在前,召喚物天賦在召喚物技能之前', () => {
     const cn = server({
       terms: COMMON_TERMS,
       operators: {
         char_300_owner: operator({
           name: '召喚師',
-          skills: ['sk_owner_1'],
+          trait: '攻击造成法术伤害',
+          skills: ['sk_owner_1', 'sk_owner_2'],
+          skillTokens: { sk_owner_2: 'token_300_ice' },
           talents: [{ name: '主天赋', description: '攻击力+10%' }],
-          tokens: ['token_300_ice'],
         }),
         token_300_ice: operator({
           name: '冰灵',
@@ -83,26 +81,129 @@ describe('幹員詳情', () => {
         }),
       },
       skills: [
-        masteredSkill('sk_owner_1', '召唤', { description: '召唤冰灵' }, { description: '召唤冰灵' }),
+        masteredSkill('sk_owner_1', '强击', { description: '攻击力提升' }, { description: '攻击力提升' }),
+        masteredSkill('sk_owner_2', '召唤', { description: '召唤冰灵' }, { description: '召唤冰灵' }),
         basicSkill('sktok_ice_1', '冰息', { description: '吐息', skillType: 'AUTO', sp: { spType: 8 } }),
       ],
     })
     const d = detail({ cn }, 'char_300_owner')
-    expect(entriesOf(d, '天賦').map((e) => [e.source, e.name, e.summon])).toEqual([
-      ['天賦1', '主天赋', undefined],
-      ['召喚物天賦1', '冰体', '冰灵'],
+    expect(d.tabs.map((t) => [t.label, t.entries.map((e) => [e.source, e.name, e.summon])])).toEqual([
+      ['特性', [['特性', 'corecaster', undefined]]],
+      ['天賦1', [['天賦1', '主天赋', undefined]]],
+      ['技能1', [['技能1', '强击', undefined]]],
+      [
+        '技能2',
+        [
+          ['技能2', '召唤', undefined],
+          ['召喚物天賦1', '冰体', '冰灵'],
+          ['召喚物技能1', '冰息', '冰灵'],
+        ],
+      ],
     ])
-    expect(entriesOf(d, '技能').map((e) => [e.source, e.name, e.summon, e.stages.map((s) => s.label)])).toEqual([
-      ['技能1', '召唤', undefined, ['等級7', '專精3']],
-      ['召喚物技能1', '冰息', '冰灵', ['等級7']],
+    expect(entriesOf(d, '技能2')[2].stages.map((s) => s.label)).toEqual(['等級7'])
+  })
+
+  test('同一召喚物被兩個技能召喚時,兩個技能分頁都有', () => {
+    const cn = server({
+      terms: COMMON_TERMS,
+      operators: {
+        char_300_owner: operator({
+          name: '召喚師',
+          skills: ['sk_owner_1', 'sk_owner_2', 'sk_owner_3'],
+          skillTokens: { sk_owner_1: 'token_300_ice', sk_owner_3: 'token_300_ice' },
+        }),
+        token_300_ice: operator({ name: '冰灵', profession: 'TOKEN', skills: ['sktok_ice_1'] }),
+      },
+      skills: [
+        masteredSkill('sk_owner_1', '召唤', { description: '召唤冰灵' }, { description: '召唤冰灵' }),
+        masteredSkill('sk_owner_2', '强击', { description: '攻击力提升' }, { description: '攻击力提升' }),
+        masteredSkill('sk_owner_3', '再召唤', { description: '召唤冰灵' }, { description: '召唤冰灵' }),
+        basicSkill('sktok_ice_1', '冰息', { description: '吐息' }),
+      ],
+    })
+    const d = detail({ cn }, 'char_300_owner')
+    expect(['技能1', '技能2', '技能3'].map((l) => entriesOf(d, l).map((e) => e.summon ?? e.source))).toEqual([
+      ['技能1', '冰灵'],
+      ['技能2'],
+      ['技能3', '冰灵'],
     ])
+  })
+
+  test('天賦帶出的召喚物接在那個天賦分頁,沒有技能的幹員也一樣', () => {
+    const cn = server({
+      terms: COMMON_TERMS,
+      operators: {
+        char_302_b: operator({
+          name: '天賦召喚',
+          rarity: 5,
+          trait: '攻击造成法术伤害',
+          talents: [
+            { name: '指挥', description: '攻击力+10%' },
+            { name: '造物', description: '可以部署机器', tokenKey: 'token_302_b' },
+          ],
+        }),
+        token_302_b: operator({ name: '乙物', profession: 'TOKEN', skills: ['sktok_1'], talents: [{ name: '机体', description: '防御力+10%' }] }),
+      },
+      skills: [basicSkill('sktok_1', '冲撞', { description: '撞击' })],
+    })
+    const d = detail({ cn }, 'char_302_b')
+    expect(d.tabs.map((t) => [t.label, t.entries.map((e) => e.source)])).toEqual([
+      ['特性', ['特性']],
+      ['天賦1', ['天賦1']],
+      ['天賦2', ['天賦2', '召喚物天賦1', '召喚物技能1']],
+    ])
+  })
+
+  test('同一召喚物由技能召喚、也由天賦帶出時,兩個分頁都有', () => {
+    const cn = server({
+      terms: COMMON_TERMS,
+      operators: {
+        char_303_c: operator({
+          name: '雙來源',
+          skills: ['sk_c_1'],
+          skillTokens: { sk_c_1: 'token_303_c' },
+          talents: [{ name: '造物', description: '可以部署机器', tokenKey: 'token_303_c' }],
+        }),
+        token_303_c: operator({ name: '丙物', profession: 'TOKEN', skills: ['sktok_1'] }),
+      },
+      skills: [masteredSkill('sk_c_1', '召', { description: '召唤' }, { description: '召唤' }), basicSkill('sktok_1', '冲撞', { description: '撞击' })],
+    })
+    const d = detail({ cn }, 'char_303_c')
+    expect(['天賦1', '技能1'].map((l) => entriesOf(d, l).map((e) => e.source))).toEqual([
+      ['天賦1', '召喚物技能1'],
+      ['技能1', '召喚物技能1'],
+    ])
+  })
+
+  test('對應不到技能或天賦的召喚物:建置發警告,接在最後一個分頁', () => {
+    const cn = server({
+      terms: COMMON_TERMS,
+      operators: {
+        char_304_m: operator({ name: '無來源', skills: ['sk_m_1'], tokens: ['token_304_a'] }),
+        token_304_a: operator({ name: '甲型', profession: 'TOKEN', talents: [{ name: '冷却', description: '攻击力+10%' }] }),
+      },
+      skills: [masteredSkill('sk_m_1', '强击', { description: '攻击力提升' }, { description: '攻击力提升' })],
+    })
+    const { warnings } = buildIndex({ cn })
+    expect(warnings.filter((w) => w.includes('token_304_a'))).toHaveLength(1)
+    const d = detail({ cn }, 'char_304_m')
+    expect(d.tabs.at(-1)!.entries.map((e) => [e.source, e.summon])).toEqual([
+      ['技能1', undefined],
+      ['召喚物天賦1', '甲型'],
+    ])
+  })
+
+  test('特性的名稱是分支名稱', () => {
+    const cn = caster()
+    cn.uniequipTable = { equipDict: {}, subProfDict: { corecaster: { subProfessionId: 'corecaster', subProfessionName: '中坚术师' } } }
+    expect(entriesOf(detail({ cn }, 'char_001_x'), '特性').map((e) => [e.source, e.name])).toEqual([['特性', '中坚术师']])
   })
 
   test('召喚物的同一段技能文字相同但技力不同時不合併', () => {
     const cn = server({
       terms: COMMON_TERMS,
       operators: {
-        char_304_m: operator({ name: '多召喚', tokens: ['token_304_a', 'token_304_b'] }),
+        char_304_m: operator({ name: '多召喚', trait: '攻击造成法术伤害', tokens: ['token_304_a', 'token_304_b'] }),
         token_304_a: operator({ name: '甲型', profession: 'TOKEN', skills: ['sktok_a'] }),
         token_304_b: operator({ name: '乙型', profession: 'TOKEN', skills: ['sktok_b'] }),
       },
@@ -111,7 +212,7 @@ describe('幹員詳情', () => {
         basicSkill('sktok_b', '冲击', { description: '攻击力提升', sp: { spCost: 20 } }),
       ],
     })
-    const skills = entriesOf(detail({ cn }, 'char_304_m'), '技能')
+    const skills = detail({ cn }, 'char_304_m').tabs.at(-1)!.entries.filter((e) => e.summon)
     expect(skills.map((e) => [e.summon, e.stages[0].stats?.sp?.cost])).toEqual([
       ['甲型', 10],
       ['乙型', 20],
@@ -127,7 +228,7 @@ describe('幹員詳情', () => {
         { id: 'uniequip_003_m', charId: 'char_200_m', name: '乙模組', code: 'CCR-Y', talents: [{ index: -1, name: '寒流', description: '攻击力+6%' }] },
       ],
     })
-    const [, added] = entriesOf(detail({ cn }, 'char_200_m'), '天賦')
+    const [added] = entriesOf(detail({ cn }, 'char_200_m'), '天賦2')
     expect([added.source, added.name]).toEqual(['天賦2', '寒流'])
     expect(added.stages.map((s) => [s.label, s.absent ?? false, s.module])).toEqual([
       ['無模組', true, undefined],
@@ -139,19 +240,19 @@ describe('幹員詳情', () => {
 
   test('預設階段是最低的存在階段,即使只有專精3 命中', () => {
     const d = detail({ cn: caster() }, 'char_001_x', { conditions: applying('ba.cold') })
-    const [, frozen] = entriesOf(d, '技能')
+    const [frozen] = entriesOf(d, '技能2')
     expect(frozen.stages.map((s) => s.hit)).toEqual([false, true])
     expect(frozen.defaultStage).toBe(0)
   })
 
   test('命中目前搜尋條件的階段有高亮、命中旗標與效果類型;未命中的階段沒有', () => {
     const d = detail({ cn: caster() }, 'char_001_x', { conditions: applying('ba.cold') })
-    const [, frozen] = entriesOf(d, '技能')
+    const [frozen] = entriesOf(d, '技能2')
     const [lv7, m3] = frozen.stages
     expect([m3.hit, m3.effects]).toEqual([true, { 'ba.cold': ['apply'] }])
     expect(lit(m3.runs)).toEqual(['寒冷'])
     expect([lv7.hit, lv7.effects, lit(lv7.runs)]).toEqual([false, {}, []])
-    const [skill1] = entriesOf(d, '技能')
+    const [skill1] = entriesOf(d, '技能1')
     expect(skill1.stages.map((s) => s.hit)).toEqual([false, false])
   })
 
@@ -160,7 +261,7 @@ describe('幹員詳情', () => {
       terms: COMMON_TERMS,
       operators: { char_001_x: operator({ name: '甲', talents: [{ name: '冰', description: '对<$ba.cold>寒冷</>敌人造成伤害，并使其<$ba.stun>晕眩</>' }] }) },
     })
-    const [talent] = entriesOf(detail({ cn }, 'char_001_x', { conditions: applying('ba.cold', 'ba.stun') }), '天賦')
+    const [talent] = entriesOf(detail({ cn }, 'char_001_x', { conditions: applying('ba.cold', 'ba.stun') }), '天賦1')
     expect(talent.stages[0].effects).toEqual({ 'ba.stun': ['apply'] })
     expect(lit(talent.stages[0].runs)).toEqual(['晕眩'])
     expect(highlights(talent.stages[0].runs)).toEqual([
@@ -177,7 +278,7 @@ describe('幹員詳情', () => {
   })
 
   test('技能各階段帶技力與圖示,沒有關鍵字的技能也一樣', () => {
-    const [skill1] = entriesOf(detail({ cn: caster() }, 'char_001_x'), '技能')
+    const [skill1] = entriesOf(detail({ cn: caster() }, 'char_001_x'), '技能1')
     expect(skill1.icon).toBe('skill-icons/sk_1.webp')
     expect(skill1.stages.map((s) => s.stats?.sp?.cost)).toEqual([9, 8])
   })
@@ -205,7 +306,7 @@ describe('幹員詳情', () => {
       ['無模組', '攻擊造成法術傷害'],
       ['模組3 · CCR-X', '攻击造成法术伤害\n攻击使敌人寒冷'],
     ])
-    const [twSkill] = entriesOf(twDetail, '技能')
+    const [twSkill] = entriesOf(twDetail, '技能1')
     expect([twSkill.name, plain(twSkill.stages[1].runs), twSkill.stages[1].stats?.sp?.cost]).toEqual(['強擊', '攻擊力+80%', 28])
 
     const cnDetail = detail({ cn, tw }, 'char_630_m', { server: 'cn' })
@@ -214,7 +315,7 @@ describe('幹員詳情', () => {
       ['模組3 · CCR-X', false],
       ['模組3 · CCR-Y', true],
     ])
-    expect(entriesOf(cnDetail, '技能')[0].stages[1].stats?.sp?.cost).toBe(30)
+    expect(entriesOf(cnDetail, '技能1')[0].stages[1].stats?.sp?.cost).toBe(30)
   })
 
   test('只存在陸服的幹員:幹員檔只有陸服資料', () => {

@@ -23,6 +23,7 @@ import type {
   Server,
   SkillStats,
   SpType,
+  SummonOrigin,
   Trigger,
 } from '../src/core/types'
 import { PROFESSION_LABELS, PROFESSIONS, sortTypes } from '../src/core/types'
@@ -223,15 +224,17 @@ class Builder {
     // 召喚物的天賦與技能歸到所屬幹員
     const summons: IndexSummon[] = []
     const displayOnly = new Set(Object.keys(char.displayTokenDict ?? {}))
-    for (const summonId of summonIds(char)) {
+    for (const [summonId, from] of summonSources(char)) {
       const summon = this.char('cn', summonId)
       if (!summon) {
         // 顯示用清單裡偶有只供顯示的 id(實際召喚物另有 id),不必警告
         if (!displayOnly.has(summonId)) this.warn(`幹員 ${id}:幹員表沒有召喚物 ${summonId}`)
         continue
       }
+      // 對應不到時介面接在最後一個分頁
+      if (from.length === 0) this.warn(`幹員 ${id}:召喚物 ${summonId} 對應不到召喚它的技能或帶出它的天賦`)
       const twSummon = this.char('tw', summonId)
-      summons.push({ id: summonId, name: twSummon?.name ?? summon.name, inTw: !!twSummon })
+      summons.push({ id: summonId, name: twSummon?.name ?? summon.name, inTw: !!twSummon, from })
       const summonEntries: IndexEntry[] = []
       ;(summon.talents ?? []).forEach((_, i) => {
         const entry = this.talentEntry(summonId, i, [])
@@ -542,12 +545,24 @@ function unlockOrder(c: RawUnlockCondition): number {
   return (PHASES[c.phase] ?? 0) * 1000 + c.level
 }
 
-/** 幹員會部署或產生的召喚物:顯示用召喚物清單、技能指定的召喚物、天賦帶出的召喚物。 */
-function summonIds(char: RawCharacter): string[] {
-  const ids = new Set<string>(Object.keys(char.displayTokenDict ?? {}))
-  for (const s of char.skills) if (s.overrideTokenKey) ids.add(s.overrideTokenKey)
-  for (const t of char.talents ?? []) for (const c of t.candidates ?? []) if (c.tokenKey) ids.add(c.tokenKey)
-  return [...ids]
+/**
+ * 幹員會部署或產生的召喚物與帶出它的敘述:顯示用召喚物清單、技能指定的召喚物、天賦帶出的召喚物(天賦任一候選帶出的都算)。
+ * 只在顯示用清單裡的召喚物沒有來源。
+ */
+function summonSources(char: RawCharacter): Map<string, SummonOrigin[]> {
+  const out = new Map<string, SummonOrigin[]>(Object.keys(char.displayTokenDict ?? {}).map((id) => [id, []]))
+  const add = (id: string, origin: SummonOrigin) => {
+    const from = out.get(id) ?? []
+    if (!from.some((f) => f.kind === origin.kind && f.no === origin.no)) from.push(origin)
+    out.set(id, from)
+  }
+  char.skills.forEach((s, i) => {
+    if (s.overrideTokenKey) add(s.overrideTokenKey, { kind: 'skill', no: i + 1 })
+  })
+  ;(char.talents ?? []).forEach((t, i) => {
+    for (const c of t.candidates ?? []) if (c.tokenKey) add(c.tokenKey, { kind: 'talent', no: i + 1 })
+  })
+  return out
 }
 
 function moduleTrait(parts: RawEquipPart[]): RawEquipTraitCandidate | undefined {

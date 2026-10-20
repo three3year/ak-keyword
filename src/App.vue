@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import { loadIndex } from './core/loadIndex'
-import { availableTypes, defaultType, filterOptions, footerItems, query, startsSearch } from './core/query'
+import { availableTypes, branchName, defaultType, filterOptions, footerItems, query, startsSearch } from './core/query'
 import {
   EFFECT_TYPE_LABELS,
   EFFECT_TYPES,
@@ -295,7 +295,7 @@ onBeforeUnmount(() => {
               :op="op"
               :selected="selected"
               :keywords="keywordMap"
-              :branch-name="index.subProfessions[op.subProfession]?.name ?? op.subProfession"
+              :branch-name="branchName(index, op)"
               @open="(trigger) => openDetail(op, trigger)"
             />
           </div>
@@ -315,7 +315,7 @@ onBeforeUnmount(() => {
       :key="detail.key"
       :op="detail.op"
       :path="detail.path"
-      :branch-name="index.subProfessions[detail.op.subProfession]?.name ?? detail.op.subProfession"
+      :branch-name="branchName(index, detail.op)"
       :server="server"
       :conditions="conditions"
       :selected="selected"

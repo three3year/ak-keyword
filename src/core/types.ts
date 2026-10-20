@@ -125,10 +125,18 @@ export interface IndexModule {
   inTw: boolean
 }
 
+/** 帶出召喚物的敘述:召喚它的技能,或帶出它的天賦。 */
+export interface SummonOrigin {
+  kind: 'skill' | 'talent'
+  no: number
+}
+
 export interface IndexSummon {
   id: string
   name: string
   inTw: boolean
+  /** 帶出它的技能與天賦(依幹員資料的順序);對應不到時為空清單。 */
+  from: SummonOrigin[]
 }
 
 export interface IndexOperator {
@@ -260,15 +268,15 @@ export interface DetailEntry extends ResultEntry {
 
 export interface DetailTab {
   kind: EntryKind
-  /** 特性、天賦、技能。 */
+  /** 敘述來源,例如「特性」「天賦1」「技能2」。 */
   label: string
-  /** 幹員本身的敘述在前,召喚物的在後。 */
+  /** 幹員本身那段敘述在前,之後是它帶出的召喚物的敘述(每個召喚物依序是召喚物天賦、召喚物技能)。 */
   entries: DetailEntry[]
 }
 
 export interface OperatorDetail {
-  /** 依序是特性、天賦、技能;沒有內容的分頁省略。 */
+  /** 幹員本身每段敘述一個分頁,依序是特性、天賦(依編號,含模組新增的天賦)、技能(依編號)。 */
   tabs: DetailTab[]
-  /** 有技能頁時是技能,否則是天賦。 */
-  defaultTab: EntryKind
+  /** 一開始顯示的分頁:第一個分頁(特性)。 */
+  defaultTab: number
 }
