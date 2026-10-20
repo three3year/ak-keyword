@@ -283,7 +283,7 @@ describe('幹員詳情', () => {
     expect(skill1.stages.map((s) => s.stats?.sp?.cost)).toEqual([9, 8])
   })
 
-  test('台服:用台服文字與技力;台服沒有的模組不列出,陸服模式標「陸服資料」', () => {
+  test('台服:用台服文字與技力;台服沒有的模組不列出,陸服模式標「台服未實裝」', () => {
     const cn = server({
       terms: COMMON_TERMS,
       operators: { char_630_m: operator({ name: '模組者', trait: '攻击造成法术伤害', skills: ['sk_1'] }) },
@@ -310,7 +310,7 @@ describe('幹員詳情', () => {
     expect([twSkill.name, plain(twSkill.stages[1].runs), twSkill.stages[1].stats?.sp?.cost]).toEqual(['強擊', '攻擊力+80%', 28])
 
     const cnDetail = detail({ cn, tw }, 'char_630_m', { server: 'cn' })
-    expect(entriesOf(cnDetail, '特性')[0].stages.map((s) => [s.label, s.cnData ?? false])).toEqual([
+    expect(entriesOf(cnDetail, '特性')[0].stages.map((s) => [s.label, s.twUnreleased ?? false])).toEqual([
       ['無模組', false],
       ['模組3 · CCR-X', false],
       ['模組3 · CCR-Y', true],
@@ -318,7 +318,21 @@ describe('幹員詳情', () => {
     expect(entriesOf(cnDetail, '技能1')[0].stages[1].stats?.sp?.cost).toBe(30)
   })
 
-  test('只存在陸服的幹員:幹員檔只有陸服資料', () => {
+  test('台服未實裝的幹員:模組3 階段不標「台服未實裝」', () => {
+    const cn = server({
+      terms: COMMON_TERMS,
+      operators: { char_631_n: operator({ name: '新模組者', trait: '攻击造成法术伤害' }) },
+      modules: [{ id: 'uniequip_002_n', charId: 'char_631_n', name: '新模组', code: 'CCR-X', trait: { add: '攻击使敌人<$ba.cold>寒冷</>' } }],
+    })
+    const tw = server({ terms: COMMON_TERMS, operators: {} })
+    const d = detail({ cn, tw }, 'char_631_n', { server: 'cn' })
+    expect(entriesOf(d, '特性')[0].stages.map((s) => [s.label, s.twUnreleased ?? false])).toEqual([
+      ['無模組', false],
+      ['模組3 · CCR-X', false],
+    ])
+  })
+
+  test('只存在陸服的幹員:幹員檔沒有台服文字', () => {
     const tw = server({ terms: COMMON_TERMS, operators: {} })
     const { operatorFiles } = buildIndex({ cn: caster(), tw })
     const [file] = operatorFiles

@@ -39,13 +39,15 @@ interface Visible {
   match: IndexText
   /** 顯示用。 */
   runs: Run[]
-  cnData: boolean
+  /** 模組3 階段的模組台服未實裝,而幹員本身台服已有。 */
+  twUnreleased: boolean
 }
 
 /**
  * 依伺服器挑出看得到的階段:
  * - 台服模式:比對與顯示都用台服文字;台服沒有的階段不列出。模組3 只列台服已實裝的模組,文字取陸服。
  * - 陸服模式:比對用陸服文字;台服文字一致時顯示繁中,否則顯示簡中。
+ *   台服已有的幹員身上台服未實裝的模組標「台服未實裝」;幹員本身台服未實裝時卡頭已經標了,模組不再標。
  */
 function visibleStages(entry: IndexEntry, op: Owner, server: Server): Visible[] {
   const out: Visible[] = []
@@ -53,11 +55,11 @@ function visibleStages(entry: IndexEntry, op: Owner, server: Server): Visible[] 
     if (stage.kind === 'module') {
       const inTw = !!op.modules.find((m) => m.id === stage.module)?.inTw
       if (server === 'tw' && !inTw) continue
-      out.push({ stage, match: stage.cn, runs: stage.cn.runs, cnData: !inTw })
+      out.push({ stage, match: stage.cn, runs: stage.cn.runs, twUnreleased: op.inTw && !inTw })
     } else if (server === 'tw') {
-      if (stage.tw) out.push({ stage, match: stage.tw, runs: stage.tw.runs, cnData: false })
+      if (stage.tw) out.push({ stage, match: stage.tw, runs: stage.tw.runs, twUnreleased: false })
     } else {
-      out.push({ stage, match: stage.cn, runs: stage.twSame && stage.tw ? stage.tw.runs : stage.cn.runs, cnData: false })
+      out.push({ stage, match: stage.cn, runs: stage.twSame && stage.tw ? stage.tw.runs : stage.cn.runs, twUnreleased: false })
     }
   }
   return out
@@ -100,7 +102,7 @@ function resultStage(v: Visible, visible: Visible[], op: Owner, opts: Pick<Query
     if (v.match.hits[c.keyword]?.includes(c.type)) effects[c.keyword] = sortTypes([...(effects[c.keyword] ?? []), c.type])
   const result: ResultStage = { label: stageLabel(v.stage, visible, op), runs: v.runs, hit: Object.keys(effects).length > 0, effects }
   if (v.stage.kind === 'module') result.module = moduleOf(v.stage, op).name
-  if (v.cnData) result.cnData = true
+  if (v.twUnreleased) result.twUnreleased = true
   if (v.stage.stats) result.stats = (opts.server === 'tw' && v.stage.stats.tw) || v.stage.stats.cn
   return result
 }
@@ -156,6 +158,8 @@ function resultOperator(op: IndexOperator, branch: string, opts: QueryOptions): 
     entries: mergeSummonEntries(entries),
   }
   if (op.avatar) result.avatar = op.avatar
+  // 台服模式不會走到這裡(台服未實裝的幹員已在 query 略過),條件寫明只有陸服模式才標
+  if (opts.server === 'cn' && !op.inTw) result.twUnreleased = true
   return result
 }
 
@@ -206,7 +210,7 @@ function detailStage(stage: ResultStage): ResultStage {
 /**
  * 幹員詳情:幹員檔裡在這個伺服器看得到的全部敘述。幹員本身每段敘述一個分頁(特性、天賦、技能,依幹員檔的順序),
  * 帶出召喚物的分頁接著列出那些召喚物的天賦與技能;對應不到分頁的召喚物接在最後一個分頁。
- * 階段的標籤、命中、效果類型與「陸服資料」規則同結果卡,但所有存在的階段都列出,預設停在第一個存在的階段。
+ * 階段的標籤、命中、效果類型與「台服未實裝」規則同結果卡,但所有存在的階段都列出,預設停在第一個存在的階段。
  */
 export function operatorDetail(file: OperatorFile, opts: Pick<QueryOptions, 'conditions' | 'server'> & { branchName: string }): OperatorDetail {
   // own:這個分頁的幹員本身那段敘述,召喚物依它的技能或天賦編號對應分頁

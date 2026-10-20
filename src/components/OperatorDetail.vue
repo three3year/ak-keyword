@@ -109,7 +109,10 @@ function onAvatarError(e: Event) {
             </h2>
             <span class="stars" :class="`r${op.rarity}`" :aria-label="`${op.rarity} 星`">{{ '★'.repeat(op.rarity) }}</span>
           </div>
-          <div class="op-sub">{{ PROFESSION_LABELS[op.profession] }} · {{ branchName }}</div>
+          <div class="op-sub">
+            {{ PROFESSION_LABELS[op.profession] }} · {{ branchName }}
+            <span v-if="op.twUnreleased" class="badge" title="台服尚未實裝這位幹員,文字與數值取自陸服">台服未實裝</span>
+          </div>
         </div>
         <button type="button" class="detail-close" aria-label="關閉" @click="emit('close')">×</button>
       </header>

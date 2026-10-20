@@ -193,7 +193,7 @@ export interface SearchIndex {
   /** 面板排列:維護者清單的分組與行,最後是「未分組」;只含索引裡的關鍵字,不含空行與空分組。 */
   groups: IndexGroup[]
   keywords: IndexKeyword[]
-  /** order 是遊戲內的分支順序(陸服資料);沒有時排在最後。 */
+  /** order 是遊戲內的分支順序(取自陸服);沒有時排在最後。 */
   subProfessions: Record<string, { name: string; profession: Profession; order?: number }>
   operators: IndexOperator[]
 }
@@ -224,8 +224,8 @@ export interface ResultStage {
   hit: boolean
   /** 關鍵字 → 這個階段符合的搜尋條件的效果類型;沒有符合的關鍵字不列。 */
   effects: Record<string, EffectType[]>
-  /** 模組3 階段的模組不在台服模組清單,只有陸服資料。 */
-  cnData?: boolean
+  /** 模組3 階段的模組台服未實裝(幹員本身台服已有);幹員也台服未實裝時不標,卡頭已經標了。 */
+  twUnreleased?: boolean
   /** 模組3 階段的模組全名(標籤只寫模組代碼)。 */
   module?: string
   /** 不存在的階段:模組新增的天賦沒有無模組階段,仍列出一個沒有文字、未命中的「無模組」供對照。 */
@@ -256,6 +256,8 @@ export interface ResultOperator {
   avatar?: string
   /** PRTS 幹員頁的完整網址。 */
   prtsUrl: string
+  /** 台服未實裝的幹員;只在陸服模式帶,台服模式不列出這種幹員。 */
+  twUnreleased?: boolean
   entries: ResultEntry[]
 }
 

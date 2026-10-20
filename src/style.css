@@ -845,6 +845,12 @@ input:focus-visible {
   color: var(--text-2);
 }
 
+/* 卡頭的「台服未實裝」徽章接在職業 · 分支後面;小卡放不下時整個徽章換行,不在徽章文字中間斷開 */
+.op-sub .badge {
+  margin-left: 4px;
+  white-space: nowrap;
+}
+
 .stars {
   letter-spacing: -1px;
   color: #b0b8c4;

@@ -92,6 +92,14 @@ describe('陸服模式', () => {
     expect(plain(fresh.entries[0].stages[0].runs)).toBe('攻击使敌人寒冷3秒')
   })
 
+  test('台服未實裝的幹員標「台服未實裝」,台服已有的幹員不標;只有職業條件時也一樣', () => {
+    const { index } = buildIndex(servers())
+    const bySearch = query(index, { conditions: applying('ba.cold'), server: 'cn' })
+    expect(bySearch.map((r) => [r.name, r.twUnreleased ?? false])).toEqual([['冰原台', false], ['改版者台', false], ['新幹员', true]])
+    const byProfession = query(index, { conditions: [], server: 'cn', professions: ['CASTER'] })
+    expect(byProfession.map((r) => [r.name, r.twUnreleased ?? false])).toEqual([['冰原台', false], ['改版者台', false], ['新幹员', true]])
+  })
+
   test('台服一致的敘述沿用陸服的效果類型,不重複列入待複核', () => {
     const { pending } = buildIndex(servers())
     // 陸服 3 段不同的文字(3 秒、5 秒、6 秒);台服只有「改版者」專精3 的 5 秒版本與陸服不一致
@@ -119,7 +127,7 @@ describe('名稱與補充關鍵字', () => {
 })
 
 describe('模組3 階段的伺服器處理', () => {
-  test('模組3 一律用陸服資料,只有台服模組清單沒有的模組標「陸服資料」;台服模式只列台服已實裝的模組', () => {
+  test('模組3 一律取陸服文字,台服已有幹員身上台服模組清單沒有的模組標「台服未實裝」;台服模式只列台服已實裝的模組', () => {
     const cn = server({
       terms: COMMON_TERMS,
       operators: { char_630_m: operator({ name: '模組者', trait: '攻击造成法术伤害' }) },
@@ -135,17 +143,33 @@ describe('模組3 階段的伺服器處理', () => {
     const { index } = buildIndex({ cn, tw })
 
     const [twEntry] = query(index, { conditions: applying('ba.cold'), server: 'tw' })[0].entries
-    expect(twEntry.stages.map((s) => [s.label, plain(s.runs), s.cnData ?? false])).toEqual([
+    expect(twEntry.stages.map((s) => [s.label, plain(s.runs), s.twUnreleased ?? false])).toEqual([
       ['無模組', '攻擊造成法術傷害', false],
       ['模組3 · CCR-X', '攻击造成法术伤害\n攻击使敌人寒冷', false],
     ])
     expect(twEntry.stages[1].module).toBe('甲模組')
 
     const [cnEntry] = query(index, { conditions: applying('ba.cold'), server: 'cn' })[0].entries
-    expect(cnEntry.stages.map((s) => [s.label, s.module, s.cnData ?? false])).toEqual([
+    expect(cnEntry.stages.map((s) => [s.label, s.module, s.twUnreleased ?? false])).toEqual([
       ['無模組', undefined, false],
       ['模組3 · CCR-X', '甲模組', false],
       ['模組3 · CCR-Y', '乙模组', true],
+    ])
+  })
+
+  test('台服未實裝的幹員只在幹員本身標「台服未實裝」,模組3 階段都不標', () => {
+    const cn = server({
+      terms: COMMON_TERMS,
+      operators: { char_631_n: operator({ name: '新模組者', trait: '攻击造成法术伤害' }) },
+      modules: [{ id: 'uniequip_002_n', charId: 'char_631_n', name: '新模组', code: 'CCR-X', trait: { add: '攻击使敌人<$ba.cold>寒冷</>' } }],
+    })
+    const tw = server({ terms: TW_TERMS, operators: {} })
+    const { index } = buildIndex({ cn, tw })
+    const [result] = query(index, { conditions: applying('ba.cold'), server: 'cn' })
+    expect(result.twUnreleased).toBe(true)
+    expect(result.entries[0].stages.map((s) => [s.label, s.twUnreleased ?? false])).toEqual([
+      ['無模組', false],
+      ['模組3 · CCR-X', false],
     ])
   })
 })
