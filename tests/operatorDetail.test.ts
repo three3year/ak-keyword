@@ -176,7 +176,7 @@ describe('幹員詳情', () => {
     ])
   })
 
-  test('天賦帶出的召喚物:召喚物天賦接在每個技能分頁,召喚物技能表第 N 格只接在幹員技能 N 分頁', () => {
+  test('天賦帶出的召喚物:召喚物特性與天賦接在每個技能分頁,召喚物技能表第 N 格只接在幹員技能 N 分頁', () => {
     const cn = server({
       terms: COMMON_TERMS,
       operators: {
@@ -188,6 +188,7 @@ describe('幹員詳情', () => {
         token_306_t: operator({
           name: '虚影',
           profession: 'TOKEN',
+          trait: '攻击造成真实伤害',
           skills: ['sktok_t_1', null, 'sktok_t_3'],
           talents: [{ name: '幻象', description: '防御力+10%' }],
         }),
@@ -201,9 +202,9 @@ describe('幹員詳情', () => {
     const d = detail({ cn }, 'char_306_t')
     expect(['天賦1', '技能1', '技能2', '技能3'].map((l) => entriesOf(d, l).map((e) => [e.source, e.name]))).toEqual([
       [['天賦1', '分身']],
-      [['技能1', 'sk_t_1'], ['召喚物技能1', '暗夜'], ['召喚物套用天賦1', '幻象']],
-      [['技能2', 'sk_t_2'], ['召喚物套用天賦1', '幻象']],
-      [['技能3', 'sk_t_3'], ['召喚物技能3', '突袭'], ['召喚物套用天賦1', '幻象']],
+      [['技能1', 'sk_t_1'], ['召喚物特性', undefined], ['召喚物技能1', '暗夜'], ['召喚物套用天賦1', '幻象']],
+      [['技能2', 'sk_t_2'], ['召喚物特性', undefined], ['召喚物套用天賦1', '幻象']],
+      [['技能3', 'sk_t_3'], ['召喚物特性', undefined], ['召喚物技能3', '突袭'], ['召喚物套用天賦1', '幻象']],
     ])
   })
 
@@ -232,6 +233,28 @@ describe('幹員詳情', () => {
     expect(['技能1', '技能2'].map((l) => entriesOf(d, l).map((e) => [e.source, e.name]))).toEqual([
       [['技能1', '谋略'], ['召喚物技能1', '开局']],
       [['技能2', '变革'], ['召喚物技能2', '变革已至']],
+    ])
+  })
+
+  test('只有特性的召喚物:召喚物特性接在召喚它的技能分頁,文字是召喚物自己的特性敘述', () => {
+    const cn = server({
+      terms: COMMON_TERMS,
+      operators: {
+        char_309_v: operator({ name: '盟主', skills: ['sk_v_1', 'sk_v_2'], skillTokens: { sk_v_2: 'token_309_v' } }),
+        token_309_v: operator({ name: '雄狮', profession: 'TOKEN', trait: '能够阻挡一个敌人', skills: [null, null] }),
+      },
+      skills: [
+        masteredSkill('sk_v_1', '强击', { description: '攻击力提升' }, { description: '攻击力提升' }),
+        masteredSkill('sk_v_2', '召狮', { description: '召唤' }, { description: '召唤' }),
+      ],
+    })
+    const d = detail({ cn }, 'char_309_v')
+    expect(['技能1', '技能2'].map((l) => entriesOf(d, l).map((e) => [e.source, e.summon, plain(e.stages[0].runs)]))).toEqual([
+      [['技能1', undefined, '攻击力提升']],
+      [
+        ['技能2', undefined, '召唤'],
+        ['召喚物特性', '雄狮', '能够阻挡一个敌人'],
+      ],
     ])
   })
 

@@ -81,7 +81,7 @@ function stageLabel(stage: IndexStage, visible: Visible[], op: Owner): string {
   }
 }
 
-/** 召喚物的天賦標「召喚物套用天賦N」,技能標「召喚物技能N」。 */
+/** 召喚物的天賦標「召喚物套用天賦N」,技能標「召喚物技能N」,特性標「召喚物特性」。 */
 function entrySource(entry: IndexEntry): string {
   if (!entry.summon) return baseSource(entry)
   return entry.kind === 'talent' ? `召喚物套用天賦${entry.no}` : `召喚物${baseSource(entry)}`
@@ -130,10 +130,10 @@ export function branchName(index: SearchIndex, op: Pick<IndexOperator, 'subProfe
   return index.subProfessions[op.subProfession]?.name ?? op.subProfession
 }
 
-/** 特性沒有自己的名稱,以分支名稱為名。 */
+/** 特性沒有自己的名稱,幹員特性以分支名稱為名;召喚物特性不另取名(旁邊已標召喚物名稱)。 */
 function resultEntry(entry: IndexEntry, summon: IndexSummon | undefined, stages: ResultStage[], branch: string): ResultEntry {
   const result: ResultEntry = { source: entrySource(entry), kind: entry.kind, stages }
-  const name = entry.kind === 'trait' ? branch : entry.name
+  const name = entry.kind === 'trait' && !entry.summon ? branch : entry.name
   if (name) result.name = name
   if (entry.summon) result.summon = summon?.name ?? entry.summon
   if (entry.icon) result.icon = entry.icon
@@ -211,7 +211,7 @@ function detailStage(stage: ResultStage): ResultStage {
 
 /**
  * 幹員詳情:幹員檔裡在這個伺服器看得到的全部敘述。幹員本身每段敘述一個分頁(特性、天賦、技能,依幹員檔的順序),
- * 召喚物的天賦與技能接在幹員的技能分頁:召喚物天賦接在召喚物在場的每個技能分頁,召喚物技能只接在它生效的那個
+ * 召喚物的特性、天賦與技能接在幹員的技能分頁:召喚物特性與天賦接在召喚物在場的每個技能分頁,召喚物技能只接在它生效的那個
  * (召喚物技能表第 N 格對應幹員技能 N);幹員沒有技能分頁時接在帶出召喚物的分頁,對應不到分頁的召喚物接在最後一個分頁。
  * 階段的標籤、命中、效果類型與「台服未實裝」規則同結果卡,但所有存在的階段都列出,預設停在第一個存在的階段。
  */
@@ -227,7 +227,7 @@ export function operatorDetail(file: OperatorFile, opts: Pick<QueryOptions, 'con
     if (entry.summon) summoned.push({ from: summon?.from ?? [], skills: entry.skills, entry: result })
     else tabs.push({ own: entry, label: result.source, entries: [result] })
   }
-  // 幹員檔裡每個召喚物的技能在天賦之前,依序接上就是「召喚物技能、召喚物天賦」
+  // 幹員檔裡每個召喚物依序是特性、技能、天賦,依序接上即可
   const skillTabs = tabs.filter((t) => t.own.kind === 'skill')
   for (const { from, skills, entry } of summoned) {
     // 召喚物在場的技能分頁:天賦帶出的每個技能都在場,技能召喚的只在召喚它的技能
@@ -235,10 +235,10 @@ export function operatorDetail(file: OperatorFile, opts: Pick<QueryOptions, 'con
     // 幹員沒有那些技能分頁時,接在帶出召喚物的分頁;再沒有就接在最後一個分頁
     const byFrom = tabs.filter((t) => from.some((f) => f.kind === t.own.kind && f.no === t.own.no))
     const fallback = byFrom.length > 0 ? byFrom : tabs.slice(-1)
-    const talentTabs = present.length > 0 ? present : fallback
+    const presentTabs = present.length > 0 ? present : fallback
     // 召喚物技能只接在它生效的幹員技能分頁(召喚物技能表第 N 格對應幹員技能 N)
     const bySkill = skillTabs.filter((t) => skills?.includes(t.own.no!))
-    const targets = entry.kind === 'skill' ? (bySkill.length > 0 ? bySkill : talentTabs) : talentTabs
+    const targets = entry.kind === 'skill' ? (bySkill.length > 0 ? bySkill : presentTabs) : presentTabs
     for (const t of targets) t.entries.push(entry)
   }
   const withDefault = (e: ResultEntry): DetailEntry => ({ ...e, defaultStage: Math.max(0, e.stages.findIndex((s) => !s.absent)) })

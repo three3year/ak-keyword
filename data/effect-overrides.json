@@ -1329,6 +1329,7 @@
 "d8f57e1ae59040af:ba.sluggish": {"types":["apply"],"reviewed":true},
 "d92f4e972d66219e:ba.stun": {"types":["apply"],"reviewed":true},
 "d945634dd6881fe5:ba.barrier": {"types":["apply"],"reviewed":true},
+"d94e5f50b1c42540:sup.truedmg": {"types":["apply"],"reviewed":true},
 "da32a1486eb9ce21:ba.barrier": {"types":["exploit"],"reviewed":true},
 "da4ac9d6e306e2a0:ba.barrier": {"types":["apply"],"reviewed":true},
 "da4ac9d6e306e2a0:ba.tremble": {"types":["apply"],"reviewed":true},
