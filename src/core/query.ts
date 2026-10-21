@@ -227,7 +227,7 @@ export function operatorDetail(file: OperatorFile, opts: Pick<QueryOptions, 'con
     if (entry.summon) summoned.push({ from: summon?.from ?? [], skills: entry.skills, entry: result })
     else tabs.push({ own: entry, label: result.source, entries: [result] })
   }
-  // 幹員檔裡每個召喚物依序是特性、技能、天賦,依序接上即可
+  // 幹員檔裡每個召喚物依序是技能、特性、天賦,依序接上即可
   const skillTabs = tabs.filter((t) => t.own.kind === 'skill')
   for (const { from, skills, entry } of summoned) {
     // 召喚物在場的技能分頁:天賦帶出的每個技能都在場,技能召喚的只在召喚它的技能

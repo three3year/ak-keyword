@@ -238,11 +238,10 @@ class Builder {
       for (const f of from)
         if (f.kind === 'skill' && !summon.skills[f.no - 1]?.skillId && summon.skills.some((s) => s.skillId))
           this.warn(`幹員 ${id}:召喚物 ${summonId} 由技能${f.no}召喚,但召喚物技能表第 ${f.no} 格沒有技能`)
-      // 依序是召喚物特性、召喚物技能、召喚物天賦
-      const summonEntries: IndexEntry[] = []
+      // 依序是召喚物技能、召喚物特性、召喚物天賦
+      const summonEntries: IndexEntry[] = this.skillEntries(summonId, summonSkillSlots(from, summon.skills.length))
       const trait = this.traitEntry(summonId, [])
       if (trait) summonEntries.push(trait)
-      summonEntries.push(...this.skillEntries(summonId, summonSkillSlots(from, summon.skills.length)))
       ;(summon.talents ?? []).forEach((_, i) => {
         const entry = this.talentEntry(summonId, i, [])
         if (entry) summonEntries.push(entry)
