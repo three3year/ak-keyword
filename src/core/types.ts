@@ -115,6 +115,8 @@ export interface IndexEntry {
   name?: string
   /** 召喚物 id;敘述屬於召喚物時才有。 */
   summon?: string
+  /** 召喚物技能才有:這個技能在幹員哪幾個技能底下生效(召喚物技能表第 N 格對應幹員技能 N)。 */
+  skills?: number[]
   /** 技能圖示的相對路徑;缺圖時沒有。 */
   icon?: string
   stages: IndexStage[]
@@ -275,7 +277,7 @@ export interface DetailTab {
   kind: EntryKind
   /** 敘述來源,例如「特性」「天賦1」「技能2」。 */
   label: string
-  /** 幹員本身那段敘述在前,之後是它帶出的召喚物的敘述(每個召喚物依序是召喚物天賦、召喚物技能)。 */
+  /** 幹員本身那段敘述在前,之後是它帶出的召喚物的敘述(每個召喚物依序是召喚物技能、召喚物天賦)。 */
   entries: DetailEntry[]
 }
 

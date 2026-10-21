@@ -93,7 +93,8 @@ export interface OperatorSpec {
   rarity?: number
   profession?: string
   sub?: string
-  skills?: string[]
+  /** null 是空格(召喚物技能表常見:只有對應的幹員技能那格有技能)。 */
+  skills?: (string | null)[]
   /** 技能 id → 召喚物 id(技能會召喚特定召喚物)。 */
   skillTokens?: Record<string, string>
   talents?: TalentSpec[]
@@ -132,7 +133,7 @@ export function operator(spec: OperatorSpec): RawCharacter {
         }
       : null,
     phases: [{}, {}, {}],
-    skills: (spec.skills ?? []).map((skillId) => ({ skillId, overrideTokenKey: spec.skillTokens?.[skillId] ?? null })),
+    skills: (spec.skills ?? []).map((skillId) => ({ skillId, overrideTokenKey: (skillId && spec.skillTokens?.[skillId]) || null })),
     displayTokenDict: spec.tokens ? Object.fromEntries(spec.tokens.map((t) => [t, true])) : null,
     talents: (spec.talents ?? []).map((t) => talent(t, style)),
   }

@@ -81,8 +81,10 @@ function stageLabel(stage: IndexStage, visible: Visible[], op: Owner): string {
   }
 }
 
+/** 召喚物的天賦標「召喚物套用天賦N」,技能標「召喚物技能N」。 */
 function entrySource(entry: IndexEntry): string {
-  return (entry.summon ? '召喚物' : '') + baseSource(entry)
+  if (!entry.summon) return baseSource(entry)
+  return entry.kind === 'talent' ? `召喚物套用天賦${entry.no}` : `召喚物${baseSource(entry)}`
 }
 
 function baseSource(entry: IndexEntry): string {
@@ -209,25 +211,35 @@ function detailStage(stage: ResultStage): ResultStage {
 
 /**
  * 幹員詳情:幹員檔裡在這個伺服器看得到的全部敘述。幹員本身每段敘述一個分頁(特性、天賦、技能,依幹員檔的順序),
- * 帶出召喚物的分頁接著列出那些召喚物的天賦與技能;對應不到分頁的召喚物接在最後一個分頁。
+ * 召喚物的天賦與技能接在幹員的技能分頁:召喚物天賦接在召喚物在場的每個技能分頁,召喚物技能只接在它生效的那個
+ * (召喚物技能表第 N 格對應幹員技能 N);幹員沒有技能分頁時接在帶出召喚物的分頁,對應不到分頁的召喚物接在最後一個分頁。
  * 階段的標籤、命中、效果類型與「台服未實裝」規則同結果卡,但所有存在的階段都列出,預設停在第一個存在的階段。
  */
 export function operatorDetail(file: OperatorFile, opts: Pick<QueryOptions, 'conditions' | 'server'> & { branchName: string }): OperatorDetail {
   // own:這個分頁的幹員本身那段敘述,召喚物依它的技能或天賦編號對應分頁
   const tabs: { own: IndexEntry; label: string; entries: ResultEntry[] }[] = []
-  const summoned: { from: IndexSummon['from']; entry: ResultEntry }[] = []
+  const summoned: { from: IndexSummon['from']; skills?: number[]; entry: ResultEntry }[] = []
   for (const { entry, summon } of visibleEntries(file, opts.server)) {
     const visible = visibleStages(entry, file, opts.server)
     if (visible.length === 0) continue
     const stages = visible.map((v) => detailStage(resultStage(v, visible, file, opts)))
     const result = resultEntry(entry, summon, withAbsentBase(entry, stages), opts.branchName)
-    if (entry.summon) summoned.push({ from: summon?.from ?? [], entry: result })
+    if (entry.summon) summoned.push({ from: summon?.from ?? [], skills: entry.skills, entry: result })
     else tabs.push({ own: entry, label: result.source, entries: [result] })
   }
-  // 幹員檔裡每個召喚物的天賦在技能之前,依序接上就是「召喚物天賦、召喚物技能」
-  for (const { from, entry } of summoned) {
-    const targets = tabs.filter((t) => from.some((f) => f.kind === t.own.kind && f.no === t.own.no))
-    for (const t of targets.length > 0 ? targets : tabs.slice(-1)) t.entries.push(entry)
+  // 幹員檔裡每個召喚物的技能在天賦之前,依序接上就是「召喚物技能、召喚物天賦」
+  const skillTabs = tabs.filter((t) => t.own.kind === 'skill')
+  for (const { from, skills, entry } of summoned) {
+    // 召喚物在場的技能分頁:天賦帶出的每個技能都在場,技能召喚的只在召喚它的技能
+    const present = from.some((f) => f.kind === 'talent') ? skillTabs : skillTabs.filter((t) => from.some((f) => f.kind === 'skill' && f.no === t.own.no))
+    // 幹員沒有那些技能分頁時,接在帶出召喚物的分頁;再沒有就接在最後一個分頁
+    const byFrom = tabs.filter((t) => from.some((f) => f.kind === t.own.kind && f.no === t.own.no))
+    const fallback = byFrom.length > 0 ? byFrom : tabs.slice(-1)
+    const talentTabs = present.length > 0 ? present : fallback
+    // 召喚物技能只接在它生效的幹員技能分頁(召喚物技能表第 N 格對應幹員技能 N)
+    const bySkill = skillTabs.filter((t) => skills?.includes(t.own.no!))
+    const targets = entry.kind === 'skill' ? (bySkill.length > 0 ? bySkill : talentTabs) : talentTabs
+    for (const t of targets) t.entries.push(entry)
   }
   const withDefault = (e: ResultEntry): DetailEntry => ({ ...e, defaultStage: Math.max(0, e.stages.findIndex((s) => !s.absent)) })
   return { tabs: tabs.map((t): DetailTab => ({ kind: t.own.kind, label: t.label, entries: mergeSummonEntries(t.entries).map(withDefault) })), defaultTab: 0 }

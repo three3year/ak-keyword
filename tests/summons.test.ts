@@ -26,8 +26,8 @@ describe('召喚物', () => {
     const results = query(buildIndex({ cn }).index, { conditions: applying('ba.cold'), server: 'cn' })
     expect(results.map((r) => r.name)).toEqual(['召喚師'])
     expect(results[0].entries.map((e) => [e.source, e.summon, e.name, plain(e.stages[0].runs)])).toEqual([
-      ['召喚物天賦1', '冰灵', '冰体', '攻击使敌人寒冷'],
       ['召喚物技能1', '冰灵', '冰息', '吐息使敌人寒冷'],
+      ['召喚物套用天賦1', '冰灵', '冰体', '攻击使敌人寒冷'],
     ])
   })
 
@@ -72,7 +72,7 @@ describe('召喚物', () => {
       },
     })
     const [r] = query(buildIndex({ cn }).index, { conditions: applying('ba.cold'), server: 'cn' })
-    expect(r.entries.map((e) => [e.source, e.summon])).toEqual([['召喚物天賦1', '甲型、乙型']])
+    expect(r.entries.map((e) => [e.source, e.summon])).toEqual([['召喚物套用天賦1', '甲型、乙型']])
   })
 
   test('不屬於任何幹員的召喚物(例如活動限定)不收錄', () => {

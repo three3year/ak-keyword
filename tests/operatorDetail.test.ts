@@ -62,7 +62,7 @@ describe('幹員詳情', () => {
     expect(d.defaultTab).toBe(0)
   })
 
-  test('技能召喚的召喚物只接在召喚它的技能分頁,幹員本身那段在前,召喚物天賦在召喚物技能之前', () => {
+  test('技能召喚的召喚物只接在召喚它的技能分頁,幹員本身那段在前,召喚物技能在召喚物天賦之前', () => {
     const cn = server({
       terms: COMMON_TERMS,
       operators: {
@@ -76,7 +76,7 @@ describe('幹員詳情', () => {
         token_300_ice: operator({
           name: '冰灵',
           profession: 'TOKEN',
-          skills: ['sktok_ice_1'],
+          skills: [null, 'sktok_ice_1'],
           talents: [{ name: '冰体', description: '防御力+10%' }],
         }),
       },
@@ -95,12 +95,12 @@ describe('幹員詳情', () => {
         '技能2',
         [
           ['技能2', '召唤', undefined],
-          ['召喚物天賦1', '冰体', '冰灵'],
-          ['召喚物技能1', '冰息', '冰灵'],
+          ['召喚物技能2', '冰息', '冰灵'],
+          ['召喚物套用天賦1', '冰体', '冰灵'],
         ],
       ],
     ])
-    expect(entriesOf(d, '技能2')[2].stages.map((s) => s.label)).toEqual(['等級7'])
+    expect(entriesOf(d, '技能2')[1].stages.map((s) => s.label)).toEqual(['等級7'])
   })
 
   test('同一召喚物被兩個技能召喚時,兩個技能分頁都有', () => {
@@ -112,7 +112,8 @@ describe('幹員詳情', () => {
           skills: ['sk_owner_1', 'sk_owner_2', 'sk_owner_3'],
           skillTokens: { sk_owner_1: 'token_300_ice', sk_owner_3: 'token_300_ice' },
         }),
-        token_300_ice: operator({ name: '冰灵', profession: 'TOKEN', skills: ['sktok_ice_1'] }),
+        // 召喚物技能表依幹員技能排,每格放同一個技能
+        token_300_ice: operator({ name: '冰灵', profession: 'TOKEN', skills: ['sktok_ice_1', 'sktok_ice_1', 'sktok_ice_1'] }),
       },
       skills: [
         masteredSkill('sk_owner_1', '召唤', { description: '召唤冰灵' }, { description: '召唤冰灵' }),
@@ -150,11 +151,11 @@ describe('幹員詳情', () => {
     expect(d.tabs.map((t) => [t.label, t.entries.map((e) => e.source)])).toEqual([
       ['特性', ['特性']],
       ['天賦1', ['天賦1']],
-      ['天賦2', ['天賦2', '召喚物天賦1', '召喚物技能1']],
+      ['天賦2', ['天賦2', '召喚物技能1', '召喚物套用天賦1']],
     ])
   })
 
-  test('同一召喚物由技能召喚、也由天賦帶出時,兩個分頁都有', () => {
+  test('同一召喚物由技能召喚、也由天賦帶出時,召喚物技能接在對應的幹員技能分頁', () => {
     const cn = server({
       terms: COMMON_TERMS,
       operators: {
@@ -170,9 +171,84 @@ describe('幹員詳情', () => {
     })
     const d = detail({ cn }, 'char_303_c')
     expect(['天賦1', '技能1'].map((l) => entriesOf(d, l).map((e) => e.source))).toEqual([
-      ['天賦1', '召喚物技能1'],
+      ['天賦1'],
       ['技能1', '召喚物技能1'],
     ])
+  })
+
+  test('天賦帶出的召喚物:召喚物天賦接在每個技能分頁,召喚物技能表第 N 格只接在幹員技能 N 分頁', () => {
+    const cn = server({
+      terms: COMMON_TERMS,
+      operators: {
+        char_306_t: operator({
+          name: '影者',
+          skills: ['sk_t_1', 'sk_t_2', 'sk_t_3'],
+          talents: [{ name: '分身', description: '部署分身', tokenKey: 'token_306_t' }],
+        }),
+        token_306_t: operator({
+          name: '虚影',
+          profession: 'TOKEN',
+          skills: ['sktok_t_1', null, 'sktok_t_3'],
+          talents: [{ name: '幻象', description: '防御力+10%' }],
+        }),
+      },
+      skills: [
+        ...['sk_t_1', 'sk_t_2', 'sk_t_3'].map((id) => masteredSkill(id, id, { description: '攻击力提升' }, { description: '攻击力提升' })),
+        basicSkill('sktok_t_1', '暗夜', { description: '冲击' }),
+        basicSkill('sktok_t_3', '突袭', { description: '突击' }),
+      ],
+    })
+    const d = detail({ cn }, 'char_306_t')
+    expect(['天賦1', '技能1', '技能2', '技能3'].map((l) => entriesOf(d, l).map((e) => [e.source, e.name]))).toEqual([
+      [['天賦1', '分身']],
+      [['技能1', 'sk_t_1'], ['召喚物技能1', '暗夜'], ['召喚物套用天賦1', '幻象']],
+      [['技能2', 'sk_t_2'], ['召喚物套用天賦1', '幻象']],
+      [['技能3', 'sk_t_3'], ['召喚物技能3', '突袭'], ['召喚物套用天賦1', '幻象']],
+    ])
+  })
+
+  test('技能召喚的召喚物只收召喚它那格的召喚物技能', () => {
+    const cn = server({
+      terms: COMMON_TERMS,
+      operators: {
+        char_307_e: operator({
+          name: '鹰主',
+          skills: ['sk_e_1', 'sk_e_2'],
+          skillTokens: { sk_e_1: 'token_307_e1', sk_e_2: 'token_307_e2' },
+        }),
+        token_307_e1: operator({ name: '雪鹰', profession: 'TOKEN', skills: ['sktok_e_1', 'sktok_e_2'] }),
+        token_307_e2: operator({ name: '雪鹰', profession: 'TOKEN', skills: ['sktok_e_1', 'sktok_e_2'] }),
+      },
+      skills: [
+        masteredSkill('sk_e_1', '谋略', { description: '召唤' }, { description: '召唤' }),
+        masteredSkill('sk_e_2', '变革', { description: '召唤' }, { description: '召唤' }),
+        basicSkill('sktok_e_1', '开局', { description: '' }),
+        basicSkill('sktok_e_2', '变革已至', { description: '直线攻击' }),
+      ],
+    })
+    const { warnings } = buildIndex({ cn })
+    expect(warnings).toEqual([])
+    const d = detail({ cn }, 'char_307_e')
+    expect(['技能1', '技能2'].map((l) => entriesOf(d, l).map((e) => [e.source, e.name]))).toEqual([
+      [['技能1', '谋略'], ['召喚物技能1', '开局']],
+      [['技能2', '变革'], ['召喚物技能2', '变革已至']],
+    ])
+  })
+
+  test('技能召喚的召喚物在對應格沒有技能時發建置警告', () => {
+    const cn = server({
+      terms: COMMON_TERMS,
+      operators: {
+        char_308_w: operator({ name: '错位', skills: ['sk_w_1', 'sk_w_2'], skillTokens: { sk_w_2: 'token_308_w' } }),
+        token_308_w: operator({ name: '箱子', profession: 'TOKEN', skills: ['sktok_w'] }),
+      },
+      skills: [
+        masteredSkill('sk_w_1', '强击', { description: '攻击力提升' }, { description: '攻击力提升' }),
+        masteredSkill('sk_w_2', '召', { description: '召唤' }, { description: '召唤' }),
+        basicSkill('sktok_w', '爆炸', { description: '爆炸' }),
+      ],
+    })
+    expect(buildIndex({ cn }).warnings.filter((w) => w.includes('token_308_w'))).toHaveLength(1)
   })
 
   test('對應不到技能或天賦的召喚物:建置發警告,接在最後一個分頁', () => {
@@ -189,7 +265,7 @@ describe('幹員詳情', () => {
     const d = detail({ cn }, 'char_304_m')
     expect(d.tabs.at(-1)!.entries.map((e) => [e.source, e.summon])).toEqual([
       ['技能1', undefined],
-      ['召喚物天賦1', '甲型'],
+      ['召喚物套用天賦1', '甲型'],
     ])
   })
 

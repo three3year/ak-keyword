@@ -235,12 +235,15 @@ class Builder {
       if (from.length === 0) this.warn(`幹員 ${id}:召喚物 ${summonId} 對應不到召喚它的技能或帶出它的天賦`)
       const twSummon = this.char('tw', summonId)
       summons.push({ id: summonId, name: twSummon?.name ?? summon.name, inTw: !!twSummon, from })
-      const summonEntries: IndexEntry[] = []
+      for (const f of from)
+        if (f.kind === 'skill' && !summon.skills[f.no - 1]?.skillId && summon.skills.some((s) => s.skillId))
+          this.warn(`幹員 ${id}:召喚物 ${summonId} 由技能${f.no}召喚,但召喚物技能表第 ${f.no} 格沒有技能`)
+      // 召喚物技能在前、召喚物天賦在後
+      const summonEntries: IndexEntry[] = this.skillEntries(summonId, summonSkillSlots(from, summon.skills.length))
       ;(summon.talents ?? []).forEach((_, i) => {
         const entry = this.talentEntry(summonId, i, [])
         if (entry) summonEntries.push(entry)
       })
-      summonEntries.push(...this.skillEntries(summonId))
       for (const e of summonEntries) entries.push({ ...e, summon: summonId })
     }
 
@@ -268,14 +271,19 @@ class Builder {
 
   // ---------- 技能 ----------
 
-  skillEntries(ownerId: string): IndexEntry[] {
+  /** slots:召喚物才給,只收這幾格(1 起算),並記在 skills。 */
+  skillEntries(ownerId: string, slots?: Set<number>): IndexEntry[] {
     const char = this.char('cn', ownerId)!
     const entries: IndexEntry[] = []
-    const seen = new Set<string>()
+    const seen = new Map<string, IndexEntry | undefined>()
     char.skills.forEach((s, i) => {
-      // 召喚物的技能表會依精英階段重複同一個技能,只收第一次
-      if (!s.skillId || seen.has(s.skillId)) return
-      seen.add(s.skillId)
+      if (!s.skillId || (slots && !slots.has(i + 1))) return
+      // 召喚物的技能表會在好幾格放同一個技能,只收一次,記下所有格
+      if (seen.has(s.skillId)) {
+        seen.get(s.skillId)?.skills?.push(i + 1)
+        return
+      }
+      seen.set(s.skillId, undefined)
       const skillId = s.skillId
       const skill = this.input.cn.skillTable[skillId]
       if (!skill) {
@@ -304,7 +312,10 @@ class Builder {
       }
       const name = this.input.tw?.skillTable[skillId]?.levels[0]?.name ?? skill.levels[0]?.name
       // 台服沒有 iconId,一律用陸服的(兩服的 skillId 相同)
-      entries.push({ kind: 'skill', no, name, icon: skillIconPath(skillIconId(skill)), stages })
+      const entry: IndexEntry = { kind: 'skill', no, name, icon: skillIconPath(skillIconId(skill)), stages }
+      if (slots) entry.skills = [no]
+      seen.set(skillId, entry)
+      entries.push(entry)
     })
     return entries
   }
@@ -566,6 +577,15 @@ function summonSources(char: RawCharacter): Map<string, SummonOrigin[]> {
     for (const c of t.candidates ?? []) if (c.tokenKey) add(c.tokenKey, { kind: 'talent', no: i + 1 })
   })
   return out
+}
+
+/**
+ * 召喚物技能表第 N 格只在幹員技能 N 時生效:技能召喚的只收召喚它那幾個技能的格,
+ * 天賦帶出的(任何技能都在)與對應不到來源的收全部格。
+ */
+function summonSkillSlots(from: SummonOrigin[], count: number): Set<number> {
+  const all = from.length === 0 || from.some((f) => f.kind === 'talent')
+  return new Set(all ? Array.from({ length: count }, (_, i) => i + 1) : from.map((f) => f.no))
 }
 
 function moduleTrait(parts: RawEquipPart[]): RawEquipTraitCandidate | undefined {
