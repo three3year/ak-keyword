@@ -334,36 +334,46 @@ input:focus-visible {
   color: var(--text-2);
 }
 
+/* 膠囊:兩端圓角、中間直線分隔(同外觀切換的 .segmented),選中的那格填色 */
 .stage-switch {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  display: inline-flex;
+  max-width: 100%;
   margin-bottom: 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
 }
 
 .stage-btn {
-  min-height: 32px;
-  border: 1px solid var(--border);
+  min-height: 30px;
+  border: 0;
   background: var(--surface-2);
-  border-radius: 999px;
-  padding: 2px 12px;
+  color: inherit;
+  padding: 2px 14px;
   font-size: 0.85rem;
+  white-space: nowrap;
   cursor: pointer;
 }
 
-.stage-btn:hover:not(:disabled) {
-  border-color: var(--accent);
+.stage-btn + .stage-btn {
+  border-left: 1px solid var(--border);
+}
+
+.stage-btn:hover:not(:disabled):not(.on) {
+  color: var(--accent);
 }
 
 .stage-btn.on {
   background: var(--accent);
-  border-color: var(--accent);
   color: #fff;
 }
 
+/* 停用:斜線底紋、刪除線,和沒選中但可以點的格子分得開 */
 .stage-btn:disabled {
-  opacity: 0.4;
-  cursor: default;
+  color: color-mix(in srgb, currentColor 45%, transparent);
+  text-decoration: line-through;
+  background: repeating-linear-gradient(-45deg, var(--surface-2) 0 4px, color-mix(in srgb, var(--border) 45%, var(--surface-2)) 4px 6px);
+  cursor: not-allowed;
 }
 
 .src-skill {

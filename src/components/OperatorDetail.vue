@@ -12,6 +12,7 @@ import {
   type Server,
 } from '../core/types'
 import EntryView from './EntryView.vue'
+import StageSwitch from './StageSwitch.vue'
 
 const props = defineProps<{
   /** 標題區直接用結果卡的資料,打開瞬間就顯示。 */
@@ -45,17 +46,40 @@ const detail = computed(() => (file.value ? operatorDetail(file.value, { server:
 const chosenTab = ref<number>()
 const tab = computed(() => chosenTab.value ?? detail.value?.defaultTab ?? 0)
 const current = computed(() => detail.value?.tabs[tab.value] ?? detail.value?.tabs[0])
-const stageOf = ref<Record<string, number>>({})
+/** 各分頁選的階段標籤;沒選過時是第一段敘述的預設階段。 */
+const stageOf = ref<Record<number, string>>({})
 
-/** 目前分頁第 i 段敘述在 stageOf 的鍵。 */
-const stageKey = (i: number) => `${tab.value}-${i}`
+/**
+ * 目前分頁的階段切換:有兩個以上階段的敘述,其階段標籤的聯集(依出現順序),任一段有存在的這個階段就能選。
+ * 只有一個階段的敘述(例如只有一個等級的召喚物技能、召喚物天賦)沒得切換,不列入。
+ */
+const tabStages = computed(() => {
+  const options: { label: string; disabled: boolean; title: string }[] = []
+  for (const e of current.value?.entries ?? [])
+    for (const s of e.stages.length > 1 ? e.stages : []) {
+      const o = options.find((o) => o.label === s.label)
+      if (o) o.disabled &&= !!s.absent
+      else options.push({ label: s.label, disabled: !!s.absent, title: '沒有這個階段:模組新增的天賦要裝模組才有' })
+    }
+  return options
+})
 
+const tabStage = computed(() => {
+  if (stageOf.value[tab.value] !== undefined) return stageOf.value[tab.value]
+  const first = current.value?.entries.find((e) => e.stages.length > 1)
+  return first?.stages[first.defaultStage]?.label ?? ''
+})
+
+const tabStageIndex = computed({
+  get: () => tabStages.value.findIndex((o) => o.label === tabStage.value),
+  set: (j: number) => (stageOf.value[tab.value] = tabStages.value[j].label),
+})
+
+/** 第 i 段敘述顯示分頁選的階段;它沒有這個階段(或不存在)時顯示它的預設階段。 */
 function stageAt(i: number): number {
-  return stageOf.value[stageKey(i)] ?? current.value!.entries[i].defaultStage
-}
-
-function setStage(i: number, j: number) {
-  stageOf.value[stageKey(i)] = j
+  const e = current.value!.entries[i]
+  const j = e.stages.findIndex((s) => s.label === tabStage.value && !s.absent)
+  return j >= 0 ? j : e.defaultStage
 }
 
 const id = useId()
@@ -141,6 +165,7 @@ function onAvatarError(e: Event) {
             </button>
           </div>
           <section :id="`${id}-panel`" class="entry detail-panel" role="tabpanel" :aria-labelledby="`${id}-tab-${tab}`">
+            <StageSwitch v-if="tabStages.length > 1" v-model="tabStageIndex" class="detail-stages" :options="tabStages" />
             <article v-for="(e, i) in current.entries" :key="`${tab}-${i}`" class="detail-entry" data-testid="detail-entry">
               <EntryView
                 :stage="stageAt(i)"
@@ -148,7 +173,6 @@ function onAvatarError(e: Event) {
                 :selected="selected"
                 :keywords="keywords"
                 detail
-                @update:stage="setStage(i, $event)"
               />
             </article>
           </section>

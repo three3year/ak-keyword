@@ -32,7 +32,8 @@ test('點頭像打開幹員詳情:每段敘述一個頁籤,預設特性;技能�
   const entries = dialog.getByTestId('detail-entry')
   await expect(entries).toHaveCount(1)
   await expect(entries.locator('.entry-name')).toHaveText('尖兵')
-  await entries.getByRole('button', { name: /^模組3/ }).first().click()
+  const stages = dialog.getByRole('group', { name: '階段' })
+  await stages.getByRole('button', { name: /^模組3/ }).first().click()
   await expect(entries.locator('.entry-name')).toHaveText(/^尖兵-.+/)
 
   for (const tab of await dialog.getByRole('tab', { name: /^技能/ }).all()) {
@@ -45,8 +46,8 @@ test('點頭像打開幹員詳情:每段敘述一個頁籤,預設特性;技能�
   const sp = async () =>
     `${await first.getByTestId('skill-facts').textContent()}|${await first.getByTestId('skill-icon').getByRole('img').getAttribute('aria-label')}`
   const before = await sp()
-  await first.getByRole('button', { name: '專精3' }).click()
-  await expect(first.getByRole('button', { name: '專精3' })).toHaveAttribute('aria-pressed', 'true')
+  await stages.getByRole('button', { name: '專精3' }).click()
+  await expect(stages.getByRole('button', { name: '專精3' })).toHaveAttribute('aria-pressed', 'true')
   expect(await sp()).not.toBe(before)
 
   // 技力文字在技能圖示下方
@@ -70,7 +71,7 @@ test('沒有技能的幹員沒有技能頁籤,預設特性', async ({ page }) =>
   await expect(dialog.getByRole('tab', { name: '特性' })).toHaveAttribute('aria-selected', 'true')
 })
 
-test('技能召喚的召喚物只出現在召喚它的技能頁籤', async ({ page }) => {
+test('技能召喚的召喚物只出現在召喚它的技能頁籤;那頁幹員技能與召喚物技能共用一個階段切換', async ({ page }) => {
   await page.goto('./')
   await page.getByRole('button', { name: '醫療', exact: true }).click()
   await card(page, '赫默').getByRole('button', { name: '檢視赫默的詳情' }).click()
@@ -80,8 +81,11 @@ test('技能召喚的召喚物只出現在召喚它的技能頁籤', async ({ pa
     const label = await tab.textContent()
     await tab.click()
     await expect(tab).toHaveAttribute('aria-selected', 'true')
-    if (label?.trim() === '技能2') await expect(summonBadges.first()).toBeVisible()
-    else await expect(summonBadges).toHaveCount(0)
+    if (label?.trim() === '技能2') {
+      await expect(summonBadges.first()).toBeVisible()
+      // 只有一個階段的召喚物技能與召喚物天賦不列入切換
+      await expect(dialog.getByRole('group', { name: '階段' }).getByRole('button')).toHaveText(['等級7', '專精3'])
+    } else await expect(summonBadges).toHaveCount(0)
   }
 })
 
