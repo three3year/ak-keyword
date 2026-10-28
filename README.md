@@ -1,7 +1,7 @@
 # 明日方舟關鍵字搜尋
 
 點選寒冷、凍結、浮空這類效果關鍵字,列出敘述(技能、天賦、特性、模組)含有該效果的幹員。
-純前端網頁(Vue 3 + Vite + TypeScript),資料在本機建置成索引,隨網頁部署。名詞見 [CONTEXT.md](CONTEXT.md)。
+純前端網頁(Vue 3 + Vite + TypeScript),資料在本機建置成索引,隨網頁部署。名詞見 [GLOSSARY.md](GLOSSARY.md)。
 
 ## 開發
 

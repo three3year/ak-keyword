@@ -10,4 +10,4 @@
 
 ### Domain docs
 
-single-context:repo 根目錄一份 `CONTEXT.md` 加上 `docs/adr/`。見 `docs/agents/domain.md`。
+single-context:repo 根目錄一份 `GLOSSARY.md` 加上 `docs/adr/`。見 `docs/agents/domain.md`。`CONTEXT.md` 為舊名(v1.3.0 前的 skill),現僅轉址到 `GLOSSARY.md`。

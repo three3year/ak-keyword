@@ -20,7 +20,7 @@
 
 ## Wayfinding 操作
 
-供 `/wayfinder` 使用。**map** 是一個檔案，每張票各一個 **child** 檔。
+供 `/mattpocock-skills:wayfinder` 使用。**map** 是一個檔案，每張票各一個 **child** 檔。
 
 - **Map**:`.scratch/<effort>/map.md`——內容為 Notes / Decisions-so-far / Fog。
 - **Child 票**:`.scratch/<effort>/issues/NN-<slug>.md`，從 `01` 編號，內文寫問題。`Type:` 行記錄票的類型(`research`/`prototype`/`grilling`/`task`);`Status:` 行記錄 `claimed`/`resolved`。
