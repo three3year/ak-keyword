@@ -126,7 +126,17 @@ function onAvatarError(e: Event) {
       @keydown="trapTab"
     >
       <header class="card-head detail-head">
-        <img class="avatar" :src="op.avatar ?? 'avatar-placeholder.svg'" alt="" width="56" height="56" @error="onAvatarError" />
+        <a
+          class="avatar-link"
+          :href="op.prtsUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          :title="`在 PRTS 查看${op.name}(新分頁)`"
+          :aria-label="`在 PRTS 查看${op.name}(新分頁)`"
+        >
+          <img class="avatar" :src="op.avatar ?? 'avatar-placeholder.svg'" alt="" width="56" height="56" @error="onAvatarError" />
+          <span class="link-badge" aria-hidden="true">↖</span>
+        </a>
         <div class="op-meta">
           <div class="op-title">
             <h2 :id="`${id}-title`" class="op-name">
