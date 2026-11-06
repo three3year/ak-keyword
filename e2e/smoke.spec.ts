@@ -211,16 +211,16 @@ test('類型鈕反灰:關鍵字在目前伺服器沒有該類型的敘述時停�
   await expect(types.getByRole('button', { name: '施加' })).toBeEnabled()
   await expect(types.getByRole('button', { name: '利用' })).toBeEnabled()
 
-  // 侵蝕損傷只有陸服有反制資料,點下去預設亮反制;切到台服後反灰,已亮著的仍可關掉
-  await page.getByRole('button', { name: '侵蝕損傷', exact: true }).first().click()
-  const erosion = page.getByRole('group', { name: '侵蝕損傷的效果類型' })
-  await expect(erosion.getByRole('button', { name: '反制' })).toHaveAttribute('aria-pressed', 'true')
-  await expect(erosion.getByRole('button', { name: '反制' })).not.toHaveClass(/no-data/)
-  await expect(erosion.getByRole('button', { name: '施加' })).toBeDisabled()
+  // 缚地只有陸服有施加資料,點下去預設亮施加;切到台服後反灰,已亮著的仍可關掉
+  await page.getByRole('button', { name: '缚地', exact: true }).first().click()
+  const groundbind = page.getByRole('group', { name: '缚地的效果類型' })
+  await expect(groundbind.getByRole('button', { name: '施加' })).toHaveAttribute('aria-pressed', 'true')
+  await expect(groundbind.getByRole('button', { name: '施加' })).not.toHaveClass(/no-data/)
+  await expect(groundbind.getByRole('button', { name: '利用' })).toBeDisabled()
   await page.getByRole('radio', { name: '台服' }).click()
-  await expect(erosion.getByRole('button', { name: '反制' })).toHaveClass(/no-data/)
-  await expect(erosion.getByRole('button', { name: '反制' })).toBeEnabled()
-  await expect(erosion.getByRole('button', { name: '利用' })).toBeDisabled()
+  await expect(groundbind.getByRole('button', { name: '施加' })).toHaveClass(/no-data/)
+  await expect(groundbind.getByRole('button', { name: '施加' })).toBeEnabled()
+  await expect(groundbind.getByRole('button', { name: '反制' })).toBeDisabled()
 })
 
 test('命中敘述裡的關鍵字只供查定義:游標為問號,點擊不改搜尋', async ({ page }) => {
@@ -373,7 +373,7 @@ test('關鍵字面板依分組分行:控場第一行以減速開頭,沉默與失
   const panel = page.getByRole('complementary', { name: '關鍵字面板' })
   const group = (name: string) => panel.locator('.kw-group').filter({ has: page.getByRole('heading', { name, exact: true }) })
   const firstRow = group('控場').locator('.kw-list').first().locator('.kw')
-  await expect(firstRow).toHaveText(['減速', '停頓', '束縛', '暈眩', '沉睡', '迟钝', '凍結'])
+  await expect(firstRow).toHaveText(['減速', '停頓', '束縛', '暈眩', '沉睡', '遲鈍', '凍結'])
   await expect(group('控場').locator('.kw-list')).toHaveCount(2)
   for (const name of ['沉默', '失重']) {
     await expect(group('減益').getByRole('button', { name, exact: true })).toHaveCount(1)

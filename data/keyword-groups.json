@@ -24,7 +24,7 @@
   {
     "name": "元素傷害",
     "rows": [
-      ["ba.dt.neural2", "ba.dt.erosion2", "ba.dt.burning2", "ba.dt.apoptosis2"],
+      ["ba.dt.neural2", "ba.dt.erosion2", "ba.dt.burning2", "ba.dt.apoptosis2", "ba.dt.rampage2"],
       ["ba.dt.element", "ba.dt.apoptosis", "ba.dt.erosion", "ba.dt.neural", "ba.dt.burning", "ba.dt.rampage"]
     ]
   },
