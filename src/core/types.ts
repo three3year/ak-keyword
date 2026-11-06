@@ -164,6 +164,26 @@ export interface IndexOperator {
   detail?: string
 }
 
+/** 屬性:最後一個階段滿級的數值,不含潛能與模組的加成。 */
+export interface OperatorAttributes {
+  /** 最後一個階段:0、1、2(精0、精1、精2)。 */
+  phase: number
+  /** 該階段的滿級等級。 */
+  level: number
+  hp: number
+  atk: number
+  def: number
+  res: number
+  cost: number
+  block: number
+  /** 攻擊間隔秒數。 */
+  interval: number
+  /** 再部署時間秒數。 */
+  redeploy: number
+  /** 信賴 100% 的加成,只有生命、攻擊、防禦。 */
+  trust: { hp: number; atk: number; def: number }
+}
+
 /** 幹員檔:一位幹員全部的特性、天賦、技能(含召喚物的),不論有沒有關鍵字;打開幹員詳情時才下載。 */
 export interface OperatorFile {
   id: string
@@ -171,6 +191,8 @@ export interface OperatorFile {
   modules: IndexModule[]
   summons: IndexSummon[]
   entries: IndexEntry[]
+  /** 各伺服器各自的屬性;台服未實裝的幹員沒有 tw。 */
+  attributes: { cn: OperatorAttributes; tw?: OperatorAttributes }
 }
 
 export interface IndexKeyword {
@@ -281,9 +303,32 @@ export interface DetailTab {
   entries: DetailEntry[]
 }
 
+/** 生命、攻擊或防禦:值與信賴加成;加成為 0 時沒有 trust。 */
+export interface DetailStat {
+  value: number
+  trust?: number
+}
+
+/** 幹員詳情卡頭的屬性(目前伺服器的數值)。 */
+export interface DetailAttributes {
+  /** 階段說明,例如「精2 90級」。 */
+  stage: string
+  cost: number
+  block: number
+  /** 攻擊間隔秒數,不帶單位。 */
+  interval: number
+  /** 再部署時間秒數,不帶單位。 */
+  redeploy: number
+  hp: DetailStat
+  atk: DetailStat
+  def: DetailStat
+  res: number
+}
+
 export interface OperatorDetail {
   /** 幹員本身每段敘述一個分頁,依序是特性、天賦(依編號,含模組新增的天賦)、技能(依編號)。 */
   tabs: DetailTab[]
   /** 一開始顯示的分頁:第一個分頁(特性)。 */
   defaultTab: number
+  attributes: DetailAttributes
 }

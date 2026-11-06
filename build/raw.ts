@@ -36,6 +36,31 @@ export interface RawCharSkill {
   overrideTokenKey?: string | null
 }
 
+/** 屬性關鍵幀的數值(只列建置用到的欄位)。 */
+export interface RawAttributes {
+  maxHp: number
+  atk: number
+  def: number
+  magicResistance: number
+  cost: number
+  blockCnt: number
+  /** 攻擊間隔秒數。 */
+  baseAttackTime: number
+  /** 再部署時間秒數。 */
+  respawnTime: number
+}
+
+export interface RawKeyFrame {
+  level: number
+  data: RawAttributes
+}
+
+/** 精英化階段:PHASE_0、PHASE_1、PHASE_2 依序排列。 */
+export interface RawPhase {
+  maxLevel: number
+  attributesKeyFrames: RawKeyFrame[]
+}
+
 export interface RawCharacter {
   name: string
   description?: string | null
@@ -47,7 +72,9 @@ export interface RawCharacter {
   profession: string
   subProfessionId: string
   trait?: { candidates: RawTraitCandidate[] | null } | null
-  phases: unknown[]
+  phases: RawPhase[]
+  /** 信賴關鍵幀:最後一格是信賴 100% 的加成。 */
+  favorKeyFrames?: RawKeyFrame[] | null
   skills: RawCharSkill[]
   displayTokenDict?: Record<string, boolean> | null
   talents?: { candidates: RawTalentCandidate[] | null }[] | null

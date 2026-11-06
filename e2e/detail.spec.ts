@@ -1,5 +1,5 @@
 import { expect, type Page, test } from '@playwright/test'
-import { cnOnly, twOperatorWithDifferentPrtsPage } from './data'
+import { attributeTexts, cnOnly, operatorAttributes, twOperatorWithDifferentPrtsPage } from './data'
 
 async function search(page: Page, keyword: string) {
   await page.goto('./')
@@ -206,6 +206,7 @@ test('幹員資料下載失敗時顯示錯誤與重試鈕,重試成功後顯示�
   // 標題區不必等下載
   await expect(dialog.getByText('先鋒 · 尖兵')).toBeVisible()
   await expect(dialog.getByRole('alert')).toBeVisible()
+  await expect(dialog.getByTestId('operator-attributes')).toHaveCount(0)
 
   fail = false
   await dialog.getByRole('button', { name: '重試' }).click()
@@ -216,6 +217,54 @@ test('幹員資料下載失敗時顯示錯誤與重試鈕,重試成功後顯示�
   await avatar.click()
   await expect(dialog.getByTestId('detail-entry')).toHaveCount(1)
   expect(requests).toBe(2)
+})
+
+test('詳情卡頭的屬性欄在星星右側,有階段說明與八項屬性,數值取自幹員檔', async ({ page }) => {
+  const a = operatorAttributes('忍冬')
+  await search(page, '暈眩')
+  await card(page, '忍冬').getByRole('button', { name: '檢視忍冬的詳情' }).click()
+  const dialog = page.getByRole('dialog', { name: '忍冬' })
+  const attrs = dialog.getByTestId('operator-attributes')
+  await expect(attrs.getByTestId('attributes-stage')).toHaveText(`精${a.phase} ${a.level}級`)
+  await expect(attrs.locator('.attr')).toHaveText(attributeTexts(a))
+  const stars = (await dialog.locator('.stars').boundingBox())!
+  const box = (await attrs.boundingBox())!
+  expect(box.x).toBeGreaterThan(stars.x + stars.width)
+})
+
+test('懸停屬性的信賴加成顯示「信賴 100% 加成」;點擊釘住,Esc 先關提示框再關詳情', async ({ page }) => {
+  await search(page, '暈眩')
+  await card(page, '忍冬').getByRole('button', { name: '檢視忍冬的詳情' }).click()
+  const dialog = page.getByRole('dialog', { name: '忍冬' })
+  const bonus = dialog.getByTestId('operator-attributes').locator('.attr .bonus').first()
+  const tip = page.getByTestId('tip')
+  await bonus.hover()
+  await expect(tip).toHaveText('信賴 100% 加成')
+  await bonus.click()
+  await page.mouse.move(0, 0)
+  await expect(tip).toHaveText('信賴 100% 加成')
+  await page.keyboard.press('Escape')
+  await expect(tip).toHaveCount(0)
+  await expect(dialog).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(dialog).toHaveCount(0)
+})
+
+test('幹員檔下載完之前卡頭照常顯示但沒有屬性欄,下載完才出現', async ({ page }) => {
+  let release!: () => void
+  const released = new Promise<void>((resolve) => (release = resolve))
+  await page.route('**/data/operators/**', async (route) => {
+    await released
+    await route.continue()
+  })
+  await search(page, '暈眩')
+  await card(page, '忍冬').getByRole('button', { name: '檢視忍冬的詳情' }).click()
+  const dialog = page.getByRole('dialog', { name: '忍冬' })
+  await expect(dialog.getByText('先鋒 · 尖兵')).toBeVisible()
+  await expect(dialog.getByText('載入中…')).toBeVisible()
+  await expect(dialog.getByTestId('operator-attributes')).toHaveCount(0)
+  release()
+  await expect(dialog.getByTestId('operator-attributes')).toBeVisible()
 })
 
 test('陸服模式下台服未實裝幹員的小卡壓灰:整張卡有懸停文字、卡頭沒有徽章;詳情卡頭有徽章;台服模式沒有壓灰', async ({ page }) => {

@@ -63,6 +63,14 @@ test('手機寬度:幹員詳情占滿螢幕、沒有水平捲動,返回鍵關閉
   const box = (await dialog.boundingBox())!
   const viewport = page.viewportSize()!
   expect([box.x, box.y, box.width, box.height]).toEqual([0, 0, viewport.width, viewport.height])
+  // 屬性欄移到頭像那一列下面;點信賴加成顯示提示
+  const attrs = dialog.getByTestId('operator-attributes')
+  const avatar = (await dialog.getByRole('link', { name: /^在 PRTS 查看忍冬/ }).boundingBox())!
+  expect((await attrs.boundingBox())!.y).toBeGreaterThanOrEqual(avatar.y + avatar.height)
+  await attrs.locator('.attr .bonus').first().tap()
+  await expect(page.getByTestId('tip')).toHaveText('信賴 100% 加成')
+  await attrs.getByTestId('attributes-stage').tap()
+  await expect(page.getByTestId('tip')).toHaveCount(0)
   // 技能頁籤有技力文字,放不下時只在欄位之間換行
   await dialog.getByRole('tab', { name: '技能1' }).tap()
   await expect(dialog.getByTestId('skill-facts').first()).toBeVisible()

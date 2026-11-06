@@ -1,7 +1,9 @@
 // 查詢:索引 + 查詢條件 → 排好序的幹員清單與命中敘述。純函式。
 import type {
   DataVersion,
+  DetailAttributes,
   DetailEntry,
+  DetailStat,
   DetailTab,
   EffectType,
   IndexEntry,
@@ -10,6 +12,7 @@ import type {
   IndexStage,
   IndexSummon,
   IndexText,
+  OperatorAttributes,
   OperatorDetail,
   OperatorFile,
   QueryOptions,
@@ -248,7 +251,27 @@ export function operatorDetail(file: OperatorFile, opts: Pick<QueryOptions, 'con
     for (const t of targets) t.entries.push(entry)
   }
   const withDefault = (e: ResultEntry): DetailEntry => ({ ...e, defaultStage: defaultStageOf(e, (s) => !s.absent) })
-  return { tabs: tabs.map((t): DetailTab => ({ kind: t.own.kind, label: t.label, entries: mergeSummonEntries(t.entries).map(withDefault) })), defaultTab: 0 }
+  return {
+    tabs: tabs.map((t): DetailTab => ({ kind: t.own.kind, label: t.label, entries: mergeSummonEntries(t.entries).map(withDefault) })),
+    defaultTab: 0,
+    attributes: detailAttributes((opts.server === 'tw' && file.attributes.tw) || file.attributes.cn),
+  }
+}
+
+/** 卡頭的屬性:階段說明「精2 90級」;信賴加成為 0 的項目不帶加成。 */
+function detailAttributes(a: OperatorAttributes): DetailAttributes {
+  const stat = (value: number, trust: number): DetailStat => (trust ? { value, trust } : { value })
+  return {
+    stage: `精${a.phase} ${a.level}級`,
+    cost: a.cost,
+    block: a.block,
+    interval: a.interval,
+    redeploy: a.redeploy,
+    hp: stat(a.hp, a.trust.hp),
+    atk: stat(a.atk, a.trust.atk),
+    def: stat(a.def, a.trust.def),
+    res: a.res,
+  }
 }
 
 /** 有搜尋條件或職業條件其中一種就開始搜尋;只有星級篩選不算。 */

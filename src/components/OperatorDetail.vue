@@ -82,6 +82,26 @@ function stageAt(i: number): number {
   return j >= 0 ? j : e.defaultStage
 }
 
+const TRUST_BONUS_TIP = '信賴 100% 加成'
+
+const attributes = computed(() => detail.value?.attributes)
+
+/** 屬性欄的兩排:費用、阻擋數、攻擊間隔、再部署時間;生命、攻擊、防禦、法抗。 */
+const attributeItems = computed(() => {
+  const a = attributes.value
+  if (!a) return []
+  return [
+    { label: '費用', value: `${a.cost}` },
+    { label: '阻擋數', value: `${a.block}` },
+    { label: '攻擊間隔', value: `${a.interval}s` },
+    { label: '再部署時間', value: `${a.redeploy}s` },
+    { label: '生命', value: `${a.hp.value}`, trust: a.hp.trust },
+    { label: '攻擊', value: `${a.atk.value}`, trust: a.atk.trust },
+    { label: '防禦', value: `${a.def.value}`, trust: a.def.trust },
+    { label: '法抗', value: `${a.res}` },
+  ]
+})
+
 const prtsTitle = computed(() => `在 PRTS 查看${props.op.name}(新分頁)`)
 
 const id = useId()
@@ -150,6 +170,17 @@ function onAvatarError(e: Event) {
             {{ PROFESSION_LABELS[op.profession] }} · {{ branchName }}
             <span v-if="op.twUnreleased" class="badge tw-unreleased" :title="TW_UNRELEASED_TITLE">台服未實裝</span>
           </div>
+        </div>
+        <div v-if="attributes" class="op-attrs" data-testid="operator-attributes">
+          <div class="attrs-stage" data-testid="attributes-stage">{{ attributes.stage }}</div>
+          <dl class="attrs-grid">
+            <div v-for="item in attributeItems" :key="item.label" class="attr">
+              <dt>{{ item.label }}</dt> <dd
+                >{{ item.value
+                }}<span v-if="item.trust" class="s-pot bonus" :data-p="TRUST_BONUS_TIP" tabindex="0">(+{{ item.trust }})</span></dd
+              >
+            </div>
+          </dl>
         </div>
         <button type="button" class="detail-close" aria-label="關閉" @click="emit('close')">×</button>
       </header>
