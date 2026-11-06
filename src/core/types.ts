@@ -184,6 +184,13 @@ export interface OperatorAttributes {
   trust: { hp: number; atk: number; def: number }
 }
 
+/** 勢力與隱藏勢力的名稱(該伺服器的用字);每個勢力是有值的國家、組織、團隊依序排列。 */
+export interface OperatorFactions {
+  faction: string[]
+  /** 隱藏勢力,最多兩個;沒有時為空清單。 */
+  hidden: string[][]
+}
+
 /** 幹員檔:一位幹員全部的特性、天賦、技能(含召喚物的),不論有沒有關鍵字;打開幹員詳情時才下載。 */
 export interface OperatorFile {
   id: string
@@ -193,6 +200,8 @@ export interface OperatorFile {
   entries: IndexEntry[]
   /** 各伺服器各自的屬性;台服未實裝的幹員沒有 tw。 */
   attributes: { cn: OperatorAttributes; tw?: OperatorAttributes }
+  /** 各伺服器各自的勢力名稱;台服未實裝的幹員沒有 tw。 */
+  factions: { cn: OperatorFactions; tw?: OperatorFactions }
 }
 
 export interface IndexKeyword {
@@ -323,6 +332,10 @@ export interface DetailAttributes {
   atk: DetailStat
   def: DetailStat
   res: number
+  /** 所屬勢力,各層以「 · 」串起;三層都空時沒有。 */
+  faction?: string
+  /** 隱藏勢力,每個照所屬勢力串成一段,多段以「、」分隔;沒有時沒有。 */
+  hiddenFactions?: string
 }
 
 export interface OperatorDetail {

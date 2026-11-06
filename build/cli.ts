@@ -19,7 +19,16 @@ const REVIEW_DIR = join(ROOT, 'review')
 const SOURCES = {
   cn: {
     base: rawBase(DATA_SOURCES.cn),
-    files: ['character_table', 'skill_table', 'gamedata_const', 'uniequip_table', 'battle_equip_table', 'char_patch_table', 'item_table'],
+    files: [
+      'character_table',
+      'skill_table',
+      'gamedata_const',
+      'uniequip_table',
+      'battle_equip_table',
+      'char_patch_table',
+      'item_table',
+      'handbook_team_table',
+    ],
   },
   tw: {
     base: rawBase(DATA_SOURCES.tw),
@@ -70,6 +79,7 @@ async function loadServer(server: ServerKey): Promise<RawServer> {
     battleEquipTable: await optional('battle_equip_table'),
     charPatchTable: await optional('char_patch_table'),
     itemTable: await optional('item_table'),
+    handbookTeamTable: await optional('handbook_team_table'),
     downloadedAt: await downloadedAt(server),
   }
 }
@@ -85,8 +95,9 @@ async function main() {
   const supplements = await readJson<SupplementKeyword[]>(join(ROOT, 'data', 'supplementary-keywords.json'))
   const excludedTerms = await readJson<string[]>(join(ROOT, 'data', 'excluded-terms.json'))
   const prtsPages = await readJson<Record<string, string>>(join(ROOT, 'data', 'prts-pages.json'))
+  const twFactionNames = await readJson<Record<string, string>>(join(ROOT, 'data', 'tw-faction-names.json'))
   const knownWarnings = await readJson<string[]>(KNOWN_WARNINGS)
-  const { index, operatorFiles, warnings, pending } = buildIndex({ cn, tw, groups, supplements, overrides, excludedTerms, prtsPages })
+  const { index, operatorFiles, warnings, pending } = buildIndex({ cn, tw, groups, supplements, overrides, excludedTerms, prtsPages, twFactionNames })
 
   // 頭像:職業形態(阿米婭)沒有專屬頭像時改用預設形態
   const formDefault = new Map<string, string>()

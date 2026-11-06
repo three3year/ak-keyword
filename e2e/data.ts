@@ -1,6 +1,13 @@
 import { readFileSync } from 'node:fs'
 import type { Page } from '@playwright/test'
-import { type OperatorAttributes, type OperatorFile, PROFESSION_LABELS, type SearchIndex, type Server } from '../src/core/types'
+import {
+  type OperatorAttributes,
+  type OperatorFactions,
+  type OperatorFile,
+  PROFESSION_LABELS,
+  type SearchIndex,
+  type Server,
+} from '../src/core/types'
 
 // 台服資料持續更新:簡中詞名會換成繁中、陸服限定的資料會變成兩服都有。
 // 測試要的資料事實從索引推算,或由 cnOnly 自己造,不寫死現況。
@@ -26,12 +33,35 @@ export function twOperatorWithDifferentPrtsPage(): { name: string; prtsPage: str
   return { name: op.name, prtsPage: op.prtsPage, rarity: op.rarity, profession: PROFESSION_LABELS[op.profession] }
 }
 
-/** 幹員檔裡某位幹員(依索引裡的名稱)在某伺服器的屬性。 */
-export function operatorAttributes(name: string, server: Server = 'cn'): OperatorAttributes {
+function operatorFile(name: string): OperatorFile {
   const op = index.operators.find((o) => o.name === name)
   if (!op?.detail) throw new Error(`索引沒有幹員 ${name} 的幹員檔`)
-  const file: OperatorFile = JSON.parse(readFileSync(`public/${op.detail}`, 'utf8'))
+  return JSON.parse(readFileSync(`public/${op.detail}`, 'utf8'))
+}
+
+/** 幹員檔裡某位幹員(依索引裡的名稱)在某伺服器的屬性。 */
+export function operatorAttributes(name: string, server: Server = 'cn'): OperatorAttributes {
+  const file = operatorFile(name)
   return (server === 'tw' && file.attributes.tw) || file.attributes.cn
+}
+
+/** 屬性欄的勢力那兩行應有的文字:「所屬勢力 …」,有隱藏勢力時再加「隱藏勢力 …」。 */
+export function factionTexts(name: string, server: Server = 'cn'): string[] {
+  const file = operatorFile(name)
+  const f = (server === 'tw' && file.factions.tw) || file.factions.cn
+  const lines = [`所屬勢力 ${f.faction.join(' · ')}`]
+  if (f.hidden.length > 0) lines.push(`隱藏勢力 ${f.hidden.map((h) => h.join(' · ')).join('、')}`)
+  return lines
+}
+
+/** 把幹員檔裡兩服的勢力換成測試自己造的。要在打開幹員詳情之前呼叫。 */
+export async function withFactions(page: Page, factions: OperatorFactions): Promise<void> {
+  await page.route('**/data/operators/**', async (route) => {
+    const response = await route.fetch()
+    const file: OperatorFile = await response.json()
+    file.factions = { cn: factions, tw: factions }
+    await route.fulfill({ response, json: file })
+  })
 }
 
 /** 屬性欄八項屬性應有的文字:「標籤 值」,攻擊間隔與再部署時間加 s,信賴加成不為 0 時附「(+B)」。 */

@@ -7,6 +7,7 @@ import type {
   RawEquip,
   RawEquipPart,
   RawPhase,
+  RawPower,
   RawServer,
   RawSkill,
   RawSkillLevel,
@@ -115,6 +116,10 @@ export interface OperatorSpec {
   trust?: Partial<RawAttributes>
   /** 潛能提升的屬性加成:建置不該讀它。 */
   potentialAttributes?: Partial<RawAttributes>
+  /** 勢力的國家、組織、團隊 ID;未給的層為空。 */
+  faction?: RawPower
+  /** 隱藏勢力,每個同樣是三層 ID。 */
+  hiddenFactions?: RawPower[]
 }
 
 /** 各階段的滿級等級,依星級,同遊戲。 */
@@ -178,6 +183,12 @@ export function operator(spec: OperatorSpec): RawCharacter {
     displayTokenDict: spec.tokens ? Object.fromEntries(spec.tokens.map((t) => [t, true])) : null,
     talents: (spec.talents ?? []).map((t) => talent(t, style)),
   }
+  // 陸服原始資料把空的層寫成 null,台服(object 寫法)直接省略空的鍵
+  const power = (p: RawPower | undefined): RawPower =>
+    style === 'object' ? { ...p } : { nationId: p?.nationId ?? null, groupId: p?.groupId ?? null, teamId: p?.teamId ?? null }
+  Object.assign(char, power(spec.faction))
+  if (spec.hiddenFactions) char.subPower = spec.hiddenFactions.map(power)
+  else if (style === 'array') char.subPower = null
   if (spec.potentialAttributes) {
     // 原始資料的潛能屬性加成形狀;不在 RawCharacter 裡,因為建置不讀它
     const attributeModifiers = Object.entries(spec.potentialAttributes).map(([key, value]) => ({ attributeType: key, formulaItem: 'ADDITION', value }))
@@ -259,6 +270,8 @@ export interface ServerSpec {
   modules?: ModuleSpec[]
   /** 阿米婭式的職業形態:預設形態 id → 其他形態(在 char_patch_table 裡)。 */
   patches?: Record<string, Record<string, RawCharacter>>
+  /** 勢力名稱表:勢力 ID → 名稱(只有陸服有)。 */
+  factionNames?: Record<string, string>
 }
 
 export function server(spec: ServerSpec): RawServer {
@@ -278,6 +291,9 @@ export function server(spec: ServerSpec): RawServer {
     downloadedAt: spec.downloadedAt ?? '2026-01-01T00:00:00Z',
     itemTable: { items },
     ...(spec.modules ? moduleTables(spec.modules) : {}),
+    ...(spec.factionNames
+      ? { handbookTeamTable: Object.fromEntries(Object.entries(spec.factionNames).map(([powerId, powerName]) => [powerId, { powerId, powerName }])) }
+      : {}),
     ...(spec.patches
       ? {
           charPatchTable: {
