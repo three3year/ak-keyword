@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # 更新遊戲資料
 
-照順序做完每一步。標著 **停下** 的地方,把內容列給維護者,等維護者回覆再往下。名詞見 `CONTEXT.md`。
+照順序做完每一步。標著 **停下** 的地方,把內容列給維護者,等維護者回覆再往下。名詞見 `GLOSSARY.md`。
 
 每個指令都看結束碼:非 0 就**停下**,原樣回報錯誤訊息,怎麼修由維護者決定(例如 `data/prts-pages.json` 缺頁名)。PowerShell 會把建置的警告輸出顯示成紅色錯誤區塊,結束碼 0 就是成功。
 
@@ -27,7 +27,7 @@ disable-model-invocation: true
 
 讀 `review/pending-review.json`。0 筆就跳到第 4 步。
 
-每一筆依 `CONTEXT.md` 的「效果類型」定義判定 `types`(`apply`/`exploit`/`counter`,可多種),寧缺勿濫:談不上任何一種就是空清單。
+每一筆依 `GLOSSARY.md` 的「效果類型」定義判定 `types`(`apply`/`exploit`/`counter`,可多種),寧缺勿濫:談不上任何一種就是空清單。
 
 **停下**:每一筆都列給維護者,一筆一列:幹員名(依 `where` 開頭的 id 查 `public/data/index.json` 的 `operators`;召喚物的 id 在 `operators` 的 `summons` 裡,列成「幹員名/召喚物名」)、敘述來源(`where`)、關鍵字名、規則判定(`ruleTypes`)、敘述原文(`text`)、你的判定與一句理由。維護者確認或改掉幾筆後,才把確認後的判定寫成 `review/decisions/<今天日期>.json`:
 
@@ -46,7 +46,7 @@ npm run build-index:offline
 
 ## 4. 新術語分組
 
-從 `public/data/index.json` 的 `groups` 找名稱為「未分組」的分組;沒有就跳到第 5 步。對其中每個關鍵字 id,讀 `keywords` 裡它的定義,決定位置。補充關鍵字(`sup.` 開頭)一律放進分組;術語依 `CONTEXT.md` 的「關鍵字」定義判斷:
+從 `public/data/index.json` 的 `groups` 找名稱為「未分組」的分組;沒有就跳到第 5 步。對其中每個關鍵字 id,讀 `keywords` 裡它的定義,決定位置。補充關鍵字(`sup.` 開頭)一律放進分組;術語依 `GLOSSARY.md` 的「關鍵字」定義判斷:
 
 - 是關鍵字:放進 `data/keyword-groups.json` 最貼近的分組與行,排在性質最接近的關鍵字旁邊。
 - 不是關鍵字:加進 `data/excluded-terms.json`。

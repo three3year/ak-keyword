@@ -6,4 +6,4 @@ Matt Pocock skills 從 v1.3.0 起把 `CONTEXT.md` 改名為 `GLOSSARY.md`(多 co
 
 - 讀詞彙:讀 `GLOSSARY.md`。
 - 新增或修改詞彙:改 `GLOSSARY.md`,格式照舊。
-- 你的 skill 版本若仍指名 `CONTEXT.md`(v1.2.x 以前),一律改成讀寫 `GLOSSARY.md`。
+- 任何工具或文件若仍指名 `CONTEXT.md`,一律改成讀寫 `GLOSSARY.md`。
