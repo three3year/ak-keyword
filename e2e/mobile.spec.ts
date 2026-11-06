@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { withFactions } from './data'
 
 test('手機寬度:抽屜選關鍵字、點擊顯示定義、點高亮詞只顯示定義不改搜尋,職業 chip 不算進抽屜計數,且沒有水平捲動', async ({ page }) => {
   await page.goto('./')
@@ -81,6 +82,23 @@ test('手機寬度:幹員詳情占滿螢幕、沒有水平捲動,返回鍵關閉
   await expect(dialog).toHaveCount(0)
   await expect(page.getByTestId('result-count')).toHaveText(count ?? '')
   await expect(page.getByTestId('profession-chip')).toHaveText([/先鋒/])
+})
+
+test('手機寬度:勢力字串過長時在屬性欄內換行,沒有水平捲動', async ({ page }) => {
+  const long = ['維多利亞', '格拉斯哥幫', '烏薩斯學生自治團', '行動預備組A6']
+  await withFactions(page, { faction: long, hidden: [long, long] })
+  await page.goto('./')
+  await page.getByRole('group', { name: '職業' }).getByRole('button', { name: '先鋒', exact: true }).tap()
+  await page.getByRole('button', { name: '檢視忍冬的詳情' }).tap()
+  const dialog = page.getByRole('dialog', { name: '忍冬' })
+  const lines = dialog.getByTestId('operator-attributes').locator('.attr-faction')
+  await expect(lines).toHaveCount(2)
+  // 換行:隱藏勢力那一行比一行字高
+  const hidden = (await lines.nth(1).boundingBox())!
+  const firstLine = (await dialog.getByTestId('attributes-stage').boundingBox())!
+  expect(hidden.height).toBeGreaterThan(firstLine.height * 1.5)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true)
+  expect(await dialog.evaluate((d) => d.scrollWidth <= d.clientWidth)).toBe(true)
 })
 
 test('手機寬度:標題列兩行,伺服器切換與外觀在標題下方同一行;關鍵字鈕浮在右下角,抽屜打開時隱藏', async ({ page }) => {

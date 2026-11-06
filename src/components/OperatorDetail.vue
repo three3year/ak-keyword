@@ -102,6 +102,15 @@ const attributeItems = computed(() => {
   ]
 })
 
+/** 屬性之後的勢力行:所屬勢力、隱藏勢力;沒有的那一行不顯示。 */
+const factionItems = computed(() => {
+  const a = attributes.value
+  return [
+    { label: '所屬勢力', value: a?.faction },
+    { label: '隱藏勢力', value: a?.hiddenFactions },
+  ].filter((item) => item.value)
+})
+
 const prtsTitle = computed(() => `在 PRTS 查看${props.op.name}(新分頁)`)
 
 const id = useId()
@@ -179,6 +188,11 @@ function onAvatarError(e: Event) {
                 >{{ item.value
                 }}<span v-if="item.trust" class="s-pot bonus" :data-p="TRUST_BONUS_TIP" tabindex="0">(+{{ item.trust }})</span></dd
               >
+            </div>
+          </dl>
+          <dl v-if="factionItems.length" class="attrs-factions">
+            <div v-for="item in factionItems" :key="item.label" class="attr-faction">
+              <dt>{{ item.label }}</dt> <dd>{{ item.value }}</dd>
             </div>
           </dl>
         </div>

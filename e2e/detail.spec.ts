@@ -1,5 +1,5 @@
 import { expect, type Page, test } from '@playwright/test'
-import { attributeTexts, cnOnly, operatorAttributes, twOperatorWithDifferentPrtsPage } from './data'
+import { attributeTexts, cnOnly, factionTexts, operatorAttributes, twOperatorWithDifferentPrtsPage, withFactions } from './data'
 
 async function search(page: Page, keyword: string) {
   await page.goto('./')
@@ -230,6 +230,32 @@ test('詳情卡頭的屬性欄在星星右側,有階段說明與八項屬性,數
   const stars = (await dialog.locator('.stars').boundingBox())!
   const box = (await attrs.boundingBox())!
   expect(box.x).toBeGreaterThan(stars.x + stars.width)
+})
+
+test('屬性欄在兩排屬性之後有所屬勢力那一行,有隱藏勢力時再一行;字串取自幹員檔', async ({ page }) => {
+  await search(page, '暈眩')
+  await card(page, '忍冬').getByRole('button', { name: '檢視忍冬的詳情' }).click()
+  const dialog = page.getByRole('dialog', { name: '忍冬' })
+  await expect(dialog.getByTestId('operator-attributes').locator('.attr-faction')).toHaveText(factionTexts('忍冬'))
+  await page.keyboard.press('Escape')
+  await page.getByRole('radio', { name: '台服' }).click()
+  await card(page, '忍冬').getByRole('button', { name: '檢視忍冬的詳情' }).click()
+  await expect(dialog.getByTestId('operator-attributes').locator('.attr-faction')).toHaveText(factionTexts('忍冬', 'tw'))
+})
+
+test('有隱藏勢力的幹員有隱藏勢力那一行,沒有的幹員沒有', async ({ page }) => {
+  await withFactions(page, { faction: ['甲國', '乙團'], hidden: [['丙國'], ['丁國', '戊幫']] })
+  await search(page, '暈眩')
+  await card(page, '忍冬').getByRole('button', { name: '檢視忍冬的詳情' }).click()
+  const lines = page.getByRole('dialog', { name: '忍冬' }).getByTestId('operator-attributes').locator('.attr-faction')
+  await expect(lines).toHaveText(['所屬勢力 甲國 · 乙團', '隱藏勢力 丙國、丁國 · 戊幫'])
+
+  // 重新載入頁面,幹員檔才會重新下載
+  await page.unrouteAll()
+  await withFactions(page, { faction: ['甲國'], hidden: [] })
+  await search(page, '暈眩')
+  await card(page, '忍冬').getByRole('button', { name: '檢視忍冬的詳情' }).click()
+  await expect(lines).toHaveText(['所屬勢力 甲國'])
 })
 
 test('懸停屬性的信賴加成顯示「信賴 100% 加成」;點擊釘住,Esc 先關提示框再關詳情', async ({ page }) => {

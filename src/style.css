@@ -1186,6 +1186,24 @@ html.modal-open {
   font-variant-numeric: tabular-nums;
 }
 
+/* 勢力行:寬度不超過兩排屬性,字串過長時換行 */
+.attrs-factions {
+  margin: 0;
+  width: 0;
+  min-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.attr-faction dt,
+.attr-faction dd {
+  display: inline;
+  margin: 0;
+}
+
+.attr-faction dt {
+  color: var(--text-2);
+}
+
 .detail-close {
   margin-left: auto;
   align-self: flex-start;
