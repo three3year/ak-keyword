@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { cnOnly, groupRowNames, keywordName } from './data'
 
 test('點一個關鍵字後看到結果卡,切換伺服器後結果更新', async ({ page }) => {
   await page.goto('./')
@@ -210,17 +211,22 @@ test('類型鈕反灰:關鍵字在目前伺服器沒有該類型的敘述時停�
   await expect(types.getByRole('button', { name: '反制' })).toBeDisabled()
   await expect(types.getByRole('button', { name: '施加' })).toBeEnabled()
   await expect(types.getByRole('button', { name: '利用' })).toBeEnabled()
+})
 
-  // 缚地只有陸服有施加資料,點下去預設亮施加;切到台服後反灰,已亮著的仍可關掉
-  await page.getByRole('button', { name: '缚地', exact: true }).first().click()
-  const groundbind = page.getByRole('group', { name: '缚地的效果類型' })
-  await expect(groundbind.getByRole('button', { name: '施加' })).toHaveAttribute('aria-pressed', 'true')
-  await expect(groundbind.getByRole('button', { name: '施加' })).not.toHaveClass(/no-data/)
-  await expect(groundbind.getByRole('button', { name: '利用' })).toBeDisabled()
+test('類型鈕反灰:只有陸服有資料的關鍵字,切到台服後已亮的類型反灰但仍可關掉', async ({ page }) => {
+  await cnOnly(page, 'ba.groundbind')
+  await page.goto('./')
+  const name = keywordName('ba.groundbind')
+  await page.getByRole('button', { name, exact: true }).first().click()
+  const types = page.getByRole('group', { name: `${name}的效果類型` })
+  const pressed = types.locator('button[aria-pressed=true]')
+  const others = types.locator('button[aria-pressed=false]')
+  await expect(pressed).toHaveCount(1)
+  await expect(pressed).not.toHaveClass(/no-data/)
   await page.getByRole('radio', { name: '台服' }).click()
-  await expect(groundbind.getByRole('button', { name: '施加' })).toHaveClass(/no-data/)
-  await expect(groundbind.getByRole('button', { name: '施加' })).toBeEnabled()
-  await expect(groundbind.getByRole('button', { name: '反制' })).toBeDisabled()
+  await expect(pressed).toHaveClass(/no-data/)
+  await expect(pressed).toBeEnabled()
+  for (const button of await others.all()) await expect(button).toBeDisabled()
 })
 
 test('命中敘述裡的關鍵字只供查定義:游標為問號,點擊不改搜尋', async ({ page }) => {
@@ -349,10 +355,11 @@ test('面板點關鍵字時預設亮第一個有資料的效果類型,切換伺�
 })
 
 test('面板隱藏目前伺服器沒有幹員的關鍵字,已選的 chip 保留', async ({ page }) => {
+  await cnOnly(page, 'ba.groundbind')
   await page.goto('./')
   const panel = page.getByRole('complementary', { name: '關鍵字面板' })
-  // 缚地只有陸服有幹員
-  const groundbind = panel.getByRole('button', { name: '缚地', exact: true })
+  const name = keywordName('ba.groundbind')
+  const groundbind = panel.getByRole('button', { name, exact: true })
   await expect(groundbind).toHaveCount(1)
   await page.getByRole('radio', { name: '台服' }).click()
   await expect(groundbind).toHaveCount(0)
@@ -363,7 +370,7 @@ test('面板隱藏目前伺服器沒有幹員的關鍵字,已選的 chip 保留'
   await groundbind.click()
   await page.getByRole('radio', { name: '台服' }).click()
   await expect(groundbind).toHaveCount(0)
-  await expect(page.getByTestId('chip').locator('.chip-name')).toHaveText('缚地')
+  await expect(page.getByTestId('chip').locator('.chip-name')).toHaveText(name)
   await page.getByRole('radio', { name: '陸服' }).click()
   await expect(groundbind).toHaveAttribute('aria-pressed', 'true')
 })
@@ -373,7 +380,8 @@ test('關鍵字面板依分組分行:控場第一行以減速開頭,沉默與失
   const panel = page.getByRole('complementary', { name: '關鍵字面板' })
   const group = (name: string) => panel.locator('.kw-group').filter({ has: page.getByRole('heading', { name, exact: true }) })
   const firstRow = group('控場').locator('.kw-list').first().locator('.kw')
-  await expect(firstRow).toHaveText(['減速', '停頓', '束縛', '暈眩', '沉睡', '遲鈍', '凍結'])
+  await expect(firstRow.first()).toHaveText('減速')
+  await expect(firstRow).toHaveText(groupRowNames('控場', 0))
   await expect(group('控場').locator('.kw-list')).toHaveCount(2)
   for (const name of ['沉默', '失重']) {
     await expect(group('減益').getByRole('button', { name, exact: true })).toHaveCount(1)

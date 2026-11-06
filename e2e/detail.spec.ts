@@ -1,4 +1,5 @@
 import { expect, type Page, test } from '@playwright/test'
+import { cnOnly } from './data'
 
 async function search(page: Page, keyword: string) {
   await page.goto('./')
@@ -219,7 +220,7 @@ test('陸服模式下台服未實裝幹員的小卡壓灰:整張卡有懸停文�
 })
 
 test('陸服模式下台服未實裝幹員的大卡不壓灰:卡頭有徽章、整張卡沒有懸停文字、命中敘述照常', async ({ page }) => {
-  // 「停頓」目前命中五位台服未實裝的幹員
+  await cnOnly(page, 'ba.sluggish')
   await search(page, '停頓')
   const flagged = page.locator('[data-testid=result-card].tw-unreleased')
   await expect(flagged.first()).toBeVisible()
