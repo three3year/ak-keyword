@@ -63,6 +63,35 @@ test('點頭像打開幹員詳情:每段敘述一個頁籤,預設特性;技能�
   await expect(entries.first().getByTestId('skill-icon')).toHaveCount(0)
 })
 
+test('大卡點名稱打開幹員詳情,關閉後焦點回到名稱按鈕', async ({ page }) => {
+  await search(page, '暈眩')
+  const name = card(page, '忍冬').getByRole('heading').getByRole('button', { name: '忍冬', exact: true })
+  await name.click()
+  const dialog = page.getByRole('dialog', { name: '忍冬' })
+  await expect(dialog).toBeVisible()
+  await dialog.getByRole('button', { name: '關閉' }).click()
+  await expect(dialog).toHaveCount(0)
+  await expect(name).toBeFocused()
+})
+
+test('小卡點名稱打開幹員詳情', async ({ page }) => {
+  await page.goto('./')
+  await page.getByRole('button', { name: '醫療', exact: true }).click()
+  await card(page, '赫默').getByRole('heading').getByRole('button', { name: '赫默', exact: true }).click()
+  await expect(page.getByRole('dialog', { name: '赫默' })).toBeVisible()
+})
+
+test('結果卡上沒有任何連結;找「檢視X的詳情」按鈕只找得到頭像', async ({ page }) => {
+  await search(page, '暈眩')
+  await expect(page.getByTestId('result-card').getByRole('link')).toHaveCount(0)
+  await expect(card(page, '忍冬').getByRole('button', { name: '檢視忍冬的詳情' })).toHaveCount(1)
+  // 小卡(只選職業條件)
+  await page.goto('./')
+  await page.getByRole('button', { name: '醫療', exact: true }).click()
+  await expect(card(page, '赫默')).toBeVisible()
+  await expect(page.getByTestId('result-card').getByRole('link')).toHaveCount(0)
+})
+
 test('沒有技能的幹員沒有技能頁籤,預設特性', async ({ page }) => {
   await page.goto('./')
   await page.getByRole('checkbox', { name: '1★' }).check()
