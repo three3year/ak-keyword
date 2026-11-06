@@ -1146,6 +1146,46 @@ html.modal-open {
   outline-offset: 2px;
 }
 
+/* 屬性欄:靠右緊貼關閉鈕;兩排屬性各四項,欄位上下對齊 */
+.op-attrs {
+  margin-left: auto;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.op-attrs + .detail-close {
+  margin-left: 0;
+}
+
+.attrs-stage {
+  color: var(--text-2);
+}
+
+.attrs-grid {
+  display: grid;
+  grid-template-columns: repeat(4, max-content);
+  gap: 0 14px;
+  margin: 0;
+}
+
+.attr {
+  white-space: nowrap;
+}
+
+.attr dt,
+.attr dd {
+  display: inline;
+  margin: 0;
+}
+
+.attr dt {
+  color: var(--text-2);
+}
+
+.attr dd {
+  font-variant-numeric: tabular-nums;
+}
+
 .detail-close {
   margin-left: auto;
   align-self: flex-start;
@@ -1209,6 +1249,25 @@ html.modal-open {
 
   .detail-body {
     padding: 0 10px 16px;
+  }
+
+  /* 屬性欄移到頭像那一列下面、佔滿寬度,兩排屬性各折成兩欄;關閉鈕留在第一列 */
+  .detail-head {
+    flex-wrap: wrap;
+  }
+
+  .op-attrs {
+    order: 1;
+    flex-basis: 100%;
+    margin-left: 0;
+  }
+
+  .op-attrs + .detail-close {
+    margin-left: auto;
+  }
+
+  .attrs-grid {
+    grid-template-columns: repeat(2, max-content);
   }
 
   .detail-panel {
