@@ -82,6 +82,8 @@ function stageAt(i: number): number {
   return j >= 0 ? j : e.defaultStage
 }
 
+const prtsTitle = computed(() => `在 PRTS 查看${props.op.name}(新分頁)`)
+
 const id = useId()
 const dialog = ref<HTMLElement>()
 
@@ -131,8 +133,8 @@ function onAvatarError(e: Event) {
           :href="op.prtsUrl"
           target="_blank"
           rel="noopener noreferrer"
-          :title="`在 PRTS 查看${op.name}(新分頁)`"
-          :aria-label="`在 PRTS 查看${op.name}(新分頁)`"
+          :title="prtsTitle"
+          :aria-label="prtsTitle"
         >
           <img class="avatar" :src="op.avatar ?? 'avatar-placeholder.svg'" alt="" width="56" height="56" @error="onAvatarError" />
           <span class="link-badge" aria-hidden="true">↖</span>
@@ -140,7 +142,7 @@ function onAvatarError(e: Event) {
         <div class="op-meta">
           <div class="op-title">
             <h2 :id="`${id}-title`" class="op-name">
-              <a :href="op.prtsUrl" target="_blank" rel="noopener noreferrer" :title="`在 PRTS 查看${op.name}(新分頁)`">{{ op.name }}</a>
+              <a :href="op.prtsUrl" target="_blank" rel="noopener noreferrer" :title="prtsTitle">{{ op.name }}</a>
             </h2>
             <span class="stars" :class="`r${op.rarity}`" :aria-label="`${op.rarity} 星`">{{ '★'.repeat(op.rarity) }}</span>
           </div>

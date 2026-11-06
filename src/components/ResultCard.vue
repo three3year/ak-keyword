@@ -13,6 +13,10 @@ const props = defineProps<{
 
 /** 點頭像或名稱打開幹員詳情;帶著被點的按鈕,關閉後焦點回到它。 */
 const emit = defineEmits<{ open: [trigger: HTMLElement] }>()
+const openLabel = computed(() => `檢視${props.op.name}的詳情`)
+function open(e: MouseEvent) {
+  emit('open', e.currentTarget as HTMLElement)
+}
 
 // 卡片狀態(目前分頁、各分頁目前階段)只存在這張卡內;查詢結果重算(op 換成新物件)時回到預設
 const tab = ref(0)
@@ -53,8 +57,8 @@ function onAvatarError(e: Event) {
       <button
         type="button"
         class="avatar-btn"
-        :aria-label="`檢視${op.name}的詳情`"
-        @click="emit('open', $event.currentTarget as HTMLElement)"
+        :aria-label="openLabel"
+        @click="open"
       >
         <img
           class="avatar"
@@ -73,8 +77,8 @@ function onAvatarError(e: Event) {
             <button
               type="button"
               class="name-btn"
-              :title="`檢視${op.name}的詳情`"
-              @click="emit('open', $event.currentTarget as HTMLElement)"
+              :title="openLabel"
+              @click="open"
             >
               {{ op.name }}
             </button>

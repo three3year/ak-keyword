@@ -1,11 +1,19 @@
 import { expect, type Page, test } from '@playwright/test'
-import { cnOnly, twRenamedOperator } from './data'
+import { cnOnly, twOperatorWithDifferentPrtsPage } from './data'
 
 async function search(page: Page, keyword: string) {
   await page.goto('./')
   await page.getByRole('button', { name: keyword, exact: true }).first().click()
   await expect(page.getByTestId('result-card').first()).toBeVisible()
 }
+
+/** 只選醫療這個職業條件:結果是小卡,其中有赫默。 */
+async function medicCompactCards(page: Page) {
+  await page.goto('./')
+  await page.getByRole('button', { name: '醫療', exact: true }).click()
+}
+
+const prtsUrl = (prtsPage: string) => `https://prts.wiki/w/${encodeURIComponent(prtsPage)}`
 
 const card = (page: Page, name: string) => page.getByTestId('result-card').filter({ has: page.getByRole('heading', { name, exact: true }) })
 
@@ -75,8 +83,7 @@ test('大卡點名稱打開幹員詳情,關閉後焦點回到名稱按鈕', asyn
 })
 
 test('小卡點名稱打開幹員詳情', async ({ page }) => {
-  await page.goto('./')
-  await page.getByRole('button', { name: '醫療', exact: true }).click()
+  await medicCompactCards(page)
   await card(page, '赫默').getByRole('heading').getByRole('button', { name: '赫默', exact: true }).click()
   await expect(page.getByRole('dialog', { name: '赫默' })).toBeVisible()
 })
@@ -85,8 +92,7 @@ test('結果卡上沒有任何連結;找「檢視X的詳情」按鈕只找得到
   await search(page, '暈眩')
   await expect(page.getByTestId('result-card').getByRole('link')).toHaveCount(0)
   await expect(card(page, '忍冬').getByRole('button', { name: '檢視忍冬的詳情' })).toHaveCount(1)
-  await page.goto('./')
-  await page.getByRole('button', { name: '醫療', exact: true }).click()
+  await medicCompactCards(page)
   await expect(card(page, '赫默')).toBeVisible()
   await expect(page.getByTestId('result-card').getByRole('link')).toHaveCount(0)
 })
@@ -102,8 +108,7 @@ test('沒有技能的幹員沒有技能頁籤,預設特性', async ({ page }) =>
 })
 
 test('技能召喚的召喚物只出現在召喚它的技能頁籤;那頁幹員技能與召喚物技能共用一個階段切換', async ({ page }) => {
-  await page.goto('./')
-  await page.getByRole('button', { name: '醫療', exact: true }).click()
+  await medicCompactCards(page)
   await card(page, '赫默').getByRole('button', { name: '檢視赫默的詳情' }).click()
   const dialog = page.getByRole('dialog', { name: '赫默' })
   const summonBadges = dialog.getByTestId('detail-entry').locator('.badge.summon')
@@ -269,7 +274,7 @@ test('詳情的名字與頭像都在新分頁打開 PRTS 的該幹員頁', async
   const name = dialog.getByRole('heading').getByRole('link', { name: '忍冬', exact: true })
   const avatar = dialog.getByRole('link', { name: '在 PRTS 查看忍冬(新分頁)', exact: true })
   for (const link of [name, avatar]) {
-    await expect(link).toHaveAttribute('href', `https://prts.wiki/w/${encodeURIComponent('忍冬')}`)
+    await expect(link).toHaveAttribute('href', prtsUrl('忍冬'))
     await expect(link).toHaveAttribute('target', '_blank')
     await expect(link).toHaveAttribute('rel', /noopener/)
     await expect(link).toHaveAttribute('rel', /noreferrer/)
@@ -278,14 +283,14 @@ test('詳情的名字與頭像都在新分頁打開 PRTS 的該幹員頁', async
 })
 
 test('台服模式下詳情的名字與頭像仍連到陸服名的 PRTS 頁', async ({ page }) => {
-  const op = twRenamedOperator()
+  const op = twOperatorWithDifferentPrtsPage()
   await page.goto('./')
   await page.getByRole('radio', { name: '台服' }).click()
   await page.getByRole('checkbox', { name: `${op.rarity}★` }).check()
   await page.getByRole('button', { name: op.profession, exact: true }).click()
   await card(page, op.name).getByRole('button', { name: `檢視${op.name}的詳情` }).click()
   const dialog = page.getByRole('dialog', { name: op.name })
-  const href = `https://prts.wiki/w/${encodeURIComponent(op.prtsPage)}`
+  const href = prtsUrl(op.prtsPage)
   await expect(dialog.getByRole('heading').getByRole('link', { name: op.name, exact: true })).toHaveAttribute('href', href)
   await expect(dialog.getByRole('link', { name: `在 PRTS 查看${op.name}(新分頁)`, exact: true })).toHaveAttribute('href', href)
 })
