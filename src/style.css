@@ -926,7 +926,6 @@ input:focus-visible {
   filter: brightness(1.12);
 }
 
-/* 結果卡名稱打開幹員詳情:平時是一般文字;滑過或鍵盤聚焦時強調色加底線 */
 .name-btn {
   border: 0;
   padding: 0;
@@ -938,7 +937,6 @@ input:focus-visible {
   cursor: pointer;
 }
 
-/* 滑過名稱或頭像任一個,兩者一起呈現滑過樣式;鍵盤聚焦不連動,各自顯示 */
 .name-btn:hover,
 .name-btn:focus-visible,
 .card-head:has(.avatar-btn:hover) .name-btn {
@@ -1134,7 +1132,6 @@ html.modal-open {
   height: 56px;
 }
 
-/* 詳情頭像連到 PRTS:左上角常駐「↖」,位置、大小、顏色比照結果卡頭像的「i」;懸停時微亮 */
 .avatar-link {
   position: relative;
   flex: none;

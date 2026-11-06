@@ -20,7 +20,6 @@ export function groupRowNames(group: string, row: number): string[] {
   return found.rows[row].map(keywordName)
 }
 
-/** 台服有實裝、名字與 PRTS 頁名(陸服名)不同的一位幹員。 */
 export function twRenamedOperator(): { name: string; prtsPage: string; rarity: number; profession: string } {
   const op = index.operators.find((o) => o.inTw && o.name !== o.prtsPage)
   if (!op) throw new Error('索引沒有名字與 PRTS 頁名不同的台服幹員')

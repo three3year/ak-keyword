@@ -85,7 +85,6 @@ test('結果卡上沒有任何連結;找「檢視X的詳情」按鈕只找得到
   await search(page, '暈眩')
   await expect(page.getByTestId('result-card').getByRole('link')).toHaveCount(0)
   await expect(card(page, '忍冬').getByRole('button', { name: '檢視忍冬的詳情' })).toHaveCount(1)
-  // 小卡(只選職業條件)
   await page.goto('./')
   await page.getByRole('button', { name: '醫療', exact: true }).click()
   await expect(card(page, '赫默')).toBeVisible()
