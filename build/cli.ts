@@ -95,9 +95,9 @@ async function main() {
   const supplements = await readJson<SupplementKeyword[]>(join(ROOT, 'data', 'supplementary-keywords.json'))
   const excludedTerms = await readJson<string[]>(join(ROOT, 'data', 'excluded-terms.json'))
   const prtsPages = await readJson<Record<string, string>>(join(ROOT, 'data', 'prts-pages.json'))
-  const twFactionNames = await readJson<Record<string, string>>(join(ROOT, 'data', 'tw-faction-names.json'))
+  const twPowerNames = await readJson<Record<string, string>>(join(ROOT, 'data', 'tw-power-names.json'))
   const knownWarnings = await readJson<string[]>(KNOWN_WARNINGS)
-  const { index, operatorFiles, warnings, pending } = buildIndex({ cn, tw, groups, supplements, overrides, excludedTerms, prtsPages, twFactionNames })
+  const { index, operatorFiles, warnings, pending } = buildIndex({ cn, tw, groups, supplements, overrides, excludedTerms, prtsPages, twPowerNames })
 
   // 頭像:職業形態(阿米婭)沒有專屬頭像時改用預設形態
   const formDefault = new Map<string, string>()

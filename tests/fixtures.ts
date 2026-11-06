@@ -1,4 +1,5 @@
 // 手寫的小型原始資料片段。形狀照真實遊戲資料,只放案例需要的欄位。
+import { type BuildInput, buildIndex } from '../build/buildIndex'
 import type {
   RawAttributes,
   RawBattleEquip,
@@ -14,7 +15,8 @@ import type {
   RawTalentCandidate,
   RawTerm,
 } from '../build/raw'
-import type { Run, SearchCondition } from '../src/core/types'
+import { branchName, operatorDetail } from '../src/core/query'
+import type { OperatorDetail, Run, SearchCondition, Server } from '../src/core/types'
 
 export type Values = Record<string, number | string>
 
@@ -113,8 +115,8 @@ export interface OperatorSpec {
   phases?: Partial<RawAttributes>[]
   trust?: Partial<RawAttributes>
   potentialAttributes?: Partial<RawAttributes>
-  faction?: RawPower
-  hiddenFactions?: RawPower[]
+  power?: RawPower
+  hiddenPowers?: RawPower[]
 }
 
 const MAX_LEVELS: Record<number, number[]> = { 1: [30], 2: [30], 3: [40, 55], 4: [45, 60, 70], 5: [50, 70, 80], 6: [50, 80, 90] }
@@ -135,9 +137,9 @@ function phases(rarity: number, specs: Partial<RawAttributes>[] | undefined): Ra
       respawnTime: 70,
       ...spec,
     }
-    const start = { ...top, maxHp: top.maxHp - 300, atk: top.atk - 100, def: top.def - 50 }
+    const lowerLevel1 = { ...top, maxHp: top.maxHp - 300, atk: top.atk - 100, def: top.def - 50 }
     const maxLevel = levels[i] ?? levels.at(-1)!
-    return { maxLevel, attributesKeyFrames: [{ level: 1, data: start }, { level: maxLevel, data: top }] }
+    return { maxLevel, attributesKeyFrames: [{ level: 1, data: lowerLevel1 }, { level: maxLevel, data: top }] }
   })
 }
 
@@ -174,14 +176,19 @@ export function operator(spec: OperatorSpec): RawCharacter {
     talents: (spec.talents ?? []).map((t) => talent(t, style)),
   }
   // 陸服原始資料把空的層寫成 null,台服(object 寫法)直接省略空的鍵
-  const power = (p: RawPower | undefined): RawPower =>
+  const rawPower = (p: RawPower | undefined): RawPower =>
     style === 'object' ? { ...p } : { nationId: p?.nationId ?? null, groupId: p?.groupId ?? null, teamId: p?.teamId ?? null }
-  Object.assign(char, power(spec.faction))
-  if (spec.hiddenFactions) char.subPower = spec.hiddenFactions.map(power)
+  Object.assign(char, rawPower(spec.power))
+  if (spec.hiddenPowers) char.subPower = spec.hiddenPowers.map(rawPower)
   else if (style === 'array') char.subPower = null
   if (spec.potentialAttributes) {
-    const attributeModifiers = Object.entries(spec.potentialAttributes).map(([key, value]) => ({ attributeType: key, formulaItem: 'ADDITION', value }))
-    Object.assign(char, { potentialRanks: [{ type: 'BUFF', buff: { attributes: { attributeModifiers } } }] })
+    /** 潛能的屬性加成。建置不讀它(RawCharacter 也就不宣告),放進來只為驗證它沒被算進屬性。 */
+    type UnreadPotentialRanks = {
+      potentialRanks: { type: 'BUFF'; buff: { attributes: { attributeModifiers: { attributeType: string; formulaItem: 'ADDITION'; value: number }[] } } }[]
+    }
+    const attributeModifiers = Object.entries(spec.potentialAttributes).map(([attributeType, value]) => ({ attributeType, formulaItem: 'ADDITION' as const, value }))
+    const unread: UnreadPotentialRanks = { potentialRanks: [{ type: 'BUFF', buff: { attributes: { attributeModifiers } } }] }
+    Object.assign(char, unread)
   }
   return char
 }
@@ -259,7 +266,8 @@ export interface ServerSpec {
   modules?: ModuleSpec[]
   /** 阿米婭式的職業形態:預設形態 id → 其他形態(在 char_patch_table 裡)。 */
   patches?: Record<string, Record<string, RawCharacter>>
-  factionNames?: Record<string, string>
+  /** 陸服勢力名稱表(handbook_team_table):勢力 ID → 名稱。 */
+  powerNames?: Record<string, string>
 }
 
 export function server(spec: ServerSpec): RawServer {
@@ -279,8 +287,8 @@ export function server(spec: ServerSpec): RawServer {
     downloadedAt: spec.downloadedAt ?? '2026-01-01T00:00:00Z',
     itemTable: { items },
     ...(spec.modules ? moduleTables(spec.modules) : {}),
-    ...(spec.factionNames
-      ? { handbookTeamTable: Object.fromEntries(Object.entries(spec.factionNames).map(([powerId, powerName]) => [powerId, { powerId, powerName }])) }
+    ...(spec.powerNames
+      ? { handbookTeamTable: Object.fromEntries(Object.entries(spec.powerNames).map(([powerId, powerName]) => [powerId, { powerId, powerName }])) }
       : {}),
     ...(spec.patches
       ? {
@@ -325,6 +333,14 @@ export function highlights(runs: Run[]): [string, string][] {
 /** 每個關鍵字配「施加」的搜尋條件。 */
 export function applying(...keywords: string[]): SearchCondition[] {
   return keywords.map((keyword) => ({ keyword, type: 'apply' }))
+}
+
+/** 建置後查詢某位幹員的幹員詳情。 */
+export function operatorDetailOf(raw: BuildInput, id: string, opts: { server?: Server; conditions?: SearchCondition[] } = {}): OperatorDetail {
+  const { index, operatorFiles } = buildIndex(raw)
+  const file = operatorFiles.find((f) => f.id === id)!
+  const op = index.operators.find((o) => o.id === id)!
+  return operatorDetail(file, { server: opts.server ?? 'cn', conditions: opts.conditions ?? [], branchName: branchName(index, op) })
 }
 
 /** 阿米婭三個職業形態的陸服名都是「阿米娅」,PRTS 頁名要另外對照。 */

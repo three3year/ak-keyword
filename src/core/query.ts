@@ -3,7 +3,6 @@ import type {
   DataVersion,
   DetailAttributes,
   DetailEntry,
-  DetailStat,
   DetailTab,
   EffectType,
   IndexEntry,
@@ -14,8 +13,8 @@ import type {
   IndexText,
   OperatorAttributes,
   OperatorDetail,
-  OperatorFactions,
   OperatorFile,
+  OperatorPowers,
   QueryOptions,
   ResultEntry,
   ResultOperator,
@@ -24,8 +23,9 @@ import type {
   SearchIndex,
   Server,
   SkillStats,
+  TrustedAttribute,
 } from './types'
-import { PROFESSION_LABELS, PROFESSIONS, type Profession, SP_TYPE_LABELS, sortTypes, TRIGGER_LABELS } from './types'
+import { onServer, PROFESSION_LABELS, PROFESSIONS, type Profession, SP_TYPE_LABELS, sortTypes, TRIGGER_LABELS } from './types'
 import { DATA_SOURCES, type DataSource, prtsUrl, repoUrl } from './sources'
 
 /** 敘述所屬的幹員:索引裡的幹員或幹員檔,兩者都帶模組、召喚物與敘述。 */
@@ -109,7 +109,7 @@ function resultStage(v: Visible, visible: Visible[], op: Owner, opts: Pick<Query
   const result: ResultStage = { label: stageLabel(v.stage, visible, op), runs: v.runs, hit: Object.keys(effects).length > 0, effects }
   if (v.stage.kind === 'module') result.module = moduleOf(v.stage, op).name
   if (v.twUnreleased) result.twUnreleased = true
-  if (v.stage.stats) result.stats = (opts.server === 'tw' && v.stage.stats.tw) || v.stage.stats.cn
+  if (v.stage.stats) result.stats = onServer(v.stage.stats, opts.server)
   return result
 }
 
@@ -255,32 +255,30 @@ export function operatorDetail(file: OperatorFile, opts: Pick<QueryOptions, 'con
   return {
     tabs: tabs.map((t): DetailTab => ({ kind: t.own.kind, label: t.label, entries: mergeSummonEntries(t.entries).map(withDefault) })),
     defaultTab: 0,
-    attributes: {
-      ...detailAttributes((opts.server === 'tw' && file.attributes.tw) || file.attributes.cn),
-      ...detailFactions((opts.server === 'tw' && file.factions.tw) || file.factions.cn),
-    },
+    attributes: detailAttributes(onServer(file.attributes, opts.server)),
+    ...detailPowers(onServer(file.powers, opts.server)),
   }
 }
 
 function detailAttributes(a: OperatorAttributes): DetailAttributes {
-  const stat = (value: number, trust: number): DetailStat => (trust ? { value, trust } : { value })
+  const withTrust = (value: number, trust: number): TrustedAttribute => (trust ? { value, trust } : { value })
   return {
-    stage: `精${a.phase} ${a.level}級`,
+    levelLabel: `精${a.phase} ${a.level}級`,
     cost: a.cost,
     block: a.block,
-    interval: a.interval,
-    redeploy: a.redeploy,
-    hp: stat(a.hp, a.trust.hp),
-    atk: stat(a.atk, a.trust.atk),
-    def: stat(a.def, a.trust.def),
+    intervalSeconds: a.intervalSeconds,
+    redeploySeconds: a.redeploySeconds,
+    hp: withTrust(a.hp, a.trust.hp),
+    atk: withTrust(a.atk, a.trust.atk),
+    def: withTrust(a.def, a.trust.def),
     res: a.res,
   }
 }
 
-function detailFactions(f: OperatorFactions): Pick<DetailAttributes, 'faction' | 'hiddenFactions'> {
-  const out: Pick<DetailAttributes, 'faction' | 'hiddenFactions'> = {}
-  if (f.faction.length > 0) out.faction = f.faction.join(' · ')
-  if (f.hidden.length > 0) out.hiddenFactions = f.hidden.map((h) => h.join(' · ')).join('、')
+function detailPowers(p: OperatorPowers): Pick<OperatorDetail, 'power' | 'hiddenPowers'> {
+  const out: Pick<OperatorDetail, 'power' | 'hiddenPowers'> = {}
+  if (p.power.length > 0) out.power = p.power.join(' · ')
+  if (p.hiddenPowers.length > 0) out.hiddenPowers = p.hiddenPowers.map((h) => h.join(' · ')).join('、')
   return out
 }
 

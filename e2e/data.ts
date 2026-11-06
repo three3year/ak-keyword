@@ -2,8 +2,9 @@ import { readFileSync } from 'node:fs'
 import type { Page } from '@playwright/test'
 import {
   type OperatorAttributes,
-  type OperatorFactions,
   type OperatorFile,
+  type OperatorPowers,
+  onServer,
   PROFESSION_LABELS,
   type SearchIndex,
   type Server,
@@ -40,25 +41,28 @@ function operatorFile(name: string): OperatorFile {
 }
 
 export function operatorAttributes(name: string, server: Server = 'cn'): OperatorAttributes {
-  const file = operatorFile(name)
-  return (server === 'tw' && file.attributes.tw) || file.attributes.cn
+  return onServer(operatorFile(name).attributes, server)
 }
 
-export function factionTexts(name: string, server: Server = 'cn'): string[] {
-  const file = operatorFile(name)
-  const f = (server === 'tw' && file.factions.tw) || file.factions.cn
-  const lines = [`所屬勢力 ${f.faction.join(' · ')}`]
-  if (f.hidden.length > 0) lines.push(`隱藏勢力 ${f.hidden.map((h) => h.join(' · ')).join('、')}`)
+export function powerTexts(name: string, server: Server = 'cn'): string[] {
+  const p = onServer(operatorFile(name).powers, server)
+  const lines = [`所屬勢力 ${p.power.join(' · ')}`]
+  if (p.hiddenPowers.length > 0) lines.push(`隱藏勢力 ${p.hiddenPowers.map((h) => h.join(' · ')).join('、')}`)
   return lines
 }
 
-export async function withFactions(page: Page, factions: OperatorFactions): Promise<void> {
-  await page.route('**/data/operators/**', async (route) => {
+const OPERATOR_FILES = '**/data/operators/**'
+
+/** 把每個幹員檔的勢力換成 powers,再重新載入首頁。app 同一次載入會快取幹員檔,所以攔截要在載入頁面之前。 */
+export async function gotoWithPowers(page: Page, powers: OperatorPowers): Promise<void> {
+  await page.unroute(OPERATOR_FILES)
+  await page.route(OPERATOR_FILES, async (route) => {
     const response = await route.fetch()
     const file: OperatorFile = await response.json()
-    file.factions = { cn: factions, tw: factions }
+    file.powers = { cn: powers, tw: powers }
     await route.fulfill({ response, json: file })
   })
+  await page.goto('./')
 }
 
 export function attributeTexts(a: OperatorAttributes): string[] {
@@ -66,8 +70,8 @@ export function attributeTexts(a: OperatorAttributes): string[] {
   return [
     `費用 ${a.cost}`,
     `阻擋數 ${a.block}`,
-    `攻擊間隔 ${a.interval}s`,
-    `再部署時間 ${a.redeploy}s`,
+    `攻擊間隔 ${a.intervalSeconds}s`,
+    `再部署時間 ${a.redeploySeconds}s`,
     `生命 ${withTrust(a.hp, a.trust.hp)}`,
     `攻擊 ${withTrust(a.atk, a.trust.atk)}`,
     `防禦 ${withTrust(a.def, a.trust.def)}`,

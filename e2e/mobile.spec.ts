@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { withFactions } from './data'
+import { gotoWithPowers } from './data'
 
 test('手機寬度:抽屜選關鍵字、點擊顯示定義、點高亮詞只顯示定義不改搜尋,職業 chip 不算進抽屜計數,且沒有水平捲動', async ({ page }) => {
   await page.goto('./')
@@ -69,7 +69,7 @@ test('手機寬度:幹員詳情占滿螢幕、沒有水平捲動,返回鍵關閉
   expect((await attrs.boundingBox())!.y).toBeGreaterThanOrEqual(avatar.y + avatar.height)
   await attrs.locator('.attr .bonus').first().tap()
   await expect(page.getByTestId('tip')).toHaveText('信賴 100% 加成')
-  await attrs.getByTestId('attributes-stage').tap()
+  await attrs.getByTestId('attributes-level').tap()
   await expect(page.getByTestId('tip')).toHaveCount(0)
   // 技能頁籤有技力文字,放不下時只在欄位之間換行
   await dialog.getByRole('tab', { name: '技能1' }).tap()
@@ -85,15 +85,14 @@ test('手機寬度:幹員詳情占滿螢幕、沒有水平捲動,返回鍵關閉
 
 test('手機寬度:勢力字串過長時在屬性欄內換行,沒有水平捲動', async ({ page }) => {
   const long = ['維多利亞', '格拉斯哥幫', '烏薩斯學生自治團', '行動預備組A6']
-  await withFactions(page, { faction: long, hidden: [long, long] })
-  await page.goto('./')
+  await gotoWithPowers(page, { power: long, hiddenPowers: [long, long] })
   await page.getByRole('group', { name: '職業' }).getByRole('button', { name: '先鋒', exact: true }).tap()
   await page.getByRole('button', { name: '檢視忍冬的詳情' }).tap()
   const dialog = page.getByRole('dialog', { name: '忍冬' })
-  const lines = dialog.getByTestId('operator-attributes').locator('.attr-faction')
+  const lines = dialog.getByTestId('operator-attributes').locator('.attr-power')
   await expect(lines).toHaveCount(2)
   const hidden = (await lines.nth(1).boundingBox())!
-  const firstLine = (await dialog.getByTestId('attributes-stage').boundingBox())!
+  const firstLine = (await dialog.getByTestId('attributes-level').boundingBox())!
   expect(hidden.height).toBeGreaterThan(firstLine.height * 1.5)
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true)
   expect(await dialog.evaluate((d) => d.scrollWidth <= d.clientWidth)).toBe(true)

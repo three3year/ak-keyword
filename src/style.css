@@ -663,10 +663,6 @@ input:focus-visible {
   color: var(--exploit);
 }
 
-.rich [data-p] {
-  cursor: pointer;
-}
-
 /* 命中敘述裡的關鍵字(已選與未選)只供懸停看定義:較粗的強調色虛線底線、問號游標;
    和潛能加成的細點狀底線區分。已選的底線疊在高亮底色上 */
 .stage-text [data-k] {
@@ -687,10 +683,11 @@ input:focus-visible {
   }
 }
 
+/* 潛能加成與信賴加成:懸停顯示提示框、點擊釘住 */
 .bonus {
   text-decoration: underline dotted;
   text-underline-offset: 3px;
-  cursor: help;
+  cursor: pointer;
 }
 
 /* ---- 篩選列 ---- */
@@ -1156,7 +1153,7 @@ html.modal-open {
   margin-left: 0;
 }
 
-.attrs-stage {
+.attrs-level {
   color: var(--text-2);
 }
 
@@ -1186,20 +1183,20 @@ html.modal-open {
 }
 
 /* 勢力行:寬度不超過兩排屬性,字串過長時換行 */
-.attrs-factions {
+.attrs-powers {
   margin: 0;
   width: 0;
   min-width: 100%;
   overflow-wrap: anywhere;
 }
 
-.attr-faction dt,
-.attr-faction dd {
+.attr-power dt,
+.attr-power dd {
   display: inline;
   margin: 0;
 }
 
-.attr-faction dt {
+.attr-power dt {
   color: var(--text-2);
 }
 

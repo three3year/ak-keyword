@@ -1,8 +1,13 @@
 import { expect, type Page, test } from '@playwright/test'
-import { attributeTexts, cnOnly, factionTexts, operatorAttributes, twOperatorWithDifferentPrtsPage, withFactions } from './data'
+import { attributeTexts, cnOnly, gotoWithPowers, operatorAttributes, powerTexts, twOperatorWithDifferentPrtsPage } from './data'
 
 async function search(page: Page, keyword: string) {
   await page.goto('./')
+  await pickKeyword(page, keyword)
+}
+
+/** 在已載入的頁面點選關鍵字。 */
+async function pickKeyword(page: Page, keyword: string) {
   await page.getByRole('button', { name: keyword, exact: true }).first().click()
   await expect(page.getByTestId('result-card').first()).toBeVisible()
 }
@@ -225,34 +230,33 @@ test('詳情卡頭的屬性欄在星星右側,有階段說明與八項屬性,數
   await card(page, '忍冬').getByRole('button', { name: '檢視忍冬的詳情' }).click()
   const dialog = page.getByRole('dialog', { name: '忍冬' })
   const attrs = dialog.getByTestId('operator-attributes')
-  await expect(attrs.getByTestId('attributes-stage')).toHaveText(`精${a.phase} ${a.level}級`)
+  await expect(attrs.getByTestId('attributes-level')).toHaveText(`精${a.phase} ${a.level}級`)
   await expect(attrs.locator('.attr')).toHaveText(attributeTexts(a))
   const stars = (await dialog.locator('.stars').boundingBox())!
   const box = (await attrs.boundingBox())!
   expect(box.x).toBeGreaterThan(stars.x + stars.width)
 })
 
-test('屬性欄在兩排屬性之後有所屬勢力那一行,有隱藏勢力時再一行;字串取自幹員檔', async ({ page }) => {
+test('屬性欄在兩排屬性之後有勢力那一行,有隱藏勢力時再一行;字串取自幹員檔', async ({ page }) => {
   await search(page, '暈眩')
   await card(page, '忍冬').getByRole('button', { name: '檢視忍冬的詳情' }).click()
   const dialog = page.getByRole('dialog', { name: '忍冬' })
-  await expect(dialog.getByTestId('operator-attributes').locator('.attr-faction')).toHaveText(factionTexts('忍冬'))
+  await expect(dialog.getByTestId('operator-attributes').locator('.attr-power')).toHaveText(powerTexts('忍冬'))
   await page.keyboard.press('Escape')
   await page.getByRole('radio', { name: '台服' }).click()
   await card(page, '忍冬').getByRole('button', { name: '檢視忍冬的詳情' }).click()
-  await expect(dialog.getByTestId('operator-attributes').locator('.attr-faction')).toHaveText(factionTexts('忍冬', 'tw'))
+  await expect(dialog.getByTestId('operator-attributes').locator('.attr-power')).toHaveText(powerTexts('忍冬', 'tw'))
 })
 
 test('有隱藏勢力的幹員有隱藏勢力那一行,沒有的幹員沒有', async ({ page }) => {
-  await withFactions(page, { faction: ['甲國', '乙團'], hidden: [['丙國'], ['丁國', '戊幫']] })
-  await search(page, '暈眩')
+  await gotoWithPowers(page, { power: ['甲國', '乙團'], hiddenPowers: [['丙國'], ['丁國', '戊幫']] })
+  await pickKeyword(page, '暈眩')
   await card(page, '忍冬').getByRole('button', { name: '檢視忍冬的詳情' }).click()
-  const lines = page.getByRole('dialog', { name: '忍冬' }).getByTestId('operator-attributes').locator('.attr-faction')
+  const lines = page.getByRole('dialog', { name: '忍冬' }).getByTestId('operator-attributes').locator('.attr-power')
   await expect(lines).toHaveText(['所屬勢力 甲國 · 乙團', '隱藏勢力 丙國、丁國 · 戊幫'])
 
-  await page.unrouteAll()
-  await withFactions(page, { faction: ['甲國'], hidden: [] })
-  await search(page, '暈眩')
+  await gotoWithPowers(page, { power: ['甲國'], hiddenPowers: [] })
+  await pickKeyword(page, '暈眩')
   await card(page, '忍冬').getByRole('button', { name: '檢視忍冬的詳情' }).click()
   await expect(lines).toHaveText(['所屬勢力 甲國'])
 })

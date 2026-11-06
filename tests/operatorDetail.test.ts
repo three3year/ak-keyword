@@ -1,16 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { attachOperatorFiles, buildIndex } from '../build/buildIndex'
-import type { RawServer } from '../build/raw'
-import { branchName, operatorDetail } from '../src/core/query'
-import type { DetailEntry, OperatorDetail, SearchCondition, Server } from '../src/core/types'
-import { applying, basicSkill, COMMON_TERMS, highlights, masteredSkill, operator, plain, server } from './fixtures'
-
-function detail(raw: { cn: RawServer; tw?: RawServer }, id: string, opts: { server?: Server; conditions?: SearchCondition[] } = {}): OperatorDetail {
-  const { index, operatorFiles } = buildIndex(raw)
-  const file = operatorFiles.find((f) => f.id === id)!
-  const op = index.operators.find((o) => o.id === id)!
-  return operatorDetail(file, { server: opts.server ?? 'cn', conditions: opts.conditions ?? [], branchName: branchName(index, op) })
-}
+import type { DetailEntry, OperatorDetail } from '../src/core/types'
+import { applying, basicSkill, COMMON_TERMS, highlights, masteredSkill, operator, operatorDetailOf, plain, server } from './fixtures'
 
 const entriesOf = (d: OperatorDetail, label: string): DetailEntry[] => d.tabs.find((t) => t.label === label)?.entries ?? []
 
@@ -38,7 +29,7 @@ function caster() {
 
 describe('幹員詳情', () => {
   test('每段敘述一個分頁,依序是特性、各天賦、各技能,標籤是敘述來源;預設特性;沒有關鍵字的敘述也列出', () => {
-    const d = detail({ cn: caster() }, 'char_001_x')
+    const d = operatorDetailOf({ cn: caster() }, 'char_001_x')
     expect(d.tabs.map((t) => [t.kind, t.label])).toEqual([
       ['trait', '特性'],
       ['talent', '天賦1'],
@@ -57,7 +48,7 @@ describe('幹員詳情', () => {
       terms: COMMON_TERMS,
       operators: { char_002_low: operator({ name: '低星', rarity: 1, trait: '不占部署位', talents: [{ name: '支援', description: '攻击力+10%' }] }) },
     })
-    const d = detail({ cn }, 'char_002_low')
+    const d = operatorDetailOf({ cn }, 'char_002_low')
     expect(d.tabs.map((t) => t.label)).toEqual(['特性', '天賦1'])
     expect(d.defaultTab).toBe(0)
   })
@@ -86,7 +77,7 @@ describe('幹員詳情', () => {
         basicSkill('sktok_ice_1', '冰息', { description: '吐息', skillType: 'AUTO', sp: { spType: 8 } }),
       ],
     })
-    const d = detail({ cn }, 'char_300_owner')
+    const d = operatorDetailOf({ cn }, 'char_300_owner')
     expect(d.tabs.map((t) => [t.label, t.entries.map((e) => [e.source, e.name, e.summon])])).toEqual([
       ['特性', [['特性', 'corecaster', undefined]]],
       ['天賦1', [['天賦1', '主天赋', undefined]]],
@@ -122,7 +113,7 @@ describe('幹員詳情', () => {
         basicSkill('sktok_ice_1', '冰息', { description: '吐息' }),
       ],
     })
-    const d = detail({ cn }, 'char_300_owner')
+    const d = operatorDetailOf({ cn }, 'char_300_owner')
     expect(['技能1', '技能2', '技能3'].map((l) => entriesOf(d, l).map((e) => e.summon ?? e.source))).toEqual([
       ['技能1', '冰灵'],
       ['技能2'],
@@ -147,7 +138,7 @@ describe('幹員詳情', () => {
       },
       skills: [basicSkill('sktok_1', '冲撞', { description: '撞击' })],
     })
-    const d = detail({ cn }, 'char_302_b')
+    const d = operatorDetailOf({ cn }, 'char_302_b')
     expect(d.tabs.map((t) => [t.label, t.entries.map((e) => e.source)])).toEqual([
       ['特性', ['特性']],
       ['天賦1', ['天賦1']],
@@ -169,7 +160,7 @@ describe('幹員詳情', () => {
       },
       skills: [masteredSkill('sk_c_1', '召', { description: '召唤' }, { description: '召唤' }), basicSkill('sktok_1', '冲撞', { description: '撞击' })],
     })
-    const d = detail({ cn }, 'char_303_c')
+    const d = operatorDetailOf({ cn }, 'char_303_c')
     expect(['天賦1', '技能1'].map((l) => entriesOf(d, l).map((e) => e.source))).toEqual([
       ['天賦1'],
       ['技能1', '召喚物技能1'],
@@ -199,7 +190,7 @@ describe('幹員詳情', () => {
         basicSkill('sktok_t_3', '突袭', { description: '突击' }),
       ],
     })
-    const d = detail({ cn }, 'char_306_t')
+    const d = operatorDetailOf({ cn }, 'char_306_t')
     expect(['天賦1', '技能1', '技能2', '技能3'].map((l) => entriesOf(d, l).map((e) => [e.source, e.name]))).toEqual([
       [['天賦1', '分身']],
       [['技能1', 'sk_t_1'], ['召喚物技能1', '暗夜'], ['召喚物特性', undefined], ['召喚物套用天賦1', '幻象']],
@@ -229,7 +220,7 @@ describe('幹員詳情', () => {
     })
     const { warnings } = buildIndex({ cn })
     expect(warnings).toEqual([])
-    const d = detail({ cn }, 'char_307_e')
+    const d = operatorDetailOf({ cn }, 'char_307_e')
     expect(['技能1', '技能2'].map((l) => entriesOf(d, l).map((e) => [e.source, e.name]))).toEqual([
       [['技能1', '谋略'], ['召喚物技能1', '开局']],
       [['技能2', '变革'], ['召喚物技能2', '变革已至']],
@@ -248,7 +239,7 @@ describe('幹員詳情', () => {
         masteredSkill('sk_v_2', '召狮', { description: '召唤' }, { description: '召唤' }),
       ],
     })
-    const d = detail({ cn }, 'char_309_v')
+    const d = operatorDetailOf({ cn }, 'char_309_v')
     expect(['技能1', '技能2'].map((l) => entriesOf(d, l).map((e) => [e.source, e.summon, plain(e.stages[0].runs)]))).toEqual([
       [['技能1', undefined, '攻击力提升']],
       [
@@ -285,7 +276,7 @@ describe('幹員詳情', () => {
     })
     const { warnings } = buildIndex({ cn })
     expect(warnings.filter((w) => w.includes('token_304_a'))).toHaveLength(1)
-    const d = detail({ cn }, 'char_304_m')
+    const d = operatorDetailOf({ cn }, 'char_304_m')
     expect(d.tabs.at(-1)!.entries.map((e) => [e.source, e.summon])).toEqual([
       ['技能1', undefined],
       ['召喚物套用天賦1', '甲型'],
@@ -295,7 +286,7 @@ describe('幹員詳情', () => {
   test('特性的名稱是分支名稱', () => {
     const cn = caster()
     cn.uniequipTable = { equipDict: {}, subProfDict: { corecaster: { subProfessionId: 'corecaster', subProfessionName: '中坚术师' } } }
-    expect(entriesOf(detail({ cn }, 'char_001_x'), '特性').map((e) => [e.source, e.name])).toEqual([['特性', '中坚术师']])
+    expect(entriesOf(operatorDetailOf({ cn }, 'char_001_x'), '特性').map((e) => [e.source, e.name])).toEqual([['特性', '中坚术师']])
   })
 
   test('召喚物的同一段技能文字相同但技力不同時不合併', () => {
@@ -311,7 +302,7 @@ describe('幹員詳情', () => {
         basicSkill('sktok_b', '冲击', { description: '攻击力提升', sp: { spCost: 20 } }),
       ],
     })
-    const skills = detail({ cn }, 'char_304_m').tabs.at(-1)!.entries.filter((e) => e.summon)
+    const skills = operatorDetailOf({ cn }, 'char_304_m').tabs.at(-1)!.entries.filter((e) => e.summon)
     expect(skills.map((e) => [e.summon, e.stages[0].stats?.sp?.cost])).toEqual([
       ['甲型', 10],
       ['乙型', 20],
@@ -327,7 +318,7 @@ describe('幹員詳情', () => {
         { id: 'uniequip_003_m', charId: 'char_200_m', name: '乙模組', code: 'CCR-Y', talents: [{ index: -1, name: '寒流', description: '攻击力+6%' }] },
       ],
     })
-    const [added] = entriesOf(detail({ cn }, 'char_200_m'), '天賦2')
+    const [added] = entriesOf(operatorDetailOf({ cn }, 'char_200_m'), '天賦2')
     expect([added.source, added.name]).toEqual(['天賦2', '寒流'])
     expect(added.stages.map((s) => [s.label, s.absent ?? false, s.module])).toEqual([
       ['無模組', true, undefined],
@@ -338,7 +329,7 @@ describe('幹員詳情', () => {
   })
 
   test('技能預設停在專精3,不看命中', () => {
-    const d = detail({ cn: caster() }, 'char_001_x', { conditions: applying('ba.cold') })
+    const d = operatorDetailOf({ cn: caster() }, 'char_001_x', { conditions: applying('ba.cold') })
     const [skill1] = entriesOf(d, '技能1')
     expect(skill1.stages.map((s) => [s.label, s.hit])).toEqual([
       ['等級7', false],
@@ -348,7 +339,7 @@ describe('幹員詳情', () => {
   })
 
   test('命中目前搜尋條件的階段有高亮、命中旗標與效果類型;未命中的階段沒有', () => {
-    const d = detail({ cn: caster() }, 'char_001_x', { conditions: applying('ba.cold') })
+    const d = operatorDetailOf({ cn: caster() }, 'char_001_x', { conditions: applying('ba.cold') })
     const [frozen] = entriesOf(d, '技能2')
     const [lv7, m3] = frozen.stages
     expect([m3.hit, m3.effects]).toEqual([true, { 'ba.cold': ['apply'] }])
@@ -363,7 +354,7 @@ describe('幹員詳情', () => {
       terms: COMMON_TERMS,
       operators: { char_001_x: operator({ name: '甲', talents: [{ name: '冰', description: '对<$ba.cold>寒冷</>敌人造成伤害，并使其<$ba.stun>晕眩</>' }] }) },
     })
-    const [talent] = entriesOf(detail({ cn }, 'char_001_x', { conditions: applying('ba.cold', 'ba.stun') }), '天賦1')
+    const [talent] = entriesOf(operatorDetailOf({ cn }, 'char_001_x', { conditions: applying('ba.cold', 'ba.stun') }), '天賦1')
     expect(talent.stages[0].effects).toEqual({ 'ba.stun': ['apply'] })
     expect(lit(talent.stages[0].runs)).toEqual(['晕眩'])
     expect(highlights(talent.stages[0].runs)).toEqual([
@@ -373,14 +364,14 @@ describe('幹員詳情', () => {
   })
 
   test('沒有搜尋條件時沒有命中、效果類型與高亮', () => {
-    const d = detail({ cn: caster() }, 'char_001_x')
+    const d = operatorDetailOf({ cn: caster() }, 'char_001_x')
     for (const tab of d.tabs)
       for (const e of tab.entries)
         for (const s of e.stages) expect([s.hit, s.effects, lit(s.runs)]).toEqual([false, {}, []])
   })
 
   test('技能各階段帶技力與圖示,沒有關鍵字的技能也一樣', () => {
-    const [skill1] = entriesOf(detail({ cn: caster() }, 'char_001_x'), '技能1')
+    const [skill1] = entriesOf(operatorDetailOf({ cn: caster() }, 'char_001_x'), '技能1')
     expect(skill1.icon).toBe('skill-icons/sk_1.webp')
     expect(skill1.stages.map((s) => s.stats?.sp?.cost)).toEqual([9, 8])
   })
@@ -403,7 +394,7 @@ describe('幹員詳情', () => {
     tw.uniequipTable = {
       equipDict: { uniequip_002_m: { uniEquipId: 'uniequip_002_m', uniEquipName: '甲模組', typeIcon: 'ccr-x', charId: 'char_630_m', type: 'ADVANCED' } },
     }
-    const twDetail = detail({ cn, tw }, 'char_630_m', { server: 'tw' })
+    const twDetail = operatorDetailOf({ cn, tw }, 'char_630_m', { server: 'tw' })
     expect(entriesOf(twDetail, '特性')[0].stages.map((s) => [s.label, plain(s.runs)])).toEqual([
       ['無模組', '攻擊造成法術傷害'],
       ['模組3 · CCR-X', '攻击造成法术伤害\n攻击使敌人寒冷'],
@@ -411,7 +402,7 @@ describe('幹員詳情', () => {
     const [twSkill] = entriesOf(twDetail, '技能1')
     expect([twSkill.name, plain(twSkill.stages[1].runs), twSkill.stages[1].stats?.sp?.cost]).toEqual(['強擊', '攻擊力+80%', 28])
 
-    const cnDetail = detail({ cn, tw }, 'char_630_m', { server: 'cn' })
+    const cnDetail = operatorDetailOf({ cn, tw }, 'char_630_m', { server: 'cn' })
     expect(entriesOf(cnDetail, '特性')[0].stages.map((s) => [s.label, s.twUnreleased ?? false])).toEqual([
       ['無模組', false],
       ['模組3 · CCR-X', false],
@@ -427,7 +418,7 @@ describe('幹員詳情', () => {
       modules: [{ id: 'uniequip_002_n', charId: 'char_631_n', name: '新模组', code: 'CCR-X', trait: { add: '攻击使敌人<$ba.cold>寒冷</>' } }],
     })
     const tw = server({ terms: COMMON_TERMS, operators: {} })
-    const d = detail({ cn, tw }, 'char_631_n', { server: 'cn' })
+    const d = operatorDetailOf({ cn, tw }, 'char_631_n', { server: 'cn' })
     expect(entriesOf(d, '特性')[0].stages.map((s) => [s.label, s.twUnreleased ?? false])).toEqual([
       ['無模組', false],
       ['模組3 · CCR-X', false],
