@@ -69,7 +69,7 @@ npm run accept-warnings        # 把已知警告清單改成最近一次建置�
 | `effect-overrides.json` | 效果類型覆寫檔(由 `build/applyReview.ts` 維護)。 |
 | `excluded-terms.json` | 談不上效果類型、不當關鍵字的術語 id(隊伍名、綁定、部署費用下限等)。不進關鍵字面板,敘述中顯示為一般文字。新增一個 id 即可。 |
 | `prts-pages.json` | 幹員 id → PRTS 頁名。結果卡的幹員名稱預設連到陸服名的 PRTS 頁;陸服名與其他幹員重複(例如阿米婭的職業形態)時必須在這裡照 PRTS 實際頁名指定,否則建置失敗。 |
-| `tw-faction-names.json` | 台服勢力 ID → 繁中名稱(台服資料沒有勢力名稱表),照台服遊戲實際用字。台服用到的勢力 ID 不在這裡時報建置警告,畫面暫用陸服的簡體名稱;新增一筆即可。 |
+| `tw-power-names.json` | 台服勢力 ID → 繁中名稱(台服資料沒有勢力名稱表),照台服遊戲實際用字。台服用到的勢力 ID 不在這裡時報建置警告,畫面暫用陸服的簡體名稱;新增一筆即可。 |
 | `known-warnings.json` | 已知警告清單:確認是上游資料問題的建置警告全文(可含換行)。建置只把清單裡沒有的列為新警告。由 `npm run accept-warnings` 維護,不手動編輯。 |
 
 ## 已知的近似

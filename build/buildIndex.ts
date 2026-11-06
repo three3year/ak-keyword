@@ -17,8 +17,9 @@ import type {
   IndexSummon,
   IndexText,
   OperatorAttributes,
-  OperatorFactions,
   OperatorFile,
+  OperatorPowers,
+  PerServer,
   Profession,
   Run,
   SearchIndex,
@@ -87,9 +88,7 @@ export interface PendingReview {
   where: string[]
 }
 
-export interface BuildInput {
-  cn: RawServer
-  tw?: RawServer
+export interface BuildInput extends PerServer<RawServer> {
   groups?: KeywordGroup[]
   supplements?: SupplementKeyword[]
   overrides?: Overrides
@@ -98,7 +97,7 @@ export interface BuildInput {
   /** 維護者對照:幹員 id → PRTS 頁名。陸服名與其他幹員重複(例如阿米婭的職業形態)時必填。 */
   prtsPages?: Record<string, string>
   /** 維護者對照:台服勢力 ID → 繁中名稱(台服資料沒有勢力名稱表)。 */
-  twFactionNames?: Record<string, string>
+  twPowerNames?: Record<string, string>
 }
 
 export interface BuildOutput {
@@ -261,9 +260,9 @@ class Builder {
     })
     const attributes: OperatorFile['attributes'] = { cn: operatorAttributes(char) }
     if (twChar) attributes.tw = operatorAttributes(twChar)
-    const factions: OperatorFile['factions'] = { cn: this.factions('cn', char) }
-    if (twChar) factions.tw = this.factions('tw', twChar)
-    this.operatorFiles.push({ id, inTw: !!twChar, modules: indexModules, summons, entries, attributes, factions })
+    const powers: OperatorFile['powers'] = { cn: this.powers('cn', char) }
+    if (twChar) powers.tw = this.powers('tw', twChar)
+    this.operatorFiles.push({ id, inTw: !!twChar, modules: indexModules, summons, entries, attributes, powers })
 
     return {
       id,
@@ -280,14 +279,14 @@ class Builder {
     }
   }
 
-  factions(server: Server, char: RawCharacter): OperatorFactions {
-    const names = (p: RawPower) => powerIds(p).map((id) => this.factionName(server, id))
-    return { faction: names(char), hidden: (char.subPower ?? []).map(names) }
+  powers(server: Server, char: RawCharacter): OperatorPowers {
+    const names = (p: RawPower) => powerIds(p).map((id) => this.powerName(server, id))
+    return { power: names(char), hiddenPowers: (char.subPower ?? []).map(names) }
   }
 
-  factionName(server: Server, id: string): string {
+  powerName(server: Server, id: string): string {
     if (server === 'tw') {
-      const name = this.input.twFactionNames?.[id]
+      const name = this.input.twPowerNames?.[id]
       if (name) return name
       this.warnOnce(`台服勢力名稱對照表沒有 ${id},改用陸服名稱`)
     }
@@ -585,8 +584,11 @@ function hasHits(text: IndexText): boolean {
   return Object.keys(text.hits).length > 0
 }
 
+const PHASE_NUMBERS = [0, 1, 2] as const
+
 function operatorAttributes(char: RawCharacter): OperatorAttributes {
-  const phase = char.phases.length - 1
+  const phase: OperatorAttributes['phase'] | undefined = PHASE_NUMBERS[char.phases.length - 1]
+  if (phase === undefined) throw new Error(`${char.name}:精英化階段有 ${char.phases.length} 個,預期 1–3 個`)
   const top = char.phases[phase]
   const a = top.attributesKeyFrames.at(-1)!.data
   const trust = char.favorKeyFrames?.at(-1)?.data
@@ -599,8 +601,8 @@ function operatorAttributes(char: RawCharacter): OperatorAttributes {
     res: a.magicResistance,
     cost: a.cost,
     block: a.blockCnt,
-    interval: a.baseAttackTime,
-    redeploy: a.respawnTime,
+    intervalSeconds: a.baseAttackTime,
+    redeploySeconds: a.respawnTime,
     trust: { hp: trust?.maxHp ?? 0, atk: trust?.atk ?? 0, def: trust?.def ?? 0 },
   }
 }

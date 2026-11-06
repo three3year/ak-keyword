@@ -2,6 +2,17 @@
 
 export type Server = 'cn' | 'tw'
 
+/** 陸服與台服各一份的資料;台服沒有(例如台服未實裝)時省略 tw。 */
+export interface PerServer<T> {
+  cn: T
+  tw?: T
+}
+
+/** 取該伺服器的那一份;台服沒有時用陸服的。 */
+export function onServer<T>(x: PerServer<T>, server: Server): T {
+  return (server === 'tw' && x.tw) || x.cn
+}
+
 /** 敘述與關鍵字的關係:施加、利用、反制。一段敘述對同一關鍵字可同時有多種。 */
 export type EffectType = 'apply' | 'exploit' | 'counter'
 
@@ -103,7 +114,7 @@ export interface IndexStage {
   /** 台服文字與陸服的術語、數值、補充關鍵字一致,陸服模式可顯示台服文字。 */
   twSame?: boolean
   /** 技能階段的技力:各伺服器各用自己的數值;台服與陸服相同或台服沒有時省略 tw。 */
-  stats?: { cn: SkillStats; tw?: SkillStats }
+  stats?: PerServer<SkillStats>
 }
 
 export type EntryKind = 'skill' | 'talent' | 'trait'
@@ -166,7 +177,8 @@ export interface IndexOperator {
 
 /** 屬性:最後一個階段滿級的數值,不含潛能與模組的加成。 */
 export interface OperatorAttributes {
-  phase: number
+  /** 精英化:0、1、2。 */
+  phase: 0 | 1 | 2
   level: number
   hp: number
   atk: number
@@ -174,19 +186,19 @@ export interface OperatorAttributes {
   res: number
   cost: number
   block: number
-  interval: number
-  redeploy: number
+  intervalSeconds: number
+  redeploySeconds: number
   /** 信賴 100% 的加成,只有生命、攻擊、防禦。 */
   trust: { hp: number; atk: number; def: number }
 }
 
 /** 勢力與隱藏勢力的名稱(該伺服器的用字);每個勢力是有值的國家、組織、團隊依序排列。 */
-export interface OperatorFactions {
-  faction: string[]
-  hidden: string[][]
+export interface OperatorPowers {
+  power: string[]
+  hiddenPowers: string[][]
 }
 
-/** 幹員檔:一位幹員全部的特性、天賦、技能(含召喚物的),不論有沒有關鍵字;打開幹員詳情時才下載。 */
+/** 幹員檔:一位幹員全部的特性、天賦、技能(含召喚物的),不論有沒有關鍵字,加上陸服與台服各自的屬性、勢力與隱藏勢力;打開幹員詳情時才下載。 */
 export interface OperatorFile {
   id: string
   inTw: boolean
@@ -194,9 +206,9 @@ export interface OperatorFile {
   summons: IndexSummon[]
   entries: IndexEntry[]
   /** 各伺服器各自的屬性;台服未實裝的幹員沒有 tw。 */
-  attributes: { cn: OperatorAttributes; tw?: OperatorAttributes }
-  /** 各伺服器各自的勢力名稱;台服未實裝的幹員沒有 tw。 */
-  factions: { cn: OperatorFactions; tw?: OperatorFactions }
+  attributes: PerServer<OperatorAttributes>
+  /** 各伺服器各自的勢力與隱藏勢力名稱;台服未實裝的幹員沒有 tw。 */
+  powers: PerServer<OperatorPowers>
 }
 
 export interface IndexKeyword {
@@ -220,7 +232,7 @@ export interface DataVersion {
 }
 
 export interface SearchIndex {
-  versions: { cn: DataVersion; tw?: DataVersion }
+  versions: PerServer<DataVersion>
   /** 面板排列:維護者清單的分組與行,最後是「未分組」;只含索引裡的關鍵字,不含空行與空分組。 */
   groups: IndexGroup[]
   keywords: IndexKeyword[]
@@ -308,27 +320,23 @@ export interface DetailTab {
 }
 
 /** 生命、攻擊或防禦:值與信賴加成;加成為 0 時沒有 trust。 */
-export interface DetailStat {
+export interface TrustedAttribute {
   value: number
   trust?: number
 }
 
 /** 幹員詳情卡頭的屬性(目前伺服器的數值)。 */
 export interface DetailAttributes {
-  /** 階段說明,例如「精2 90級」。 */
-  stage: string
+  /** 屬性取自的精英化與等級,例如「精2 90級」。 */
+  levelLabel: string
   cost: number
   block: number
-  interval: number
-  redeploy: number
-  hp: DetailStat
-  atk: DetailStat
-  def: DetailStat
+  intervalSeconds: number
+  redeploySeconds: number
+  hp: TrustedAttribute
+  atk: TrustedAttribute
+  def: TrustedAttribute
   res: number
-  /** 所屬勢力,各層以「 · 」串起;三層都空時沒有。 */
-  faction?: string
-  /** 隱藏勢力,每個照所屬勢力串成一段,多段以「、」分隔;沒有時沒有。 */
-  hiddenFactions?: string
 }
 
 export interface OperatorDetail {
@@ -337,4 +345,8 @@ export interface OperatorDetail {
   /** 一開始顯示的分頁:第一個分頁(特性)。 */
   defaultTab: number
   attributes: DetailAttributes
+  /** 勢力,各層以「 · 」串起;三層都空時沒有。 */
+  power?: string
+  /** 隱藏勢力,每個照勢力的方式串成一段,多段以「、」分隔;沒有時沒有。 */
+  hiddenPowers?: string
 }

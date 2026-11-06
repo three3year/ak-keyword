@@ -92,8 +92,8 @@ const attributeItems = computed(() => {
   return [
     { label: '費用', value: `${a.cost}` },
     { label: '阻擋數', value: `${a.block}` },
-    { label: '攻擊間隔', value: `${a.interval}s` },
-    { label: '再部署時間', value: `${a.redeploy}s` },
+    { label: '攻擊間隔', value: `${a.intervalSeconds}s` },
+    { label: '再部署時間', value: `${a.redeploySeconds}s` },
     { label: '生命', value: `${a.hp.value}`, trust: a.hp.trust },
     { label: '攻擊', value: `${a.atk.value}`, trust: a.atk.trust },
     { label: '防禦', value: `${a.def.value}`, trust: a.def.trust },
@@ -101,11 +101,11 @@ const attributeItems = computed(() => {
   ]
 })
 
-const factionItems = computed(() => {
-  const a = attributes.value
+const powerItems = computed(() => {
+  const d = detail.value
   return [
-    { label: '所屬勢力', value: a?.faction },
-    { label: '隱藏勢力', value: a?.hiddenFactions },
+    { label: '所屬勢力', value: d?.power },
+    { label: '隱藏勢力', value: d?.hiddenPowers },
   ].filter((item) => item.value)
 })
 
@@ -179,7 +179,7 @@ function onAvatarError(e: Event) {
           </div>
         </div>
         <div v-if="attributes" class="op-attrs" data-testid="operator-attributes">
-          <div class="attrs-stage" data-testid="attributes-stage">{{ attributes.stage }}</div>
+          <div class="attrs-level" data-testid="attributes-level">{{ attributes.levelLabel }}</div>
           <dl class="attrs-grid">
             <div v-for="item in attributeItems" :key="item.label" class="attr">
               <dt>{{ item.label }}</dt> <dd
@@ -188,8 +188,8 @@ function onAvatarError(e: Event) {
               >
             </div>
           </dl>
-          <dl v-if="factionItems.length" class="attrs-factions">
-            <div v-for="item in factionItems" :key="item.label" class="attr-faction">
+          <dl v-if="powerItems.length" class="attrs-powers">
+            <div v-for="item in powerItems" :key="item.label" class="attr-power">
               <dt>{{ item.label }}</dt> <dd>{{ item.value }}</dd>
             </div>
           </dl>

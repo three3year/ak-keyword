@@ -170,7 +170,7 @@ function onPopState() {
 // 詳情打開時背後的頁面不捲動
 watch(detail, (d) => document.documentElement.classList.toggle('modal-open', !!d))
 
-// ---- 提示框:以事件委派處理所有帶 data-k(關鍵字)與 data-p(潛能加成)的元素 ----
+// ---- 提示框:以事件委派處理所有帶 data-k(關鍵字)與 data-p(潛能加成、信賴加成)的元素 ----
 
 function target(e: Event): HTMLElement | null {
   return (e.target as HTMLElement | null)?.closest?.('[data-k],[data-p]') ?? null
