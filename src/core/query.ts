@@ -14,6 +14,7 @@ import type {
   IndexText,
   OperatorAttributes,
   OperatorDetail,
+  OperatorFactions,
   OperatorFile,
   QueryOptions,
   ResultEntry,
@@ -254,7 +255,10 @@ export function operatorDetail(file: OperatorFile, opts: Pick<QueryOptions, 'con
   return {
     tabs: tabs.map((t): DetailTab => ({ kind: t.own.kind, label: t.label, entries: mergeSummonEntries(t.entries).map(withDefault) })),
     defaultTab: 0,
-    attributes: detailAttributes((opts.server === 'tw' && file.attributes.tw) || file.attributes.cn),
+    attributes: {
+      ...detailAttributes((opts.server === 'tw' && file.attributes.tw) || file.attributes.cn),
+      ...detailFactions((opts.server === 'tw' && file.factions.tw) || file.factions.cn),
+    },
   }
 }
 
@@ -272,6 +276,14 @@ function detailAttributes(a: OperatorAttributes): DetailAttributes {
     def: stat(a.def, a.trust.def),
     res: a.res,
   }
+}
+
+/** 卡頭的勢力字串:各層以「 · 」串起,隱藏勢力多段以「、」分隔;空的不輸出。 */
+function detailFactions(f: OperatorFactions): Pick<DetailAttributes, 'faction' | 'hiddenFactions'> {
+  const out: Pick<DetailAttributes, 'faction' | 'hiddenFactions'> = {}
+  if (f.faction.length > 0) out.faction = f.faction.join(' · ')
+  if (f.hidden.length > 0) out.hiddenFactions = f.hidden.map((h) => h.join(' · ')).join('、')
+  return out
 }
 
 /** 有搜尋條件或職業條件其中一種就開始搜尋;只有星級篩選不算。 */

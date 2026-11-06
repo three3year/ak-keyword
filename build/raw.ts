@@ -61,7 +61,14 @@ export interface RawPhase {
   attributesKeyFrames: RawKeyFrame[]
 }
 
-export interface RawCharacter {
+/** 勢力的三層 ID:國家、組織、團隊。陸服空的層為 null,台服直接省略該鍵。 */
+export interface RawPower {
+  nationId?: string | null
+  groupId?: string | null
+  teamId?: string | null
+}
+
+export interface RawCharacter extends RawPower {
   name: string
   description?: string | null
   potentialItemId?: string | null
@@ -78,6 +85,8 @@ export interface RawCharacter {
   skills: RawCharSkill[]
   displayTokenDict?: Record<string, boolean> | null
   talents?: { candidates: RawTalentCandidate[] | null }[] | null
+  /** 隱藏勢力;沒有時陸服為 null,台服省略。 */
+  subPower?: RawPower[] | null
 }
 
 export interface RawSkillLevel {
@@ -165,6 +174,8 @@ export interface RawServer {
   charPatchTable?: RawCharPatchTable
   /** 只有陸服用到:以潛能信物編號近似實裝順序。 */
   itemTable?: RawItemTable
+  /** 勢力名稱表(handbook_team_table):勢力 ID → 名稱。只有陸服有。 */
+  handbookTeamTable?: Record<string, { powerId: string; powerName: string }>
   /** 這份資料的下載時間(ISO 8601)。不在遊戲資料裡,由建置腳本從快取讀出。 */
   downloadedAt: string
 }

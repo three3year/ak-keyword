@@ -17,6 +17,7 @@ import type {
   IndexSummon,
   IndexText,
   OperatorAttributes,
+  OperatorFactions,
   OperatorFile,
   Profession,
   Run,
@@ -36,6 +37,7 @@ import type {
   RawEquipPart,
   RawEquipTalentCandidate,
   RawEquipTraitCandidate,
+  RawPower,
   RawServer,
   RawSkill,
   RawSkillLevel,
@@ -95,6 +97,8 @@ export interface BuildInput {
   excludedTerms?: string[]
   /** 維護者對照:幹員 id → PRTS 頁名。陸服名與其他幹員重複(例如阿米婭的職業形態)時必填。 */
   prtsPages?: Record<string, string>
+  /** 維護者對照:台服勢力 ID → 繁中名稱(台服資料沒有勢力名稱表)。 */
+  twFactionNames?: Record<string, string>
 }
 
 export interface BuildOutput {
@@ -257,7 +261,9 @@ class Builder {
     })
     const attributes: OperatorFile['attributes'] = { cn: operatorAttributes(char) }
     if (twChar) attributes.tw = operatorAttributes(twChar)
-    this.operatorFiles.push({ id, inTw: !!twChar, modules: indexModules, summons, entries, attributes })
+    const factions: OperatorFile['factions'] = { cn: this.factions('cn', char) }
+    if (twChar) factions.tw = this.factions('tw', twChar)
+    this.operatorFiles.push({ id, inTw: !!twChar, modules: indexModules, summons, entries, attributes, factions })
 
     return {
       id,
@@ -272,6 +278,32 @@ class Builder {
       summons,
       entries: entries.filter((e) => e.stages.some((st) => hasHits(st.cn) || (st.tw && hasHits(st.tw)))),
     }
+  }
+
+  // ---------- 勢力 ----------
+
+  /** 勢力與隱藏勢力轉成該伺服器的名稱。 */
+  factions(server: Server, char: RawCharacter): OperatorFactions {
+    const names = (p: RawPower) => powerIds(p).map((id) => this.factionName(server, id))
+    return { faction: names(char), hidden: (char.subPower ?? []).map(names) }
+  }
+
+  /** 陸服用勢力名稱表;台服用維護者對照,沒有時退回陸服名稱。名稱表也查不到時用 ID 本身。 */
+  factionName(server: Server, id: string): string {
+    if (server === 'tw') {
+      const name = this.input.twFactionNames?.[id]
+      if (name) return name
+      this.warnOnce(`台服勢力名稱對照表沒有 ${id},改用陸服名稱`)
+    }
+    const name = this.input.cn.handbookTeamTable?.[id]?.powerName
+    if (name) return name
+    this.warnOnce(`陸服勢力名稱表沒有 ${id},顯示勢力 ID`)
+    return id
+  }
+
+  /** 同一則警告只報一次(同一個勢力 ID 會出現在許多幹員)。 */
+  warnOnce(message: string) {
+    if (!this.warnings.includes(message)) this.warn(message)
   }
 
   // ---------- 技能 ----------
@@ -577,6 +609,11 @@ function operatorAttributes(char: RawCharacter): OperatorAttributes {
     redeploy: a.respawnTime,
     trust: { hp: trust?.maxHp ?? 0, atk: trust?.atk ?? 0, def: trust?.def ?? 0 },
   }
+}
+
+/** 勢力的國家、組織、團隊 ID,依序取有值的;台服省略的鍵視同空。 */
+function powerIds(p: RawPower): string[] {
+  return [p.nationId, p.groupId, p.teamId].filter((id): id is string => !!id)
 }
 
 const PHASES: Record<string, number> = { PHASE_0: 0, PHASE_1: 1, PHASE_2: 2 }
