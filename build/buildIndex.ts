@@ -280,15 +280,11 @@ class Builder {
     }
   }
 
-  // ---------- 勢力 ----------
-
-  /** 勢力與隱藏勢力轉成該伺服器的名稱。 */
   factions(server: Server, char: RawCharacter): OperatorFactions {
     const names = (p: RawPower) => powerIds(p).map((id) => this.factionName(server, id))
     return { faction: names(char), hidden: (char.subPower ?? []).map(names) }
   }
 
-  /** 陸服用勢力名稱表;台服用維護者對照,沒有時退回陸服名稱。名稱表也查不到時用 ID 本身。 */
   factionName(server: Server, id: string): string {
     if (server === 'tw') {
       const name = this.input.twFactionNames?.[id]
@@ -301,7 +297,6 @@ class Builder {
     return id
   }
 
-  /** 同一則警告只報一次(同一個勢力 ID 會出現在許多幹員)。 */
   warnOnce(message: string) {
     if (!this.warnings.includes(message)) this.warn(message)
   }
@@ -590,7 +585,6 @@ function hasHits(text: IndexText): boolean {
   return Object.keys(text.hits).length > 0
 }
 
-/** 屬性:最後一個階段最後一個屬性關鍵幀,加上信賴關鍵幀最後一格的生命、攻擊、防禦;不讀潛能與模組加成。 */
 function operatorAttributes(char: RawCharacter): OperatorAttributes {
   const phase = char.phases.length - 1
   const top = char.phases[phase]
@@ -611,7 +605,6 @@ function operatorAttributes(char: RawCharacter): OperatorAttributes {
   }
 }
 
-/** 勢力的國家、組織、團隊 ID,依序取有值的;台服省略的鍵視同空。 */
 function powerIds(p: RawPower): string[] {
   return [p.nationId, p.groupId, p.teamId].filter((id): id is string => !!id)
 }

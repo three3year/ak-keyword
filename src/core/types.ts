@@ -166,9 +166,7 @@ export interface IndexOperator {
 
 /** 屬性:最後一個階段滿級的數值,不含潛能與模組的加成。 */
 export interface OperatorAttributes {
-  /** 最後一個階段:0、1、2(精0、精1、精2)。 */
   phase: number
-  /** 該階段的滿級等級。 */
   level: number
   hp: number
   atk: number
@@ -176,9 +174,7 @@ export interface OperatorAttributes {
   res: number
   cost: number
   block: number
-  /** 攻擊間隔秒數。 */
   interval: number
-  /** 再部署時間秒數。 */
   redeploy: number
   /** 信賴 100% 的加成,只有生命、攻擊、防禦。 */
   trust: { hp: number; atk: number; def: number }
@@ -187,7 +183,6 @@ export interface OperatorAttributes {
 /** 勢力與隱藏勢力的名稱(該伺服器的用字);每個勢力是有值的國家、組織、團隊依序排列。 */
 export interface OperatorFactions {
   faction: string[]
-  /** 隱藏勢力,最多兩個;沒有時為空清單。 */
   hidden: string[][]
 }
 
@@ -324,9 +319,7 @@ export interface DetailAttributes {
   stage: string
   cost: number
   block: number
-  /** 攻擊間隔秒數,不帶單位。 */
   interval: number
-  /** 再部署時間秒數,不帶單位。 */
   redeploy: number
   hp: DetailStat
   atk: DetailStat

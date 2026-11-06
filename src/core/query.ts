@@ -262,7 +262,6 @@ export function operatorDetail(file: OperatorFile, opts: Pick<QueryOptions, 'con
   }
 }
 
-/** 卡頭的屬性:階段說明「精2 90級」;信賴加成為 0 的項目不帶加成。 */
 function detailAttributes(a: OperatorAttributes): DetailAttributes {
   const stat = (value: number, trust: number): DetailStat => (trust ? { value, trust } : { value })
   return {
@@ -278,7 +277,6 @@ function detailAttributes(a: OperatorAttributes): DetailAttributes {
   }
 }
 
-/** 卡頭的勢力字串:各層以「 · 」串起,隱藏勢力多段以「、」分隔;空的不輸出。 */
 function detailFactions(f: OperatorFactions): Pick<DetailAttributes, 'faction' | 'hiddenFactions'> {
   const out: Pick<DetailAttributes, 'faction' | 'hiddenFactions'> = {}
   if (f.faction.length > 0) out.faction = f.faction.join(' · ')

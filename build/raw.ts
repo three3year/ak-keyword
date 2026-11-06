@@ -36,7 +36,6 @@ export interface RawCharSkill {
   overrideTokenKey?: string | null
 }
 
-/** 屬性關鍵幀的數值(只列建置用到的欄位)。 */
 export interface RawAttributes {
   maxHp: number
   atk: number

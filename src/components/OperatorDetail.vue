@@ -86,7 +86,6 @@ const TRUST_BONUS_TIP = '信賴 100% 加成'
 
 const attributes = computed(() => detail.value?.attributes)
 
-/** 屬性欄的兩排:費用、阻擋數、攻擊間隔、再部署時間;生命、攻擊、防禦、法抗。 */
 const attributeItems = computed(() => {
   const a = attributes.value
   if (!a) return []
@@ -102,7 +101,6 @@ const attributeItems = computed(() => {
   ]
 })
 
-/** 屬性之後的勢力行:所屬勢力、隱藏勢力;沒有的那一行不顯示。 */
 const factionItems = computed(() => {
   const a = attributes.value
   return [

@@ -39,13 +39,11 @@ function operatorFile(name: string): OperatorFile {
   return JSON.parse(readFileSync(`public/${op.detail}`, 'utf8'))
 }
 
-/** 幹員檔裡某位幹員(依索引裡的名稱)在某伺服器的屬性。 */
 export function operatorAttributes(name: string, server: Server = 'cn'): OperatorAttributes {
   const file = operatorFile(name)
   return (server === 'tw' && file.attributes.tw) || file.attributes.cn
 }
 
-/** 屬性欄的勢力那兩行應有的文字:「所屬勢力 …」,有隱藏勢力時再加「隱藏勢力 …」。 */
 export function factionTexts(name: string, server: Server = 'cn'): string[] {
   const file = operatorFile(name)
   const f = (server === 'tw' && file.factions.tw) || file.factions.cn
@@ -54,7 +52,6 @@ export function factionTexts(name: string, server: Server = 'cn'): string[] {
   return lines
 }
 
-/** 把幹員檔裡兩服的勢力換成測試自己造的。要在打開幹員詳情之前呼叫。 */
 export async function withFactions(page: Page, factions: OperatorFactions): Promise<void> {
   await page.route('**/data/operators/**', async (route) => {
     const response = await route.fetch()
@@ -64,7 +61,6 @@ export async function withFactions(page: Page, factions: OperatorFactions): Prom
   })
 }
 
-/** 屬性欄八項屬性應有的文字:「標籤 值」,攻擊間隔與再部署時間加 s,信賴加成不為 0 時附「(+B)」。 */
 export function attributeTexts(a: OperatorAttributes): string[] {
   const withTrust = (value: number, trust: number) => (trust ? `${value}(+${trust})` : `${value}`)
   return [

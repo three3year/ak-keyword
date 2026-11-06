@@ -250,7 +250,6 @@ test('有隱藏勢力的幹員有隱藏勢力那一行,沒有的幹員沒有', a
   const lines = page.getByRole('dialog', { name: '忍冬' }).getByTestId('operator-attributes').locator('.attr-faction')
   await expect(lines).toHaveText(['所屬勢力 甲國 · 乙團', '隱藏勢力 丙國、丁國 · 戊幫'])
 
-  // 重新載入頁面,幹員檔才會重新下載
   await page.unrouteAll()
   await withFactions(page, { faction: ['甲國'], hidden: [] })
   await search(page, '暈眩')

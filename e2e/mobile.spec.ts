@@ -64,7 +64,6 @@ test('手機寬度:幹員詳情占滿螢幕、沒有水平捲動,返回鍵關閉
   const box = (await dialog.boundingBox())!
   const viewport = page.viewportSize()!
   expect([box.x, box.y, box.width, box.height]).toEqual([0, 0, viewport.width, viewport.height])
-  // 屬性欄移到頭像那一列下面;點信賴加成顯示提示
   const attrs = dialog.getByTestId('operator-attributes')
   const avatar = (await dialog.getByRole('link', { name: /^在 PRTS 查看忍冬/ }).boundingBox())!
   expect((await attrs.boundingBox())!.y).toBeGreaterThanOrEqual(avatar.y + avatar.height)
@@ -93,7 +92,6 @@ test('手機寬度:勢力字串過長時在屬性欄內換行,沒有水平捲動
   const dialog = page.getByRole('dialog', { name: '忍冬' })
   const lines = dialog.getByTestId('operator-attributes').locator('.attr-faction')
   await expect(lines).toHaveCount(2)
-  // 換行:隱藏勢力那一行比一行字高
   const hidden = (await lines.nth(1).boundingBox())!
   const firstLine = (await dialog.getByTestId('attributes-stage').boundingBox())!
   expect(hidden.height).toBeGreaterThan(firstLine.height * 1.5)

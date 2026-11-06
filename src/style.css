@@ -1146,7 +1146,6 @@ html.modal-open {
   outline-offset: 2px;
 }
 
-/* 屬性欄:靠右緊貼關閉鈕;兩排屬性各四項,欄位上下對齊 */
 .op-attrs {
   margin-left: auto;
   font-size: 0.82rem;
@@ -1269,7 +1268,6 @@ html.modal-open {
     padding: 0 10px 16px;
   }
 
-  /* 屬性欄移到頭像那一列下面、佔滿寬度,兩排屬性各折成兩欄;關閉鈕留在第一列 */
   .detail-head {
     flex-wrap: wrap;
   }
