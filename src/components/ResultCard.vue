@@ -11,7 +11,7 @@ const props = defineProps<{
   branchName: string
 }>()
 
-/** 點頭像打開幹員詳情;帶著頭像按鈕,關閉後焦點回到它。 */
+/** 點頭像或名稱打開幹員詳情;帶著被點的按鈕,關閉後焦點回到它。 */
 const emit = defineEmits<{ open: [trigger: HTMLElement] }>()
 
 // 卡片狀態(目前分頁、各分頁目前階段)只存在這張卡內;查詢結果重算(op 換成新物件)時回到預設
@@ -70,7 +70,14 @@ function onAvatarError(e: Event) {
       <div class="op-meta">
         <div class="op-title">
           <h3 class="op-name">
-            <a :href="op.prtsUrl" target="_blank" rel="noopener noreferrer" :title="`在 PRTS 查看${op.name}(新分頁)`">{{ op.name }}</a>
+            <button
+              type="button"
+              class="name-btn"
+              :title="`檢視${op.name}的詳情`"
+              @click="emit('open', $event.currentTarget as HTMLElement)"
+            >
+              {{ op.name }}
+            </button>
           </h3>
           <span class="stars" :class="`r${op.rarity}`" :aria-label="`${op.rarity} 星`">{{ '★'.repeat(op.rarity) }}</span>
         </div>

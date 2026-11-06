@@ -259,15 +259,15 @@ input:focus-visible {
   font-size: 1.05rem;
 }
 
-/* 幹員名稱連到 PRTS:強調色加淡底線,滑過時底線加深 */
-.op-name a {
+/* 幹員詳情的名字連到 PRTS:強調色加淡底線,滑過時底線加深 */
+.detail-head .op-name a {
   color: var(--accent);
   text-decoration: underline;
   text-decoration-color: color-mix(in srgb, currentColor 35%, transparent);
   text-underline-offset: 3px;
 }
 
-.op-name a:hover {
+.detail-head .op-name a:hover {
   text-decoration-color: currentColor;
   text-decoration-thickness: 2px;
 }
@@ -924,6 +924,34 @@ input:focus-visible {
 
 .avatar-btn:hover .avatar {
   filter: brightness(1.12);
+}
+
+/* 結果卡名稱打開幹員詳情:平時是一般文字;滑過或鍵盤聚焦時強調色加底線 */
+.name-btn {
+  border: 0;
+  padding: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: inherit;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+/* 滑過名稱或頭像任一個,兩者一起呈現滑過樣式;鍵盤聚焦不連動,各自顯示 */
+.name-btn:hover,
+.name-btn:focus-visible,
+.card-head:has(.avatar-btn:hover) .name-btn {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.card-head:has(.name-btn:hover) .avatar {
+  filter: brightness(1.12);
+}
+
+.card-head:has(.name-btn:hover) .info-badge {
+  background: var(--accent);
 }
 
 /* 低調的「i」:半透明灰點,中心在頭像左上角稍往右下;懸停頭像時變強調色 */

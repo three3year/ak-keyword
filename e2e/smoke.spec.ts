@@ -266,22 +266,6 @@ test('點 A 的定義後再點 B:關掉 A、改顯示 B', async ({ page }) => {
   await expect(tip.locator('.tip-title')).not.toContainText('暈眩')
 })
 
-test('幹員名稱是連到 PRTS 的新分頁連結,頭像是按鈕不是連結', async ({ page }) => {
-  await page.goto('./')
-  await page.getByRole('button', { name: '暈眩', exact: true }).first().click()
-  const card = page.getByTestId('result-card').filter({ has: page.getByRole('heading', { name: '忍冬', exact: true }) })
-  const link = card.getByRole('heading').getByRole('link', { name: '忍冬', exact: true })
-  await expect(link).toHaveAttribute('href', `https://prts.wiki/w/${encodeURIComponent('忍冬')}`)
-  await expect(link).toHaveAttribute('target', '_blank')
-  await expect(link).toHaveAttribute('rel', /noopener/)
-  await expect(link).toHaveAttribute('rel', /noreferrer/)
-  await expect(card.getByRole('link')).toHaveCount(1)
-  // 台服譯名與陸服名不同時仍連到陸服名的頁面
-  await page.getByRole('radio', { name: '台服' }).click()
-  for (const href of await page.locator('[data-testid=result-card] .op-name a').evaluateAll((as) => as.map((a) => a.getAttribute('href'))))
-    expect(href).toMatch(/^https:\/\/prts\.wiki\/w\/.+/)
-})
-
 test('關鍵字面板:補充關鍵字叫推、拉;頂端沒有過濾欄位與清除按鈕,在面板上再點一次該關鍵字即移除', async ({ page }) => {
   await page.goto('./')
   const panel = page.getByRole('complementary', { name: '關鍵字面板' })
