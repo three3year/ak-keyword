@@ -1134,6 +1134,42 @@ html.modal-open {
   height: 56px;
 }
 
+/* 詳情頭像連到 PRTS:左上角常駐「↖」,位置、大小、顏色比照結果卡頭像的「i」;懸停時微亮 */
+.avatar-link {
+  position: relative;
+  flex: none;
+  border-radius: 8px;
+  line-height: 0;
+}
+
+.avatar-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.avatar-link:hover .avatar {
+  filter: brightness(1.12);
+}
+
+.link-badge {
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--info-badge);
+  color: #fff;
+  font: 700 7px/10px system-ui, sans-serif;
+  text-align: center;
+  transition: background-color 0.15s;
+}
+
+.avatar-link:hover .link-badge,
+.avatar-link:focus-visible .link-badge {
+  background: var(--accent);
+}
+
 .detail-close {
   margin-left: auto;
   align-self: flex-start;

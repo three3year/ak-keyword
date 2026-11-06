@@ -1,5 +1,5 @@
 import { expect, type Page, test } from '@playwright/test'
-import { cnOnly } from './data'
+import { cnOnly, twRenamedOperator } from './data'
 
 async function search(page: Page, keyword: string) {
   await page.goto('./')
@@ -261,6 +261,34 @@ test('陸服模式下台服未實裝幹員的大卡不壓灰:卡頭有徽章、�
   // 大卡不是小卡,沒有壓灰;命中敘述與高亮照常顯示
   await expect(flagged.first()).not.toHaveClass(/\bcompact\b/)
   await expect(flagged.first().getByTestId('entry').locator('mark.hl').first()).toBeVisible()
+})
+
+test('詳情的名字與頭像都在新分頁打開 PRTS 的該幹員頁', async ({ page }) => {
+  await search(page, '暈眩')
+  await card(page, '忍冬').getByRole('button', { name: '檢視忍冬的詳情' }).click()
+  const dialog = page.getByRole('dialog', { name: '忍冬' })
+  const name = dialog.getByRole('heading').getByRole('link', { name: '忍冬', exact: true })
+  const avatar = dialog.getByRole('link', { name: '在 PRTS 查看忍冬(新分頁)', exact: true })
+  for (const link of [name, avatar]) {
+    await expect(link).toHaveAttribute('href', `https://prts.wiki/w/${encodeURIComponent('忍冬')}`)
+    await expect(link).toHaveAttribute('target', '_blank')
+    await expect(link).toHaveAttribute('rel', /noopener/)
+    await expect(link).toHaveAttribute('rel', /noreferrer/)
+    await expect(link).toHaveAttribute('title', '在 PRTS 查看忍冬(新分頁)')
+  }
+})
+
+test('台服模式下詳情的名字與頭像仍連到陸服名的 PRTS 頁', async ({ page }) => {
+  const op = twRenamedOperator()
+  await page.goto('./')
+  await page.getByRole('radio', { name: '台服' }).click()
+  await page.getByRole('checkbox', { name: `${op.rarity}★` }).check()
+  await page.getByRole('button', { name: op.profession, exact: true }).click()
+  await card(page, op.name).getByRole('button', { name: `檢視${op.name}的詳情` }).click()
+  const dialog = page.getByRole('dialog', { name: op.name })
+  const href = `https://prts.wiki/w/${encodeURIComponent(op.prtsPage)}`
+  await expect(dialog.getByRole('heading').getByRole('link', { name: op.name, exact: true })).toHaveAttribute('href', href)
+  await expect(dialog.getByRole('link', { name: `在 PRTS 查看${op.name}(新分頁)`, exact: true })).toHaveAttribute('href', href)
 })
 
 test('只有職業條件、沒有命中敘述的結果卡也能打開詳情,詳情裡沒有高亮', async ({ page }) => {

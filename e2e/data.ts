@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import type { Page } from '@playwright/test'
-import type { SearchIndex } from '../src/core/types'
+import { PROFESSION_LABELS, type SearchIndex } from '../src/core/types'
 
 // 台服資料持續更新:簡中詞名會換成繁中、陸服限定的資料會變成兩服都有。
 // 測試要的資料事實從索引推算,或由 cnOnly 自己造,不寫死現況。
@@ -18,6 +18,13 @@ export function groupRowNames(group: string, row: number): string[] {
   const found = index.groups.find((g) => g.name === group)
   if (!found) throw new Error(`索引沒有分組 ${group}`)
   return found.rows[row].map(keywordName)
+}
+
+/** 台服有實裝、名字與 PRTS 頁名(陸服名)不同的一位幹員。 */
+export function twRenamedOperator(): { name: string; prtsPage: string; rarity: number; profession: string } {
+  const op = index.operators.find((o) => o.inTw && o.name !== o.prtsPage)
+  if (!op) throw new Error('索引沒有名字與 PRTS 頁名不同的台服幹員')
+  return { name: op.name, prtsPage: op.prtsPage, rarity: op.rarity, profession: PROFESSION_LABELS[op.profession] }
 }
 
 /** 把帶有這個關鍵字的幹員都當成台服未實裝,讓它只有陸服有資料。要在 page.goto 之前呼叫。 */
