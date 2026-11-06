@@ -1,10 +1,12 @@
 // 手寫的小型原始資料片段。形狀照真實遊戲資料,只放案例需要的欄位。
 import type {
+  RawAttributes,
   RawBattleEquip,
   RawBlackboard,
   RawCharacter,
   RawEquip,
   RawEquipPart,
+  RawPhase,
   RawServer,
   RawSkill,
   RawSkillLevel,
@@ -107,12 +109,47 @@ export interface OperatorSpec {
   tokens?: string[]
   notObtainable?: boolean
   style?: BlackboardStyle
+  /** 各階段滿級的屬性(未給的欄位用預設);未給時階段數同遊戲:4★ 以上三個、3★ 兩個、1–2★ 一個。 */
+  phases?: Partial<RawAttributes>[]
+  /** 信賴關鍵幀最後一格(信賴 100%)的加成;未給的欄位為 0。 */
+  trust?: Partial<RawAttributes>
+  /** 潛能提升的屬性加成:建置不該讀它。 */
+  potentialAttributes?: Partial<RawAttributes>
+}
+
+/** 各階段的滿級等級,依星級,同遊戲。 */
+const MAX_LEVELS: Record<number, number[]> = { 1: [30], 2: [30], 3: [40, 55], 4: [45, 60, 70], 5: [50, 70, 80], 6: [50, 80, 90] }
+
+const NO_ATTRIBUTES: RawAttributes = { maxHp: 0, atk: 0, def: 0, magicResistance: 0, cost: 0, blockCnt: 0, baseAttackTime: 0, respawnTime: 0 }
+
+/**
+ * 每個階段兩個屬性關鍵幀:等級1 與滿級。滿級的預設值隨階段遞增;等級1 的生命、攻擊、防禦較低,
+ * 確認建置取的是最後一個階段的最後一個關鍵幀。
+ */
+function phases(rarity: number, specs: Partial<RawAttributes>[] | undefined): RawPhase[] {
+  const levels = MAX_LEVELS[rarity]
+  return (specs ?? levels.map(() => ({}))).map((spec, i) => {
+    const top: RawAttributes = {
+      maxHp: 1000 + 500 * i,
+      atk: 300 + 100 * i,
+      def: 100 + 50 * i,
+      magicResistance: 10,
+      cost: 18 + 2 * i,
+      blockCnt: 1,
+      baseAttackTime: 1.6,
+      respawnTime: 70,
+      ...spec,
+    }
+    const start = { ...top, maxHp: top.maxHp - 300, atk: top.atk - 100, def: top.def - 50 }
+    const maxLevel = levels[i] ?? levels.at(-1)!
+    return { maxLevel, attributesKeyFrames: [{ level: 1, data: start }, { level: maxLevel, data: top }] }
+  })
 }
 
 export function operator(spec: OperatorSpec): RawCharacter {
   const style = spec.style ?? 'array'
   const rarity = spec.rarity ?? 6
-  return {
+  const char: RawCharacter = {
     name: spec.name,
     description: spec.trait ?? '',
     potentialItemId: `p_${spec.name}`,
@@ -132,11 +169,21 @@ export function operator(spec: OperatorSpec): RawCharacter {
           ],
         }
       : null,
-    phases: [{}, {}, {}],
+    phases: phases(rarity, spec.phases),
+    favorKeyFrames: [
+      { level: 0, data: NO_ATTRIBUTES },
+      { level: 50, data: { ...NO_ATTRIBUTES, ...spec.trust } },
+    ],
     skills: (spec.skills ?? []).map((skillId) => ({ skillId, overrideTokenKey: (skillId && spec.skillTokens?.[skillId]) || null })),
     displayTokenDict: spec.tokens ? Object.fromEntries(spec.tokens.map((t) => [t, true])) : null,
     talents: (spec.talents ?? []).map((t) => talent(t, style)),
   }
+  if (spec.potentialAttributes) {
+    // 原始資料的潛能屬性加成形狀;不在 RawCharacter 裡,因為建置不讀它
+    const attributeModifiers = Object.entries(spec.potentialAttributes).map(([key, value]) => ({ attributeType: key, formulaItem: 'ADDITION', value }))
+    Object.assign(char, { potentialRanks: [{ type: 'BUFF', buff: { attributes: { attributeModifiers } } }] })
+  }
+  return char
 }
 
 export interface ModuleSpec {

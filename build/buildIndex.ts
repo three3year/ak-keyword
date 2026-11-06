@@ -16,6 +16,7 @@ import type {
   IndexStage,
   IndexSummon,
   IndexText,
+  OperatorAttributes,
   OperatorFile,
   Profession,
   Run,
@@ -254,7 +255,9 @@ class Builder {
       const twEquip = twEquips[m.equip.uniEquipId]
       return { id: m.equip.uniEquipId, name: twEquip?.uniEquipName ?? m.equip.uniEquipName, code: m.equip.typeIcon.toUpperCase(), inTw: !!twEquip }
     })
-    this.operatorFiles.push({ id, inTw: !!twChar, modules: indexModules, summons, entries })
+    const attributes: OperatorFile['attributes'] = { cn: operatorAttributes(char) }
+    if (twChar) attributes.tw = operatorAttributes(twChar)
+    this.operatorFiles.push({ id, inTw: !!twChar, modules: indexModules, summons, entries, attributes })
 
     return {
       id,
@@ -553,6 +556,27 @@ function isOperator(id: string, char: RawCharacter): boolean {
 
 function hasHits(text: IndexText): boolean {
   return Object.keys(text.hits).length > 0
+}
+
+/** 屬性:最後一個階段最後一個屬性關鍵幀,加上信賴關鍵幀最後一格的生命、攻擊、防禦;不讀潛能與模組加成。 */
+function operatorAttributes(char: RawCharacter): OperatorAttributes {
+  const phase = char.phases.length - 1
+  const top = char.phases[phase]
+  const a = top.attributesKeyFrames.at(-1)!.data
+  const trust = char.favorKeyFrames?.at(-1)?.data
+  return {
+    phase,
+    level: top.maxLevel,
+    hp: a.maxHp,
+    atk: a.atk,
+    def: a.def,
+    res: a.magicResistance,
+    cost: a.cost,
+    block: a.blockCnt,
+    interval: a.baseAttackTime,
+    redeploy: a.respawnTime,
+    trust: { hp: trust?.maxHp ?? 0, atk: trust?.atk ?? 0, def: trust?.def ?? 0 },
+  }
 }
 
 const PHASES: Record<string, number> = { PHASE_0: 0, PHASE_1: 1, PHASE_2: 2 }
