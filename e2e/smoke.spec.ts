@@ -52,22 +52,22 @@ test('結果卡一次只顯示一段命中敘述,點分頁後換成該段', asyn
   await expect(panel.locator('mark.hl').first()).toHaveText(/暈眩|晕眩/)
 })
 
-test('階段切換:預設第一個命中的階段,未命中的階段停用,重新查詢後回到預設', async ({ page }) => {
+test('階段切換:預設第一個命中的階段(技能是專精3),未命中的階段停用,重新查詢後回到預設', async ({ page }) => {
   await page.goto('./')
   await page.getByRole('button', { name: '暈眩', exact: true }).first().click()
   const cards = page.getByTestId('result-card')
   const card = (name: string) => cards.filter({ has: page.getByRole('heading', { name, exact: true }) })
 
-  // 忍冬技能2 的等級7 與專精3 都會暈眩:預設等級7,可切到專精3
+  // 忍冬技能2 的等級7 與專精3 都會暈眩:預設專精3,可切到等級7
   const stages = card('忍冬').getByRole('group', { name: '階段' })
   await expect(stages.getByRole('button')).toHaveText(['等級7', '專精3'])
-  await expect(stages.getByRole('button', { name: '等級7' })).toHaveAttribute('aria-pressed', 'true')
-  await stages.getByRole('button', { name: '專精3' }).click()
   await expect(stages.getByRole('button', { name: '專精3' })).toHaveAttribute('aria-pressed', 'true')
-  await expect(stages.getByRole('button', { name: '等級7' })).toHaveAttribute('aria-pressed', 'false')
+  await stages.getByRole('button', { name: '等級7' }).click()
+  await expect(stages.getByRole('button', { name: '等級7' })).toHaveAttribute('aria-pressed', 'true')
+  await expect(stages.getByRole('button', { name: '專精3' })).toHaveAttribute('aria-pressed', 'false')
   // 每張卡各自切換:另一張卡不受影響
   const other = card('繆爾賽思').getByRole('group', { name: '階段' })
-  await expect(other.getByRole('button', { name: '等級7' })).toHaveAttribute('aria-pressed', 'true')
+  await expect(other.getByRole('button', { name: '專精3' })).toHaveAttribute('aria-pressed', 'true')
 
   // 赫德雷天賦1 只有模組3 會暈眩:無模組停用,預設顯示模組3 並在內容區寫模組全名
   const hedley = card('赫德雷')
@@ -84,7 +84,7 @@ test('階段切換:預設第一個命中的階段,未命中的階段停用,重�
   await page.getByRole('radio', { name: '台服' }).click()
   await page.getByRole('radio', { name: '陸服' }).click()
   await expect(card('忍冬').getByRole('tab', { name: '技能2' })).toHaveAttribute('aria-selected', 'true')
-  await expect(stages.getByRole('button', { name: '等級7' })).toHaveAttribute('aria-pressed', 'true')
+  await expect(stages.getByRole('button', { name: '專精3' })).toHaveAttribute('aria-pressed', 'true')
 })
 
 test('搜尋條件 chip:加入時只亮施加,再亮一顆後結果變多或不變,關掉最後一顆後 chip 消失', async ({ page }) => {

@@ -248,7 +248,7 @@ export interface ResultEntry {
   summon?: string
   /** 技能圖示的相對路徑。 */
   icon?: string
-  /** 各階段依序排列;介面預設顯示第一個命中的階段。 */
+  /** 各階段依序排列;介面預設顯示第一個命中的階段(技能是最後一個命中的,專精3 優先)。 */
   stages: ResultStage[]
 }
 
@@ -269,7 +269,7 @@ export interface ResultOperator {
 // ---------- 幹員詳情 ----------
 
 export interface DetailEntry extends ResultEntry {
-  /** 一開始顯示的階段:第一個存在的階段,不看命中。 */
+  /** 一開始顯示的階段:第一個存在的階段(技能是最後一個,即專精3),不看命中。 */
   defaultStage: number
 }
 

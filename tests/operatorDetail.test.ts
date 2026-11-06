@@ -337,11 +337,14 @@ describe('幹員詳情', () => {
     expect(added.defaultStage).toBe(1)
   })
 
-  test('預設階段是最低的存在階段,即使只有專精3 命中', () => {
+  test('技能預設停在專精3,不看命中', () => {
     const d = detail({ cn: caster() }, 'char_001_x', { conditions: applying('ba.cold') })
-    const [frozen] = entriesOf(d, '技能2')
-    expect(frozen.stages.map((s) => s.hit)).toEqual([false, true])
-    expect(frozen.defaultStage).toBe(0)
+    const [skill1] = entriesOf(d, '技能1')
+    expect(skill1.stages.map((s) => [s.label, s.hit])).toEqual([
+      ['等級7', false],
+      ['專精3', false],
+    ])
+    expect(skill1.defaultStage).toBe(1)
   })
 
   test('命中目前搜尋條件的階段有高亮、命中旗標與效果類型;未命中的階段沒有', () => {

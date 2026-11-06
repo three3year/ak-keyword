@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, useId, watch } from 'vue'
-import { PROFESSION_LABELS, TW_UNRELEASED_TITLE, type IndexKeyword, type ResultEntry, type ResultOperator } from '../core/types'
+import { defaultStageOf } from '../core/query'
+import { PROFESSION_LABELS, TW_UNRELEASED_TITLE, type IndexKeyword, type ResultOperator } from '../core/types'
 import EntryView from './EntryView.vue'
 
 const props = defineProps<{
@@ -24,14 +25,9 @@ watch(
   },
 )
 
-/** 預設顯示第一個命中的階段。 */
-function defaultStage(e: ResultEntry): number {
-  return Math.max(0, e.stages.findIndex((s) => s.hit))
-}
-
 const entry = computed(() => props.op.entries[tab.value] ?? props.op.entries[0])
 const stage = computed({
-  get: () => stageOf.value[tab.value] ?? defaultStage(entry.value),
+  get: () => stageOf.value[tab.value] ?? defaultStageOf(entry.value, (s) => s.hit),
   set: (j: number) => (stageOf.value[tab.value] = j),
 })
 const id = useId()

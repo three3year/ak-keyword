@@ -203,6 +203,12 @@ function mergeSummonEntries(entries: ResultEntry[]): ResultEntry[] {
   return out
 }
 
+/** 符合 ok 的階段中預設顯示的那個:技能取最後一個(專精3 優先於等級7),其他取第一個;都不符合時為 0。 */
+export function defaultStageOf(e: ResultEntry, ok: (s: ResultStage) => boolean): number {
+  const js = e.stages.flatMap((s, j) => (ok(s) ? [j] : []))
+  return (e.kind === 'skill' ? js.at(-1) : js[0]) ?? 0
+}
+
 /** 幹員詳情的階段:命中的關鍵字標上高亮。 */
 function detailStage(stage: ResultStage): ResultStage {
   if (!stage.hit) return stage
@@ -213,7 +219,7 @@ function detailStage(stage: ResultStage): ResultStage {
  * 幹員詳情:幹員檔裡在這個伺服器看得到的全部敘述。幹員本身每段敘述一個分頁(特性、天賦、技能,依幹員檔的順序),
  * 召喚物的特性、天賦與技能接在幹員的技能分頁:召喚物特性與天賦接在召喚物在場的每個技能分頁,召喚物技能只接在它生效的那個
  * (召喚物技能表第 N 格對應幹員技能 N);幹員沒有技能分頁時接在帶出召喚物的分頁,對應不到分頁的召喚物接在最後一個分頁。
- * 階段的標籤、命中、效果類型與「台服未實裝」規則同結果卡,但所有存在的階段都列出,預設停在第一個存在的階段。
+ * 階段的標籤、命中、效果類型與「台服未實裝」規則同結果卡,但所有存在的階段都列出,預設停在第一個存在的階段(技能停在最後一個,即專精3)。
  */
 export function operatorDetail(file: OperatorFile, opts: Pick<QueryOptions, 'conditions' | 'server'> & { branchName: string }): OperatorDetail {
   // own:這個分頁的幹員本身那段敘述,召喚物依它的技能或天賦編號對應分頁
@@ -241,7 +247,7 @@ export function operatorDetail(file: OperatorFile, opts: Pick<QueryOptions, 'con
     const targets = entry.kind === 'skill' ? (bySkill.length > 0 ? bySkill : presentTabs) : presentTabs
     for (const t of targets) t.entries.push(entry)
   }
-  const withDefault = (e: ResultEntry): DetailEntry => ({ ...e, defaultStage: Math.max(0, e.stages.findIndex((s) => !s.absent)) })
+  const withDefault = (e: ResultEntry): DetailEntry => ({ ...e, defaultStage: defaultStageOf(e, (s) => !s.absent) })
   return { tabs: tabs.map((t): DetailTab => ({ kind: t.own.kind, label: t.label, entries: mergeSummonEntries(t.entries).map(withDefault) })), defaultTab: 0 }
 }
 

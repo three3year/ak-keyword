@@ -17,7 +17,7 @@ test('結果卡的技能分頁有技能圖示與技力疊字', async ({ page }) 
   await expect(icon.getByRole('img')).toHaveAccessibleName(/^(自動|攻擊|受擊)回復,初始技力 \d+,所需技力 \d+$/)
 })
 
-test('點頭像打開幹員詳情:每段敘述一個頁籤,預設特性;技能頁籤數等於實際技能數;技能頭部有圖示與文字欄位,切到專精3 後技力跟著換', async ({ page }) => {
+test('點頭像打開幹員詳情:每段敘述一個頁籤,預設特性;技能頁籤數等於實際技能數;技能頭部有圖示與文字欄位,預設專精3,切到等級7 後技力跟著換', async ({ page }) => {
   await search(page, '暈眩')
   await card(page, '忍冬').getByRole('button', { name: '檢視忍冬的詳情' }).click()
   const dialog = page.getByRole('dialog', { name: '忍冬' })
@@ -46,9 +46,10 @@ test('點頭像打開幹員詳情:每段敘述一個頁籤,預設特性;技能�
   const first = entries.first()
   const sp = async () =>
     `${await first.getByTestId('skill-facts').textContent()}|${await first.getByTestId('skill-icon').getByRole('img').getAttribute('aria-label')}`
-  const before = await sp()
-  await stages.getByRole('button', { name: '專精3' }).click()
   await expect(stages.getByRole('button', { name: '專精3' })).toHaveAttribute('aria-pressed', 'true')
+  const before = await sp()
+  await stages.getByRole('button', { name: '等級7' }).click()
+  await expect(stages.getByRole('button', { name: '等級7' })).toHaveAttribute('aria-pressed', 'true')
   expect(await sp()).not.toBe(before)
 
   // 技力文字在技能圖示下方
